@@ -35,6 +35,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.cio)
+            implementation(projects.snoopWeb)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)

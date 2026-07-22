@@ -21,6 +21,7 @@ SDK. Snoop does both, and correlates analytics events to the request that carrie
 | `snoop-ktor` | Ktor client plugin that captures traffic | core, ktor-client |
 | `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | core |
 | `snoop-ui` | Compose Multiplatform inspector UI + Android Activity/notification | core, compose |
+| `snoop-web` | Embedded HTTP server serving the live timeline in a browser (Android v1) | core, ktor-server |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds | — |
 
 ## Install
@@ -102,6 +103,19 @@ install(Snoop) {
 ```
 
 The event detail then shows "sent over POST /collect → 204" with a tap-through to the request.
+
+## Web viewer
+
+Inspect from a desktop browser while debugging from Android Studio:
+
+```kotlin
+SnoopWebServer.start()   // http://localhost:9394
+```
+```bash
+adb forward tcp:9394 tcp:9394   # then open http://localhost:9394
+```
+
+Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 
 ## Sample
 
