@@ -29,7 +29,7 @@ internal fun CollapsibleSection(
     initiallyExpanded: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    var expanded by rememberSaveable(title) { mutableStateOf(initiallyExpanded) }
+    var expanded by rememberSaveable(title, initiallyExpanded) { mutableStateOf(initiallyExpanded) }
     Row(
         modifier = Modifier
             .fillMaxWidth()

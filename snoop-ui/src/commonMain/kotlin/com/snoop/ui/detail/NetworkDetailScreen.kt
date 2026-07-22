@@ -1,17 +1,25 @@
 package com.snoop.ui.detail
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,16 +27,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkState
 import com.snoop.core.model.NetworkTransaction
-import com.snoop.ui.component.BodyView
+import com.snoop.ui.component.CollapsibleSection
 import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.KeyValueRow
+import com.snoop.ui.component.NetworkBodyView
 import com.snoop.ui.component.Pill
 import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.internal.buildCurl
@@ -40,19 +51,28 @@ private enum class NetworkDetailTab { Overview, Request, Response }
 
 @Composable
 internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> Unit) {
+    val clipboard = LocalClipboardManager.current
     DetailScaffold(
         title = "${transaction.method} ${transaction.path.ifEmpty { "/" }}",
         subtitle = transaction.host,
         onBack = onBack,
-    ) { modifier, showMessage ->
+        actions = { showMessage ->
+            IconButton(onClick = {
+                clipboard.setText(AnnotatedString(buildCurl(transaction)))
+                showMessage("Copied as cURL")
+            }) {
+                Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy as cURL")
+            }
+        },
+    ) { modifier, _ ->
         Column(modifier) {
             var tab by remember { mutableStateOf(NetworkDetailTab.Overview) }
+            val colors = LocalSnoopColors.current
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val colors = LocalSnoopColors.current
                 val statusLabel = when (transaction.state) {
                     NetworkState.Pending -> "pending"
                     NetworkState.Failed -> "failed"
@@ -63,15 +83,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                 transaction.responseBody?.let { Pill(formatBytes(it.byteCount), colors.neutral) }
                 Pill("ktor", colors.accent)
             }
-            TabRow(selectedTabIndex = tab.ordinal) {
-                NetworkDetailTab.entries.forEach { option ->
-                    Tab(
-                        selected = tab == option,
-                        onClick = { tab = option },
-                        text = { Text(option.name) },
-                    )
-                }
-            }
+            TextTabs(selected = tab, onSelect = { tab = it })
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -79,9 +91,21 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 when (tab) {
-                    NetworkDetailTab.Overview -> Overview(transaction, showMessage)
-                    NetworkDetailTab.Request -> HeadersAndBody(transaction.requestContentType, transaction.requestHeaders, transaction.requestBody?.text, transaction.requestBody?.truncated == true)
-                    NetworkDetailTab.Response -> HeadersAndBody(transaction.responseContentType, transaction.responseHeaders, transaction.responseBody?.text, transaction.responseBody?.truncated == true)
+                    NetworkDetailTab.Overview -> Overview(transaction)
+                    NetworkDetailTab.Request -> HeadersAndBody(
+                        contentType = transaction.requestContentType,
+                        headers = transaction.requestHeaders,
+                        body = transaction.requestBody?.text,
+                        truncated = transaction.requestBody?.truncated == true,
+                        headersInitiallyExpanded = true,
+                    )
+                    NetworkDetailTab.Response -> HeadersAndBody(
+                        contentType = transaction.responseContentType,
+                        headers = transaction.responseHeaders,
+                        body = transaction.responseBody?.text,
+                        truncated = transaction.responseBody?.truncated == true,
+                        headersInitiallyExpanded = false,
+                    )
                 }
             }
         }
@@ -89,8 +113,37 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
 }
 
 @Composable
-private fun Overview(transaction: NetworkTransaction, showMessage: (String) -> Unit) {
-    val clipboard = LocalClipboardManager.current
+private fun TextTabs(selected: NetworkDetailTab, onSelect: (NetworkDetailTab) -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            NetworkDetailTab.entries.forEach { tab ->
+                val active = tab == selected
+                Column(Modifier.width(IntrinsicSize.Max).clickable { onSelect(tab) }) {
+                    Text(
+                        text = tab.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                        color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                            .background(if (active) MaterialTheme.colorScheme.onSurface else Color.Transparent),
+                    )
+                }
+            }
+        }
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+    }
+}
+
+@Composable
+private fun Overview(transaction: NetworkTransaction) {
     SectionLabel("URL")
     Text(transaction.url, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
 
@@ -111,12 +164,6 @@ private fun Overview(transaction: NetworkTransaction, showMessage: (String) -> U
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-
-    SectionLabel("Share")
-    OutlinedButton(onClick = {
-        clipboard.setText(AnnotatedString(buildCurl(transaction)))
-        showMessage("Copied as cURL")
-    }) { Text("Copy as cURL") }
 }
 
 @Composable
@@ -125,12 +172,16 @@ private fun HeadersAndBody(
     headers: List<KeyValue>,
     body: String?,
     truncated: Boolean,
+    headersInitiallyExpanded: Boolean,
 ) {
-    SectionLabel("Headers")
-    if (headers.isEmpty()) {
-        Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } else {
-        headers.forEach { KeyValueRow(it) }
+    CollapsibleSection("Headers (${headers.size})", initiallyExpanded = headersInitiallyExpanded) {
+        if (headers.isEmpty()) {
+            Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            Column(Modifier.fillMaxWidth()) {
+                headers.forEach { KeyValueRow(it) }
+            }
+        }
     }
 
     SectionLabel("Body")
@@ -140,7 +191,7 @@ private fun HeadersAndBody(
     if (body.isNullOrEmpty()) {
         Text("Empty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     } else {
-        BodyView(body)
+        NetworkBodyView(body)
         if (truncated) {
             Text(
                 "Body truncated to the configured limit.",
