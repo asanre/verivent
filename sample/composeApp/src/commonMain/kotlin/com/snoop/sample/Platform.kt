@@ -1,0 +1,11 @@
+package com.snoop.sample
+
+import androidx.compose.runtime.Composable
+import io.ktor.client.engine.HttpClientEngineFactory
+
+/** Ktor engine per platform: CIO on Android, Darwin on iOS. */
+internal expect fun sampleEngine(): HttpClientEngineFactory<*>
+
+/** Platform-only demo controls (e.g. the Android notification button). */
+@Composable
+expect fun PlatformExtras()
