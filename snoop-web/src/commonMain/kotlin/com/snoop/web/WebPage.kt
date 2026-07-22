@@ -45,6 +45,8 @@ main{display:flex;height:calc(100vh - 58px);padding:10px 12px;gap:10px}
 .dwrap{padding:16px}
 .dtitle{font-weight:700;font-size:16px;margin-bottom:2px;word-break:break-all}
 .section{margin-top:18px;text-transform:uppercase;font-size:11px;letter-spacing:.4px;color:var(--muted);font-weight:600}
+.shead{cursor:pointer;user-select:none}
+.copybtn{padding:5px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);cursor:pointer;font-size:12px;font-weight:600}
 .kv{display:flex;gap:12px;padding:4px 0;border-bottom:1px solid var(--line)}
 .kv .k{flex:.42;color:var(--muted)}
 .kv .v{flex:.58;font-family:ui-monospace,Menlo,monospace;word-break:break-all}
@@ -74,7 +76,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding
   <div class='detail' id='detail'></div>
 </main>
 <script>
-var entries=[],latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={};
+var entries=[],latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={};
 var PALETTE=['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
 function esc(s){s=(s==null)?'':(''+s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function pal(ch){var h=0;ch=ch||'';for(var i=0;i<ch.length;i++){h=(h*31+ch.charCodeAt(i))|0;}return PALETTE[((h%PALETTE.length)+PALETTE.length)%PALETTE.length];}
@@ -138,6 +140,30 @@ function kvHtml(items){return (items||[]).map(function(k){var v=k.redacted?"<spa
 function pretty(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s),null,2);}catch(e){return s;}}
 function compact(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s));}catch(e){return s;}}
 function hl(s){return esc(s).replace(/("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b/g,function(m,str,colon,num,kw){if(str)return "<span class='"+(colon?'jk':'js')+"'>"+str+"</span>"+(colon||'');if(num)return "<span class='jn'>"+num+"</span>";return "<span class='jb'>"+kw+"</span>";});}
+function toggleHeaders(k){openHeaders[k]=!openHeaders[k];renderDetail();}
+function headersSection(label,items,key){
+  var open=!!openHeaders[key];
+  var h="<div class='section shead' onclick='toggleHeaders(\""+key+"\")'>"+(open?'▾':'▸')+" "+label+" ("+(items||[]).length+")</div>";
+  if(open)h+=(kvHtml(items)||'<div class=sub>None</div>');
+  return h;
+}
+function curlCmd(e){
+  var parts=['curl'];
+  if((e.method||'GET').toUpperCase()!=='GET')parts.push('-X '+e.method.toUpperCase());
+  parts.push("'"+e.url+"'");
+  (e.requestHeaders||[]).forEach(function(k){parts.push("-H '"+k.name+": "+(''+k.value).replace(/'/g,"'\\''")+"'");});
+  if(e.requestBody)parts.push("--data '"+e.requestBody.replace(/'/g,"'\\''")+"'");
+  return parts.join(' \\\n  ');
+}
+function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(err){}document.body.removeChild(ta);}
+function copyCurl(id){
+  var e=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){e=entries[i];break;}}
+  if(!e)return;
+  var done=function(){var b=document.getElementById('curlbtn');if(b){b.textContent='Copied';setTimeout(function(){b.textContent='Copy as cURL';},1200);}};
+  var text=curlCmd(e);
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text);done();});}
+  else{fallbackCopy(text);done();}
+}
 var rawBody=false;
 function setRaw(v){rawBody=v;renderDetail();}
 function segHtml(){return "<span class='seg'><span class='"+(rawBody?'':'on')+"' onclick='setRaw(false)'>Pretty</span><span class='"+(rawBody?'on':'')+"' onclick='setRaw(true)'>Raw</span></span>";}
@@ -148,12 +174,12 @@ function renderDetail(){
   var h="<div class='dwrap'><button class='close' onclick='sel(null)'>×</button>";
   if(e.type==='network'){
     h+="<div class='dtitle'>"+esc(e.method)+" "+esc(e.path||'/')+"</div><div class='sub'>"+esc(e.host)+"</div>";
-    h+="<div style='margin-top:10px'>"+pill(statusLabel(e),statusColor(e),true)+" "+pill(dur(e.durationMillis)||'—','#6d5efc')+"</div>";
+    h+="<div style='margin-top:10px;display:flex;align-items:center;gap:8px'>"+pill(statusLabel(e),statusColor(e),true)+" "+pill(dur(e.durationMillis)||'—','#6d5efc')+"<button class='copybtn' id='curlbtn' onclick='copyCurl(\""+e.id+"\")' style='margin-left:auto'>Copy as cURL</button></div>";
     h+="<div class='section'>URL</div><pre>"+esc(e.url)+"</pre>";
     if(e.error){h+="<div class='section'>Error</div><pre>"+esc(e.error)+"</pre>";}
-    h+="<div class='section'>Request headers</div>"+(kvHtml(e.requestHeaders)||'<div class=sub>None</div>');
+    h+=headersSection('Request headers',e.requestHeaders,e.id+':req');
     if(e.requestBody){h+="<div class='section'>Request body"+segHtml()+"</div><pre>"+(rawBody?esc(compact(e.requestBody)):hl(pretty(e.requestBody)))+"</pre>";}
-    h+="<div class='section'>Response headers</div>"+(kvHtml(e.responseHeaders)||'<div class=sub>None</div>');
+    h+=headersSection('Response headers',e.responseHeaders,e.id+':res');
     if(e.responseBody){h+="<div class='section'>Response body"+segHtml()+"</div><pre>"+(rawBody?esc(compact(e.responseBody)):hl(pretty(e.responseBody)))+"</pre>";}
   }else{
     var c=pal(e.channel);
