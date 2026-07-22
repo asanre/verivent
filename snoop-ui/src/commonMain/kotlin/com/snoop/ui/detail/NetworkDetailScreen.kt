@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -18,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.KeyValue
@@ -28,6 +31,7 @@ import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.KeyValueRow
 import com.snoop.ui.component.Pill
 import com.snoop.ui.component.SectionLabel
+import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.formatBytes
 import com.snoop.ui.internal.formatDuration
 import com.snoop.ui.theme.statusColor
@@ -40,7 +44,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
         title = "${transaction.method} ${transaction.path.ifEmpty { "/" }}",
         subtitle = transaction.host,
         onBack = onBack,
-    ) { modifier ->
+    ) { modifier, showMessage ->
         Column(modifier) {
             var tab by remember { mutableStateOf(NetworkDetailTab.Overview) }
             TabRow(selectedTabIndex = tab.ordinal) {
@@ -59,7 +63,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 when (tab) {
-                    NetworkDetailTab.Overview -> Overview(transaction)
+                    NetworkDetailTab.Overview -> Overview(transaction, showMessage)
                     NetworkDetailTab.Request -> HeadersAndBody(transaction.requestContentType, transaction.requestHeaders, transaction.requestBody?.text, transaction.requestBody?.truncated == true)
                     NetworkDetailTab.Response -> HeadersAndBody(transaction.responseContentType, transaction.responseHeaders, transaction.responseBody?.text, transaction.responseBody?.truncated == true)
                 }
@@ -69,7 +73,8 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
 }
 
 @Composable
-private fun Overview(transaction: NetworkTransaction) {
+private fun Overview(transaction: NetworkTransaction, showMessage: (String) -> Unit) {
+    val clipboard = LocalClipboardManager.current
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -105,6 +110,12 @@ private fun Overview(transaction: NetworkTransaction) {
             style = MaterialTheme.typography.bodyMedium,
         )
     }
+
+    SectionLabel("Share")
+    OutlinedButton(onClick = {
+        clipboard.setText(AnnotatedString(buildCurl(transaction)))
+        showMessage("Copied as cURL")
+    }) { Text("Copy as cURL") }
 }
 
 @Composable

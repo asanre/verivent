@@ -10,10 +10,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
@@ -42,7 +45,8 @@ internal fun AnalyticsDetailScreen(
     onOpenCall: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    DetailScaffold(title = entry.name, subtitle = "event · ${entry.channel}", onBack = onBack) { modifier ->
+    DetailScaffold(title = entry.name, subtitle = "event · ${entry.channel}", onBack = onBack) { modifier, showMessage ->
+        val clipboard = LocalClipboardManager.current
         Column(
             modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
@@ -83,7 +87,15 @@ internal fun AnalyticsDetailScreen(
                 entry.properties.forEach { KeyValueRow(it) }
 
                 SectionLabel("Payload")
-                BodyView(propertiesToJson(entry.properties))
+                val payload = propertiesToJson(entry.properties)
+                BodyView(payload)
+                OutlinedButton(
+                    onClick = {
+                        clipboard.setText(AnnotatedString(payload))
+                        showMessage("Copied payload")
+                    },
+                    modifier = Modifier.padding(top = 8.dp),
+                ) { Text("Copy payload") }
             }
         }
     }

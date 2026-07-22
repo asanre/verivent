@@ -4,9 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,15 +50,32 @@ private fun TimeLabel(text: String) {
 }
 
 @Composable
-internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
+private fun RowShell(
+    accent: Color,
+    background: Color,
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(IntrinsicSize.Min)
+            .background(background)
+            .clickable(onClick = onClick),
     ) {
+        Spacer(Modifier.fillMaxHeight().width(3.dp).background(accent))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
+        )
+    }
+}
+
+@Composable
+internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
+    RowShell(accent = statusColor(transaction), background = Color.Transparent, onClick = onClick) {
         TimeLabel(formatClock(transaction.timestamp))
         Pill(transaction.method, methodColor(transaction.method))
         Column(Modifier.weight(1f)) {
@@ -99,15 +122,7 @@ private fun annotationLabel(annotation: Annotation): String = when (annotation) 
 @Composable
 internal fun AnalyticsRow(entry: AnalyticsEntry, onClick: () -> Unit) {
     val color = channelColor(entry.channel)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(color.copy(alpha = 0.06f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    RowShell(accent = color, background = color.copy(alpha = 0.07f), onClick = onClick) {
         TimeLabel(formatClock(entry.timestamp))
         Pill(entry.channel, color, filled = true)
         Column(Modifier.weight(1f)) {
