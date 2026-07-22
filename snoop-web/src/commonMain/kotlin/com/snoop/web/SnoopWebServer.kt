@@ -9,6 +9,7 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.sse
@@ -48,6 +49,10 @@ object SnoopWebServer {
             get("/") { call.respondText(INDEX_HTML, ContentType.Text.Html) }
             get("/api/entries") {
                 call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
+            }
+            post("/api/clear") {
+                SnoopCore.store.clear()
+                call.respondText("ok")
             }
             sse("/api/stream") {
                 SnoopCore.store.entries.collect { entries ->
