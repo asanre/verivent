@@ -47,6 +47,21 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
     ) { modifier, showMessage ->
         Column(modifier) {
             var tab by remember { mutableStateOf(NetworkDetailTab.Overview) }
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                val statusLabel = when (transaction.state) {
+                    NetworkState.Pending -> "pending"
+                    NetworkState.Failed -> "failed"
+                    NetworkState.Complete -> transaction.status.toString()
+                }
+                Pill(statusLabel, statusColor(transaction), filled = true)
+                transaction.durationMillis?.let { Pill(formatDuration(it), MaterialTheme.colorScheme.primary) }
+                transaction.responseBody?.let { Pill(formatBytes(it.byteCount), MaterialTheme.colorScheme.tertiary) }
+                Pill("ktor", MaterialTheme.colorScheme.secondary)
+            }
             TabRow(selectedTabIndex = tab.ordinal) {
                 NetworkDetailTab.entries.forEach { option ->
                     Tab(
@@ -75,21 +90,6 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
 @Composable
 private fun Overview(transaction: NetworkTransaction, showMessage: (String) -> Unit) {
     val clipboard = LocalClipboardManager.current
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        val statusLabel = when (transaction.state) {
-            NetworkState.Pending -> "pending"
-            NetworkState.Failed -> "failed"
-            NetworkState.Complete -> transaction.status.toString()
-        }
-        Pill(statusLabel, statusColor(transaction), filled = true)
-        transaction.durationMillis?.let { Pill(formatDuration(it), MaterialTheme.colorScheme.primary) }
-        transaction.responseBody?.let { Pill(formatBytes(it.byteCount), MaterialTheme.colorScheme.tertiary) }
-        Pill(transaction.method, MaterialTheme.colorScheme.secondary)
-    }
-
     SectionLabel("URL")
     Text(transaction.url, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
 

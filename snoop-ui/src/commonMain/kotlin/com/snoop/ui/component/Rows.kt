@@ -4,22 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,7 +20,6 @@ import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
 import com.snoop.core.model.NetworkState
 import com.snoop.core.model.NetworkTransaction
-import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.formatDuration
 import com.snoop.ui.theme.channelColor
 import com.snoop.ui.theme.statusColor
@@ -41,42 +33,15 @@ private fun methodColor(method: String): Color = when (method.uppercase()) {
 }
 
 @Composable
-private fun TimeLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-@Composable
-private fun RowShell(
-    accent: Color,
-    background: Color,
-    onClick: () -> Unit,
-    content: @Composable RowScope.() -> Unit,
-) {
+internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .background(background)
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Spacer(Modifier.fillMaxHeight().width(3.dp).background(accent))
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 11.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
-        )
-    }
-}
-
-@Composable
-internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
-    RowShell(accent = statusColor(transaction), background = Color.Transparent, onClick = onClick) {
-        TimeLabel(formatClock(transaction.timestamp))
         Pill(transaction.method, methodColor(transaction.method))
         Column(Modifier.weight(1f)) {
             Text(
@@ -100,7 +65,12 @@ internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
                 NetworkState.Failed -> "ERR"
                 NetworkState.Complete -> transaction.status.toString()
             }
-            Pill(label, statusColor(transaction))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = statusColor(transaction),
+            )
             transaction.durationMillis?.let {
                 Text(
                     text = formatDuration(it),
@@ -112,19 +82,25 @@ internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
     }
 }
 
-private fun annotationLabel(annotation: Annotation): String = when (annotation) {
-    Annotation.Ecommerce -> "ecommerce"
-    Annotation.Conversion -> "conversion"
-    Annotation.Consent -> "consent"
-    Annotation.ScreenView -> "screen"
+private fun eventGlyph(entry: AnalyticsEntry): String = when {
+    entry.name.contains("screen", ignoreCase = true) -> "📱"
+    Annotation.Ecommerce in entry.annotations -> "🛒"
+    else -> "📊"
 }
 
 @Composable
 internal fun AnalyticsRow(entry: AnalyticsEntry, onClick: () -> Unit) {
     val color = channelColor(entry.channel)
-    RowShell(accent = color, background = color.copy(alpha = 0.07f), onClick = onClick) {
-        TimeLabel(formatClock(entry.timestamp))
-        Pill(entry.channel, color, filled = true)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color.copy(alpha = 0.05f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(eventGlyph(entry), style = MaterialTheme.typography.titleMedium)
         Column(Modifier.weight(1f)) {
             Text(
                 text = entry.name,
@@ -133,24 +109,18 @@ internal fun AnalyticsRow(entry: AnalyticsEntry, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "event",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                entry.annotations.forEach {
-                    Text(
-                        text = "· ${annotationLabel(it)}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = color,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
-            }
+            Text(
+                text = if (entry.correlatedCallId != null) {
+                    "sent over network"
+                } else {
+                    "${entry.properties.size} param${if (entry.properties.size == 1) "" else "s"}"
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
-        if (entry.correlatedCallId != null) {
-            Text("🔗", style = MaterialTheme.typography.labelMedium)
-        }
+        Pill(entry.channel, color, filled = true)
     }
 }

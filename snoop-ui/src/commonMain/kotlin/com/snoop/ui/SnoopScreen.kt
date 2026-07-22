@@ -257,6 +257,7 @@ private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(if (collapsed) "▸" else "▾", style = MaterialTheme.typography.labelMedium)
+            Text("📱", style = MaterialTheme.typography.labelLarge)
             Text(
                 group.screen ?: "session",
                 style = MaterialTheme.typography.titleSmall,
