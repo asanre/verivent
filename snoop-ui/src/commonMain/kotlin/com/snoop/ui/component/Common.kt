@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.KeyValue
+import com.snoop.ui.internal.compactPrintJson
 import com.snoop.ui.internal.prettyPrintJson
 import com.snoop.ui.internal.propertiesToJson
 import com.snoop.ui.theme.TintPair
@@ -109,9 +110,9 @@ private fun CodePanel(content: @Composable () -> Unit) {
 }
 
 /**
- * Network body viewer. Pretty = formatted JSON with syntax colors, Raw = the same formatted text
- * without colors (capture may arrive compact or indented — both render the same); the toggle only
- * shows when the payload parses as JSON.
+ * Network body viewer. Pretty = formatted JSON with syntax colors, Raw = the payload compacted to
+ * one line (capture may arrive compact or indented — both render the same); the toggle only shows
+ * when the payload parses as JSON.
  */
 @Composable
 internal fun NetworkBodyView(raw: String) {
@@ -131,8 +132,9 @@ internal fun NetworkBodyView(raw: String) {
             if (pretty != null && !showRaw) {
                 JsonSyntaxText(pretty, Modifier.fillMaxWidth())
             } else {
+                val compact = remember(raw) { compactPrintJson(raw) }
                 Text(
-                    text = pretty ?: raw,
+                    text = compact ?: raw,
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     modifier = Modifier.fillMaxWidth(),
                 )

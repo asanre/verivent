@@ -27,6 +27,13 @@ internal fun prettyPrintJson(raw: String): String? = try {
     null
 }
 
+/** Collapse a JSON payload to one line for the "Raw" view; null if it isn't valid JSON. */
+internal fun compactPrintJson(raw: String): String? = try {
+    Json.encodeToString(JsonElement.serializer(), Json.parseToJsonElement(raw))
+} catch (_: Throwable) {
+    null
+}
+
 internal fun formatBytes(bytes: Long): String = when {
     bytes < 1024 -> "$bytes B"
     bytes < 1024 * 1024 -> "${oneDecimal(bytes / 1024.0)} KB"

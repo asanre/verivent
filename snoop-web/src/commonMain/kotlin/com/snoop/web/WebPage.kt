@@ -136,6 +136,7 @@ function listHtml(){
 function toggleGroup(k){collapsedGroups[k]=!collapsedGroups[k];render();}
 function kvHtml(items){return (items||[]).map(function(k){var v=k.redacted?"<span class='redact'></span>":esc(k.value);return "<div class='kv'><div class='k'>"+esc(k.name)+"</div><div class='v'>"+v+"</div></div>";}).join('');}
 function pretty(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s),null,2);}catch(e){return s;}}
+function compact(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s));}catch(e){return s;}}
 function hl(s){return esc(s).replace(/("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b/g,function(m,str,colon,num,kw){if(str)return "<span class='"+(colon?'jk':'js')+"'>"+str+"</span>"+(colon||'');if(num)return "<span class='jn'>"+num+"</span>";return "<span class='jb'>"+kw+"</span>";});}
 var rawBody=false;
 function setRaw(v){rawBody=v;renderDetail();}
@@ -151,9 +152,9 @@ function renderDetail(){
     h+="<div class='section'>URL</div><pre>"+esc(e.url)+"</pre>";
     if(e.error){h+="<div class='section'>Error</div><pre>"+esc(e.error)+"</pre>";}
     h+="<div class='section'>Request headers</div>"+(kvHtml(e.requestHeaders)||'<div class=sub>None</div>');
-    if(e.requestBody){h+="<div class='section'>Request body"+segHtml()+"</div><pre>"+(rawBody?esc(pretty(e.requestBody)):hl(pretty(e.requestBody)))+"</pre>";}
+    if(e.requestBody){h+="<div class='section'>Request body"+segHtml()+"</div><pre>"+(rawBody?esc(compact(e.requestBody)):hl(pretty(e.requestBody)))+"</pre>";}
     h+="<div class='section'>Response headers</div>"+(kvHtml(e.responseHeaders)||'<div class=sub>None</div>');
-    if(e.responseBody){h+="<div class='section'>Response body"+segHtml()+"</div><pre>"+(rawBody?esc(pretty(e.responseBody)):hl(pretty(e.responseBody)))+"</pre>";}
+    if(e.responseBody){h+="<div class='section'>Response body"+segHtml()+"</div><pre>"+(rawBody?esc(compact(e.responseBody)):hl(pretty(e.responseBody)))+"</pre>";}
   }else{
     var c=pal(e.channel);
     h+="<div class='dtitle'>"+esc(e.name)+"</div><div style='margin-top:8px'>"+pill(e.channel,c,true);
