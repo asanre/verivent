@@ -15,13 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -59,15 +56,8 @@ import com.snoop.ui.detail.NetworkDetailScreen
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.entriesToJson
 import com.snoop.ui.internal.groupEntries
-import com.snoop.ui.summary.SummaryContent
 import com.snoop.ui.theme.SnoopTheme
 import kotlinx.coroutines.launch
-
-internal enum class SnoopTab(val label: String, val glyph: String) {
-    Timeline("Timeline", "▤"),
-    Summary("Summary", "▦"),
-    Settings("Settings", "⚙"),
-}
 
 internal enum class TypeFilter { All, Network, Analytics }
 
@@ -94,7 +84,6 @@ private fun SnoopContent(groupByEvent: String?) {
     var frozen by remember { mutableStateOf<List<SnoopEntry>>(emptyList()) }
     val entries = if (paused) frozen else live
 
-    var tab by remember { mutableStateOf(SnoopTab.Timeline) }
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val clipboard = LocalClipboardManager.current
@@ -143,26 +132,10 @@ private fun SnoopContent(groupByEvent: String?) {
                 },
             )
         },
-        bottomBar = {
-            NavigationBar {
-                SnoopTab.entries.forEach { entry ->
-                    NavigationBarItem(
-                        selected = tab == entry,
-                        onClick = { tab = entry },
-                        icon = { Text(entry.glyph) },
-                        label = { Text(entry.label) },
-                    )
-                }
-            }
-        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         Box(Modifier.padding(padding)) {
-            when (tab) {
-                SnoopTab.Timeline -> TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
-                SnoopTab.Summary -> SummaryContent(entries)
-                SnoopTab.Settings -> SettingsContent()
-            }
+            TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
         }
     }
 }
@@ -322,24 +295,3 @@ private fun EmptyState(nothingCaptured: Boolean) {
     }
 }
 
-@Composable
-private fun SettingsContent() {
-    Column(Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Settings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Buffer capacity", fontWeight = FontWeight.SemiBold)
-                Text(
-                    "Keeps the most recent ${SnoopCore.store.capacity} entries in memory.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Text("Snoop is open source — Apache-2.0", style = MaterialTheme.typography.bodySmall)
-    }
-}
