@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,30 +16,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.Pause
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -51,12 +59,14 @@ import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.component.AnalyticsRow
 import com.snoop.ui.component.FilterChipBar
 import com.snoop.ui.component.NetworkRow
+import com.snoop.ui.component.SnoopChip
 import com.snoop.ui.detail.AnalyticsDetailScreen
 import com.snoop.ui.detail.NetworkDetailScreen
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.entriesToJson
 import com.snoop.ui.internal.groupEntries
+import com.snoop.ui.theme.LocalSnoopColors
 import com.snoop.ui.theme.SnoopTheme
 import kotlinx.coroutines.launch
 
@@ -106,32 +116,41 @@ private fun SnoopContent(groupByEvent: String?) {
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Snoop", fontWeight = FontWeight.Bold)
-                        LiveDot(active = !paused && live.isNotEmpty())
-                        Text(
-                            "${entries.size}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {
-                        val text = entriesToJson(entries)
-                        clipboard.setText(AnnotatedString(text))
-                        scope.launch { snackbar.showSnackbar("Copied ${entries.size} entries as JSON") }
-                    }) { Text("⬆") }
-                    IconButton(onClick = {
-                        if (!paused) frozen = live
-                        paused = !paused
-                    }) { Text(if (paused) "▶" else "⏸") }
-                    IconButton(onClick = { SnoopCore.store.clear() }) { Text("🗑") }
-                },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("Snoop", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                LiveDot(active = !paused && live.isNotEmpty())
+                Text(
+                    "${entries.size}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = {
+                    if (!paused) frozen = live
+                    paused = !paused
+                }) {
+                    Icon(
+                        imageVector = if (paused) Icons.Default.PlayArrow else Icons.Outlined.Pause,
+                        contentDescription = if (paused) "Resume" else "Pause",
+                    )
+                }
+                IconButton(onClick = { SnoopCore.store.clear() }) {
+                    Icon(Icons.Outlined.Delete, contentDescription = "Clear")
+                }
+                IconButton(onClick = {
+                    val text = entriesToJson(entries)
+                    clipboard.setText(AnnotatedString(text))
+                    scope.launch { snackbar.showSnackbar("Copied ${entries.size} entries as JSON") }
+                }) {
+                    Icon(Icons.Outlined.FileDownload, contentDescription = "Export as JSON")
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -143,8 +162,9 @@ private fun SnoopContent(groupByEvent: String?) {
 
 @Composable
 private fun LiveDot(active: Boolean) {
+    val colors = LocalSnoopColors.current
     val color by animateColorAsState(
-        if (active) Color(0xFF16A34A) else MaterialTheme.colorScheme.outline,
+        if (active) colors.liveDot else MaterialTheme.colorScheme.outline,
     )
     Box(Modifier.size(8.dp).clip(CircleShape).background(color))
 }
@@ -158,6 +178,9 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
 
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
+    }
+    val callsById = remember(entries) {
+        entries.filterIsInstance<NetworkTransaction>().associateBy { it.id }
     }
     val filtered = entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
     val groups = groupEntries(filtered, if (grouped) groupByEvent else null)
@@ -175,16 +198,24 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
             value = query,
             onValueChange = { query = it },
             placeholder = { Text("Search path, host, event…") },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+            shape = CircleShape,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
-        Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             if (groupByEvent != null) {
-                FilterChip(
+                SnoopChip(
+                    label = "Group",
                     selected = grouped,
                     onClick = { grouped = !grouped },
-                    label = { Text("Group") },
-                    modifier = Modifier.padding(end = 4.dp),
+                    modifier = Modifier.padding(end = 8.dp),
                 )
             }
             FilterChipBar(
@@ -195,28 +226,38 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
                 onChannel = { filters = filters.selectChannel(it) },
             )
         }
-        if (filtered.isEmpty()) {
-            EmptyState(entries.isEmpty())
-        } else {
-            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                groups.forEach { group ->
-                    if (group.entries.isEmpty()) return@forEach
-                    val groupKey = group.entries.first().id
-                    val isCollapsed = groupKey in collapsed.value
-                    if (grouped && groupByEvent != null && group.screen != null) {
-                        item(key = "hdr:$groupKey") {
-                            GroupHeader(group, isCollapsed) {
-                                collapsed.value = if (isCollapsed) collapsed.value - groupKey else collapsed.value + groupKey
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            if (filtered.isEmpty()) {
+                EmptyState(entries.isEmpty())
+            } else {
+                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                    groups.forEach { group ->
+                        if (group.entries.isEmpty()) return@forEach
+                        val groupKey = group.entries.first().id
+                        val isCollapsed = groupKey in collapsed.value
+                        if (grouped && groupByEvent != null && group.screen != null) {
+                            item(key = "hdr:$groupKey") {
+                                GroupHeader(group, groupByEvent, isCollapsed) {
+                                    collapsed.value = if (isCollapsed) collapsed.value - groupKey else collapsed.value + groupKey
+                                }
                             }
                         }
-                    }
-                    if (!isCollapsed) {
-                        items(group.entries, key = { it.id }) { entry ->
-                            when (entry) {
-                                is NetworkTransaction -> NetworkRow(entry) { onOpen(entry.id) }
-                                is AnalyticsEntry -> AnalyticsRow(entry) { onOpen(entry.id) }
+                        if (!isCollapsed) {
+                            items(group.entries, key = { it.id }) { entry ->
+                                when (entry) {
+                                    is NetworkTransaction -> NetworkRow(entry) { onOpen(entry.id) }
+                                    is AnalyticsEntry -> AnalyticsRow(
+                                        entry = entry,
+                                        correlatedCall = entry.correlatedCallId?.let(callsById::get),
+                                        onClick = { onOpen(entry.id) },
+                                    )
+                                }
+                                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                             }
-                            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         }
                     }
                 }
@@ -226,34 +267,42 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
 }
 
 @Composable
-private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -> Unit) {
+private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boolean, onToggle: () -> Unit) {
     val events = group.entries.count { it is AnalyticsEntry }
     val calls = group.entries.count { it is NetworkTransaction }
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)) {
-        Row(
-            Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(if (collapsed) "▸" else "▾", style = MaterialTheme.typography.labelMedium)
-            Text("📱", style = MaterialTheme.typography.labelLarge)
-            Text(
-                group.screen ?: "session",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = if (collapsed) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Default.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp),
+        )
+        Text("📱", style = MaterialTheme.typography.labelLarge)
+        Text(
+            group.screen ?: "session",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            if (collapsed) {
                 buildString {
                     if (events > 0) append("$events event${if (events == 1) "" else "s"}")
                     if (events > 0 && calls > 0) append(" · ")
                     if (calls > 0) append("$calls call${if (calls == 1) "" else "s"}")
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+                }
+            } else {
+                groupLabel
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
+    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 }
 
 private fun matchesFilters(
@@ -300,4 +349,3 @@ private fun EmptyState(nothingCaptured: Boolean) {
         }
     }
 }
-

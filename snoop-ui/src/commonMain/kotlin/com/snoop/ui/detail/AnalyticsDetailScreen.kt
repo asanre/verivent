@@ -29,7 +29,7 @@ import com.snoop.ui.component.KeyValueRow
 import com.snoop.ui.component.Pill
 import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.internal.propertiesToJson
-import com.snoop.ui.theme.channelColor
+import com.snoop.ui.theme.LocalSnoopColors
 
 private fun annotationLabel(annotation: Annotation): String = when (annotation) {
     Annotation.Ecommerce -> "ecommerce"
@@ -50,10 +50,10 @@ internal fun AnalyticsDetailScreen(
         Column(
             modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            val color = channelColor(entry.channel)
+            val tint = LocalSnoopColors.current.channelTint(entry.channel)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Pill(entry.channel, color, filled = true)
-                entry.annotations.forEach { Pill(annotationLabel(it), color) }
+                Pill(entry.channel, tint)
+                entry.annotations.forEach { Pill(annotationLabel(it), tint) }
             }
 
             val call = entry.correlatedCallId?.let { id ->

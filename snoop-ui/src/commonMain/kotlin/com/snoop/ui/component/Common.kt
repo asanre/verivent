@@ -23,20 +23,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.KeyValue
 import com.snoop.ui.internal.prettyPrintJson
+import com.snoop.ui.theme.TintPair
 
 /** Small rounded label used for status codes, methods, channels and badges. */
 @Composable
-internal fun Pill(text: String, color: Color, modifier: Modifier = Modifier, filled: Boolean = false) {
+internal fun Pill(text: String, tint: TintPair, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        color = if (filled) color else color.copy(alpha = 0.15f),
-        contentColor = if (filled) Color.White else color,
+        color = tint.container,
+        contentColor = tint.content,
         shape = RoundedCornerShape(6.dp),
     ) {
         Text(

@@ -34,7 +34,7 @@ import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.formatBytes
 import com.snoop.ui.internal.formatDuration
-import com.snoop.ui.theme.statusColor
+import com.snoop.ui.theme.LocalSnoopColors
 
 private enum class NetworkDetailTab { Overview, Request, Response }
 
@@ -52,15 +52,16 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                val colors = LocalSnoopColors.current
                 val statusLabel = when (transaction.state) {
                     NetworkState.Pending -> "pending"
                     NetworkState.Failed -> "failed"
                     NetworkState.Complete -> transaction.status.toString()
                 }
-                Pill(statusLabel, statusColor(transaction), filled = true)
-                transaction.durationMillis?.let { Pill(formatDuration(it), MaterialTheme.colorScheme.primary) }
-                transaction.responseBody?.let { Pill(formatBytes(it.byteCount), MaterialTheme.colorScheme.tertiary) }
-                Pill("ktor", MaterialTheme.colorScheme.secondary)
+                Pill(statusLabel, colors.statusTint(transaction))
+                transaction.durationMillis?.let { Pill(formatDuration(it), colors.neutral) }
+                transaction.responseBody?.let { Pill(formatBytes(it.byteCount), colors.neutral) }
+                Pill("ktor", colors.accent)
             }
             TabRow(selectedTabIndex = tab.ordinal) {
                 NetworkDetailTab.entries.forEach { option ->
