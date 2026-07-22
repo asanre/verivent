@@ -182,8 +182,12 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
     val callsById = remember(entries) {
         entries.filterIsInstance<NetworkTransaction>().associateBy { it.id }
     }
-    val filtered = entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
-    val groups = groupEntries(filtered, if (grouped) groupByEvent else null)
+    // Group over all entries so screen headers survive filters that hide the grouping event.
+    val groups = groupEntries(entries, if (grouped) groupByEvent else null)
+        .mapNotNull { group ->
+            val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
+            if (shown.isEmpty()) null else group.entries.first().id to group.copy(entries = shown)
+        }
 
     val listState = rememberLazyListState()
     val newestId = entries.lastOrNull()?.id
@@ -231,13 +235,11 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            if (filtered.isEmpty()) {
+            if (groups.isEmpty()) {
                 EmptyState(entries.isEmpty())
             } else {
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                    groups.forEach { group ->
-                        if (group.entries.isEmpty()) return@forEach
-                        val groupKey = group.entries.first().id
+                    groups.forEach { (groupKey, group) ->
                         val isCollapsed = groupKey in collapsed.value
                         if (grouped && groupByEvent != null && group.screen != null) {
                             item(key = "hdr:$groupKey") {

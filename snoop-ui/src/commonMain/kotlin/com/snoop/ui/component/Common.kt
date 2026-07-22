@@ -109,8 +109,9 @@ private fun CodePanel(content: @Composable () -> Unit) {
 }
 
 /**
- * Network body viewer. Pretty = formatted JSON with syntax colors, Raw = the payload as captured;
- * the toggle only shows when the payload parses as JSON.
+ * Network body viewer. Pretty = formatted JSON with syntax colors, Raw = the same formatted text
+ * without colors (capture may arrive compact or indented — both render the same); the toggle only
+ * shows when the payload parses as JSON.
  */
 @Composable
 internal fun NetworkBodyView(raw: String) {
@@ -131,7 +132,7 @@ internal fun NetworkBodyView(raw: String) {
                 JsonSyntaxText(pretty, Modifier.fillMaxWidth())
             } else {
                 Text(
-                    text = raw,
+                    text = pretty ?: raw,
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                     modifier = Modifier.fillMaxWidth(),
                 )
