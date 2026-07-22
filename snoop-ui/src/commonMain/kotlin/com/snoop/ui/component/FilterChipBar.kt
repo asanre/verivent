@@ -25,7 +25,7 @@ internal fun FilterChipBar(
     channel: String?,
     channels: List<String>,
     onType: (TypeFilter) -> Unit,
-    onChannel: (String?) -> Unit,
+    onChannel: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -45,7 +45,7 @@ internal fun FilterChipBar(
             val color = channelColor(name)
             FilterChip(
                 selected = channel == name,
-                onClick = { onChannel(if (channel == name) null else name) },
+                onClick = { onChannel(name) },
                 label = { Text(name) },
                 leadingIcon = {
                     androidx.compose.foundation.layout.Box(

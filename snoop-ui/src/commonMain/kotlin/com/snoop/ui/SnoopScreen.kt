@@ -53,6 +53,7 @@ import com.snoop.ui.component.FilterChipBar
 import com.snoop.ui.component.NetworkRow
 import com.snoop.ui.detail.AnalyticsDetailScreen
 import com.snoop.ui.detail.NetworkDetailScreen
+import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.entriesToJson
 import com.snoop.ui.internal.groupEntries
@@ -151,15 +152,14 @@ private fun LiveDot(active: Boolean) {
 @Composable
 private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen: (String) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
-    var typeFilter by remember { mutableStateOf(TypeFilter.All) }
-    var channelFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var filters by remember { mutableStateOf(TimelineFilters()) }
     var grouped by rememberSaveable { mutableStateOf(groupByEvent != null) }
     val collapsed = remember { mutableStateOf(setOf<String>()) }
 
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
-    val filtered = entries.filter { matchesFilters(it, typeFilter, channelFilter, query) }
+    val filtered = entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
     val groups = groupEntries(filtered, if (grouped) groupByEvent else null)
 
     val listState = rememberLazyListState()
@@ -187,7 +187,13 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
                     modifier = Modifier.padding(end = 4.dp),
                 )
             }
-            FilterChipBar(typeFilter, channelFilter, channels, onType = { typeFilter = it }, onChannel = { channelFilter = it })
+            FilterChipBar(
+                type = filters.type,
+                channel = filters.channel,
+                channels = channels,
+                onType = { filters = filters.selectType(it) },
+                onChannel = { filters = filters.selectChannel(it) },
+            )
         }
         if (filtered.isEmpty()) {
             EmptyState(entries.isEmpty())
