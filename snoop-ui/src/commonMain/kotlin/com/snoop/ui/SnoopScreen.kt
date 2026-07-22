@@ -40,7 +40,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.SolidColor
@@ -89,6 +91,7 @@ fun SnoopScreen(modifier: Modifier = Modifier, groupByEvent: String? = "screen_v
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun SnoopContent(groupByEvent: String?) {
     val live by SnoopCore.store.entries.collectAsState()
@@ -103,6 +106,7 @@ private fun SnoopContent(groupByEvent: String?) {
     val scope = rememberCoroutineScope()
 
     val selected = entries.firstOrNull { it.id == selectedId }
+    BackHandler(enabled = selected != null) { selectedId = null }
     if (selected != null) {
         when (selected) {
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })
