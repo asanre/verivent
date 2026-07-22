@@ -23,7 +23,8 @@ input#q{flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--line);bor
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);cursor:pointer;font-size:13px}
 .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn{padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--fg);cursor:pointer}
+.btn{margin-left:auto;display:flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--fg);cursor:pointer;font-weight:600;font-size:13px}
+.btn.paused{background:#d9770622;color:#d97706;border-color:transparent}
 main{display:flex;height:calc(100vh - 58px)}
 .list{flex:1;overflow:auto}
 .detail{width:0;overflow:auto;border-left:1px solid var(--line);background:var(--panel);transition:width .15s}
@@ -61,14 +62,14 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:
   <input id='q' placeholder='Search path, host, event…'>
   <div class='chips' id='typechips'></div>
   <div class='chips' id='chanchips'></div>
-  <button class='btn' id='pause'>Pause</button>
+  <button class='btn' id='pause'>⏸ Pause</button>
 </header>
 <main>
   <div class='list' id='list'></div>
   <div class='detail' id='detail'></div>
 </main>
 <script>
-var entries=[],paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null;
+var entries=[],latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null;
 var PALETTE=['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6'];
 function esc(s){s=(s==null)?'':(''+s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function pal(ch){var h=0;ch=ch||'';for(var i=0;i<ch.length;i++){h=(h*31+ch.charCodeAt(i))|0;}return PALETTE[((h%PALETTE.length)+PALETTE.length)%PALETTE.length];}
@@ -132,13 +133,13 @@ function renderDetail(){
   d.innerHTML=h+"</div>";
 }
 function sel(id){selectedId=id;render();}
-function setType(t){typeFilter=t;render();}
-function setChan(c){channelFilter=(channelFilter===c?null:c);render();}
+function setType(t){typeFilter=t;if(t==='network')channelFilter=null;render();}
+function setChan(c){if(channelFilter===c){channelFilter=null;}else{channelFilter=c;typeFilter='analytics';}render();}
 document.getElementById('q').addEventListener('input',function(e){search=e.target.value;render();});
-document.getElementById('pause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'Resume':'Pause';render();});
+document.getElementById('pause').addEventListener('click',function(){paused=!paused;this.textContent=paused?'▶ Resume':'⏸ Pause';this.className=paused?'btn paused':'btn';if(!paused&&latest){entries=latest;}render();});
 var es=new EventSource('/api/stream');
-es.onmessage=function(ev){if(paused)return;entries=JSON.parse(ev.data);render();};
-fetch('/api/entries').then(function(r){return r.json();}).then(function(j){if(!entries.length){entries=j;render();}});
+es.onmessage=function(ev){latest=JSON.parse(ev.data);if(!paused){entries=latest;render();}};
+fetch('/api/entries').then(function(r){return r.json();}).then(function(j){if(!latest){latest=j;entries=j;render();}});
 render();
 </script>
 </body>
