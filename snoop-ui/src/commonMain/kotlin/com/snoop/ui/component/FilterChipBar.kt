@@ -49,12 +49,17 @@ internal fun SnoopChip(
         selected -> scheme.surface
         else -> scheme.onSurface
     }
+    val border = when {
+        selected && tint != null -> BorderStroke(2.dp, tint.content)
+        selected -> null
+        else -> BorderStroke(1.dp, scheme.outlineVariant)
+    }
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = container,
         contentColor = content,
-        border = if (selected) null else BorderStroke(1.dp, scheme.outlineVariant),
+        border = border,
         modifier = modifier,
     ) {
         Row(

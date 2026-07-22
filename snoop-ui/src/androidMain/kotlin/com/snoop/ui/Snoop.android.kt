@@ -43,7 +43,7 @@ object Snoop {
             flags,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_view)
+            .setSmallIcon(R.drawable.snoop_ic_logo)
             .setContentTitle("Snoop")
             .setContentText("${SnoopCore.store.entries.value.size} entries captured — tap to inspect")
             .setOngoing(true)

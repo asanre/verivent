@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +31,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkState
 import com.snoop.core.model.NetworkTransaction
@@ -41,7 +40,9 @@ import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.KeyValueRow
 import com.snoop.ui.component.NetworkBodyView
 import com.snoop.ui.component.Pill
+import com.snoop.ui.component.SectionCard
 import com.snoop.ui.component.SectionLabel
+import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.formatBytes
 import com.snoop.ui.internal.formatDuration
@@ -61,7 +62,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                 clipboard.setText(AnnotatedString(buildCurl(transaction)))
                 showMessage("Copied as cURL")
             }) {
-                Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy as cURL")
+                Icon(SnoopIcons.Copy, contentDescription = "Copy as cURL")
             }
         },
     ) { modifier, _ ->
@@ -78,10 +79,10 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                     NetworkState.Failed -> "failed"
                     NetworkState.Complete -> transaction.status.toString()
                 }
-                Pill(statusLabel, colors.statusTint(transaction))
-                transaction.durationMillis?.let { Pill(formatDuration(it), colors.neutral) }
-                transaction.responseBody?.let { Pill(formatBytes(it.byteCount), colors.neutral) }
-                Pill("ktor", colors.accent)
+                Pill(statusLabel, colors.statusTint(transaction), mono = true)
+                transaction.durationMillis?.let { Pill(formatDuration(it), colors.neutral, mono = true) }
+                transaction.responseBody?.let { Pill(formatBytes(it.byteCount), colors.neutral, mono = true) }
+                Pill("ktor", colors.neutral, mono = true)
             }
             TextTabs(selected = tab, onSelect = { tab = it })
             Column(
@@ -93,14 +94,12 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                 when (tab) {
                     NetworkDetailTab.Overview -> Overview(transaction)
                     NetworkDetailTab.Request -> HeadersAndBody(
-                        contentType = transaction.requestContentType,
                         headers = transaction.requestHeaders,
                         body = transaction.requestBody?.text,
                         truncated = transaction.requestBody?.truncated == true,
                         headersInitiallyExpanded = true,
                     )
                     NetworkDetailTab.Response -> HeadersAndBody(
-                        contentType = transaction.responseContentType,
                         headers = transaction.responseHeaders,
                         body = transaction.responseBody?.text,
                         truncated = transaction.responseBody?.truncated == true,
@@ -144,61 +143,68 @@ private fun TextTabs(selected: NetworkDetailTab, onSelect: (NetworkDetailTab) ->
 
 @Composable
 private fun Overview(transaction: NetworkTransaction) {
-    SectionLabel("URL")
-    Text(transaction.url, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
+    SectionCard {
+        Column(Modifier.padding(12.dp)) {
+            SectionLabel("URL", fontSize = 10.sp)
+            Text(transaction.url, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
 
-    transaction.protocol?.let {
-        SectionLabel("Protocol")
-        Text(it, style = MaterialTheme.typography.bodyMedium)
-    }
+            transaction.protocol?.let {
+                SectionLabel("Protocol", fontSize = 10.sp)
+                Text(it, style = MaterialTheme.typography.bodyMedium)
+            }
 
-    transaction.error?.let {
-        SectionLabel("Error")
-        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
-    }
+            transaction.error?.let {
+                SectionLabel("Error", fontSize = 10.sp)
+                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+            }
 
-    if (transaction.correlatedEventIds.isNotEmpty()) {
-        SectionLabel("Analytics")
-        Text(
-            "${transaction.correlatedEventIds.size} analytics event(s) sent over this call.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+            if (transaction.correlatedEventIds.isNotEmpty()) {
+                SectionLabel("Analytics", fontSize = 10.sp)
+                Text(
+                    "${transaction.correlatedEventIds.size} analytics event(s) sent over this call.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun HeadersAndBody(
-    contentType: String?,
     headers: List<KeyValue>,
     body: String?,
     truncated: Boolean,
     headersInitiallyExpanded: Boolean,
 ) {
-    CollapsibleSection("Headers (${headers.size})", initiallyExpanded = headersInitiallyExpanded) {
-        if (headers.isEmpty()) {
-            Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        } else {
-            Column(Modifier.fillMaxWidth()) {
-                headers.forEach { KeyValueRow(it) }
+    SectionCard {
+        Column(Modifier.padding(12.dp)) {
+            CollapsibleSection("Headers (${headers.size})", initiallyExpanded = headersInitiallyExpanded) {
+                if (headers.isEmpty()) {
+                    Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Column(Modifier.fillMaxWidth()) {
+                        headers.forEach { KeyValueRow(it) }
+                    }
+                }
             }
         }
     }
-
-    SectionLabel("Body")
-    contentType?.let {
-        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 6.dp))
-    }
-    if (body.isNullOrEmpty()) {
-        Text("Empty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } else {
-        NetworkBodyView(body)
-        if (truncated) {
-            Text(
-                "Body truncated to the configured limit.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
-            )
+    SectionCard(modifier = Modifier.padding(top = 12.dp)) {
+        Column(Modifier.padding(12.dp)) {
+            SectionLabel("Body", fontSize = 10.sp)
+            if (body.isNullOrEmpty()) {
+                Text("Empty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                NetworkBodyView(body)
+                if (truncated) {
+                    Text(
+                        "Body truncated to the configured limit.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            }
         }
     }
 }

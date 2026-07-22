@@ -1,5 +1,6 @@
 package com.snoop.ui.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +25,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.snoop.core.model.KeyValue
 import com.snoop.ui.internal.compactPrintJson
 import com.snoop.ui.internal.prettyPrintJson
@@ -33,7 +37,7 @@ import com.snoop.ui.theme.TintPair
 
 /** Small rounded label used for status codes, methods, channels and badges. */
 @Composable
-internal fun Pill(text: String, tint: TintPair, modifier: Modifier = Modifier) {
+internal fun Pill(text: String, tint: TintPair, modifier: Modifier = Modifier, mono: Boolean = false) {
     Surface(
         modifier = modifier,
         color = tint.container,
@@ -43,18 +47,33 @@ internal fun Pill(text: String, tint: TintPair, modifier: Modifier = Modifier) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
+            ),
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
         )
     }
 }
 
+/** Rounded surface with a hairline border used to group related detail fields. */
 @Composable
-internal fun SectionLabel(text: String) {
+internal fun SectionCard(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(Modifier.padding(4.dp)) { content() }
+    }
+}
+
+@Composable
+internal fun SectionLabel(text: String, fontSize: TextUnit = 11.sp) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = fontSize),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
@@ -62,20 +81,20 @@ internal fun SectionLabel(text: String) {
 }
 
 @Composable
-internal fun KeyValueRow(item: KeyValue) {
+internal fun KeyValueRow(item: KeyValue, valueAlignEnd: Boolean = false) {
     Column(Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(0.42f),
             )
-            Box(Modifier.weight(0.58f)) {
+            Box(Modifier.weight(0.58f), contentAlignment = if (valueAlignEnd) Alignment.CenterEnd else Alignment.CenterStart) {
                 if (item.redacted) {
                     Box(
                         Modifier
@@ -88,8 +107,9 @@ internal fun KeyValueRow(item: KeyValue) {
                 } else {
                     Text(
                         text = item.value,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
                         color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = if (valueAlignEnd) TextAlign.End else TextAlign.Start,
                     )
                 }
             }
@@ -101,8 +121,8 @@ internal fun KeyValueRow(item: KeyValue) {
 @Composable
 private fun CodePanel(content: @Composable () -> Unit) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(10.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(Modifier.fillMaxWidth().padding(12.dp)) { content() }
@@ -148,16 +168,22 @@ internal fun NetworkBodyView(raw: String) {
  * stay as compact JSON in the cell), Raw = the whole payload as indented JSON.
  */
 @Composable
-internal fun PropertiesView(properties: List<KeyValue>) {
+internal fun PropertiesView(properties: List<KeyValue>, label: String) {
     var showRaw by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxWidth()) {
-        SegmentedToggle(
-            options = listOf("Pretty", "Raw"),
-            selectedIndex = if (showRaw) 1 else 0,
-            onSelect = { showRaw = it == 1 },
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel(label)
+            SegmentedToggle(
+                options = listOf("Pretty", "Raw"),
+                selectedIndex = if (showRaw) 1 else 0,
+                onSelect = { showRaw = it == 1 },
+            )
+        }
         if (showRaw) {
             val json = remember(properties) {
                 val compact = propertiesToJson(properties)
@@ -171,8 +197,8 @@ internal fun PropertiesView(properties: List<KeyValue>) {
                 )
             }
         } else {
-            Column(Modifier.fillMaxWidth()) {
-                properties.forEach { KeyValueRow(it) }
+            SectionCard(modifier = Modifier.padding(top = 8.dp)) {
+                properties.forEach { KeyValueRow(it, valueAlignEnd = true) }
             }
         }
     }

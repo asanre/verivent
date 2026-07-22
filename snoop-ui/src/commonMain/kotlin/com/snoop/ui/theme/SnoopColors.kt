@@ -23,6 +23,7 @@ internal data class SnoopColors(
     val error: TintPair,
     val neutral: TintPair,
     val accent: TintPair,
+    val ecom: TintPair,
     val channelPalette: List<TintPair>,
     val jsonKey: Color,
     val jsonString: Color,
@@ -58,10 +59,11 @@ internal data class SnoopColors(
 internal val SnoopLightColors = SnoopColors(
     success = TintPair(Color(0xFFDCFCE7), Color(0xFF16A34A)),
     info = TintPair(Color(0xFFDBEAFE), Color(0xFF2563EB)),
-    warn = TintPair(Color(0xFFFEF3C7), Color(0xFFD97706)),
+    warn = TintPair(Color(0xFFFEF3C7), Color(0xFFB45309)),
     error = TintPair(Color(0xFFFEE2E2), Color(0xFFDC2626)),
     neutral = TintPair(Color(0xFFF3F4F6), Color(0xFF6B7280)),
     accent = TintPair(Color(0xFFEDEBFE), Color(0xFF6D5EFC)),
+    ecom = TintPair(Color(0xFFD1FAE5), Color(0xFF047857)),
     channelPalette = listOf(
         TintPair(Color(0xFFDBEAFE), Color(0xFF1D4ED8)),
         TintPair(Color(0xFFD1FAE5), Color(0xFF047857)),
@@ -86,6 +88,7 @@ internal val SnoopDarkColors = SnoopColors(
     error = TintPair(Color(0xFF3A1A1A), Color(0xFFF87171)),
     neutral = TintPair(Color(0xFF23232B), Color(0xFF9AA0AA)),
     accent = TintPair(Color(0xFF241F44), Color(0xFF8B7DFF)),
+    ecom = TintPair(Color(0xFF123229), Color(0xFF34D399)),
     channelPalette = listOf(
         TintPair(Color(0xFF16243D), Color(0xFF60A5FA)),
         TintPair(Color(0xFF123229), Color(0xFF34D399)),

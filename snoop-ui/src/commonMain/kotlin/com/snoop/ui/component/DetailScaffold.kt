@@ -6,14 +6,15 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarData
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,6 +25,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+
+/** Floating toast matching the design's inverted-fill notification style. */
+@Composable
+internal fun SnoopToast(data: SnackbarData) {
+    Surface(
+        color = MaterialTheme.colorScheme.onSurface,
+        contentColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(10.dp),
+        shadowElevation = 6.dp,
+        modifier = Modifier.padding(bottom = 8.dp),
+    ) {
+        Text(
+            text = data.visuals.message,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+        )
+    }
+}
 
 @Composable
 internal fun DetailScaffold(
@@ -44,7 +64,7 @@ internal fun DetailScaffold(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(SnoopIcons.Back, contentDescription = "Back")
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -65,7 +85,7 @@ internal fun DetailScaffold(
                 actions(showMessage)
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
     ) { padding ->
         content(Modifier.fillMaxSize().padding(padding), showMessage)
     }

@@ -1,6 +1,8 @@
 package com.snoop.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,26 +12,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FileDownload
-import androidx.compose.material.icons.outlined.Pause
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -47,11 +42,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.snoop.core.SnoopCore
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
@@ -60,6 +59,8 @@ import com.snoop.ui.component.AnalyticsRow
 import com.snoop.ui.component.FilterChipBar
 import com.snoop.ui.component.NetworkRow
 import com.snoop.ui.component.SnoopChip
+import com.snoop.ui.component.SnoopIcons
+import com.snoop.ui.component.SnoopToast
 import com.snoop.ui.detail.AnalyticsDetailScreen
 import com.snoop.ui.detail.NetworkDetailScreen
 import com.snoop.ui.internal.TimelineFilters
@@ -119,15 +120,25 @@ private fun SnoopContent(groupByEvent: String?) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Snoop", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Icon(
+                    imageVector = SnoopIcons.LogoMark,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp),
+                )
+                Text(
+                    "Snoop",
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
+                    fontWeight = FontWeight.SemiBold,
+                )
                 LiveDot(active = !paused && live.isNotEmpty())
                 Text(
                     "${entries.size}",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.weight(1f))
@@ -136,23 +147,23 @@ private fun SnoopContent(groupByEvent: String?) {
                     paused = !paused
                 }) {
                     Icon(
-                        imageVector = if (paused) Icons.Default.PlayArrow else Icons.Outlined.Pause,
+                        imageVector = if (paused) SnoopIcons.Play else SnoopIcons.Pause,
                         contentDescription = if (paused) "Resume" else "Pause",
                     )
                 }
                 IconButton(onClick = { SnoopCore.store.clear() }) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Clear")
+                    Icon(SnoopIcons.Clear, contentDescription = "Clear")
                 }
                 IconButton(onClick = {
                     val text = entriesToJson(entries)
                     clipboard.setText(AnnotatedString(text))
                     scope.launch { snackbar.showSnackbar("Copied ${entries.size} entries as JSON") }
                 }) {
-                    Icon(Icons.Outlined.FileDownload, contentDescription = "Export as JSON")
+                    Icon(SnoopIcons.Export, contentDescription = "Export as JSON")
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) },
+        snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
     ) { padding ->
         Box(Modifier.padding(padding)) {
             TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
@@ -167,6 +178,46 @@ private fun LiveDot(active: Boolean) {
         if (active) colors.liveDot else MaterialTheme.colorScheme.outline,
     )
     Box(Modifier.size(8.dp).clip(CircleShape).background(color))
+}
+
+@Composable
+private fun SearchPill(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.height(40.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = SnoopIcons.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Box(Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text(
+                        "Search url or event",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -198,19 +249,9 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
     }
 
     Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
+        SearchPill(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search path, host, event…") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            singleLine = true,
-            shape = CircleShape,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.outline,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            ),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -231,9 +272,10 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
             )
         }
         Surface(
-            shape = MaterialTheme.shapes.large,
+            shape = RoundedCornerShape(18.dp),
             color = MaterialTheme.colorScheme.surface,
-            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            modifier = Modifier.fillMaxSize().padding(12.dp),
         ) {
             if (groups.isEmpty()) {
                 EmptyState(entries.isEmpty())
@@ -258,7 +300,7 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
                                         onClick = { onOpen(entry.id) },
                                     )
                                 }
-                                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
                             }
                         }
                     }
@@ -272,22 +314,27 @@ private fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen
 private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boolean, onToggle: () -> Unit) {
     val events = group.entries.count { it is AnalyticsEntry }
     val calls = group.entries.count { it is NetworkTransaction }
+    val rotation by animateFloatAsState(if (collapsed) 0f else 90f)
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
-            imageVector = if (collapsed) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.Default.KeyboardArrowDown,
+            imageVector = SnoopIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(16.dp).rotate(rotation),
         )
-        Text("📱", style = MaterialTheme.typography.labelLarge)
+        Icon(
+            imageVector = SnoopIcons.Phone,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp),
+        )
         Text(
             group.screen ?: "session",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp, fontWeight = FontWeight.W600),
             modifier = Modifier.weight(1f),
         )
         Text(
@@ -300,11 +347,11 @@ private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boo
             } else {
                 groupLabel
             },
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-    HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 private fun matchesFilters(
@@ -336,11 +383,22 @@ private fun matchesFilters(
 private fun EmptyState(nothingCaptured: Boolean) {
     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("👀", style = MaterialTheme.typography.displaySmall)
+            Box(
+                Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = SnoopIcons.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
             Text(
                 if (nothingCaptured) "Nothing captured yet" else "No matches",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 8.dp),
             )
             Text(
                 if (nothingCaptured) "Network calls and analytics events will show up here as they happen." else "Try a different filter or search.",

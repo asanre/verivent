@@ -31,9 +31,10 @@ internal fun JsonSyntaxText(pretty: String, modifier: Modifier = Modifier) {
             }
         }
     }
+    val baseStyle = MaterialTheme.typography.bodySmall
     Text(
         text = annotated,
-        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+        style = baseStyle.copy(fontFamily = FontFamily.Monospace, lineHeight = baseStyle.fontSize * 1.75f),
         modifier = modifier,
     )
 }

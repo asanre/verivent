@@ -1,5 +1,6 @@
 package com.snoop.ui.detail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -7,16 +8,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -30,6 +32,7 @@ import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.Pill
 import com.snoop.ui.component.PropertiesView
 import com.snoop.ui.component.SectionLabel
+import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.propertiesToJson
 import com.snoop.ui.theme.LocalSnoopColors
@@ -58,7 +61,7 @@ internal fun AnalyticsDetailScreen(
                 clipboard.setText(AnnotatedString(propertiesToJson(entry.properties)))
                 showMessage("Copied payload")
             }) {
-                Icon(Icons.Outlined.ContentCopy, contentDescription = "Copy payload")
+                Icon(SnoopIcons.Copy, contentDescription = "Copy payload")
             }
         },
     ) { modifier, _ ->
@@ -72,40 +75,58 @@ internal fun AnalyticsDetailScreen(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             ) {
                 Pill(entry.channel, tint)
-                entry.annotations.forEach { Pill(annotationLabel(it), tint) }
-                Pill(formatClock(entry.timestamp), colors.neutral)
+                entry.annotations.forEach {
+                    val annotationTint = if (it == Annotation.Ecommerce) colors.ecom else tint
+                    Pill(annotationLabel(it), annotationTint)
+                }
+                Pill(formatClock(entry.timestamp), colors.neutral, mono = true)
             }
 
             val call = entry.correlatedCallId?.let { id ->
                 allEntries.filterIsInstance<NetworkTransaction>().firstOrNull { it.id == id }
             }
             if (call != null) {
-                SectionLabel("Sent over")
                 Surface(
-                    shape = MaterialTheme.shapes.large,
-                    color = colors.accent.container,
-                    contentColor = colors.accent.content,
-                    modifier = Modifier.fillMaxWidth().clickable { onOpenCall(call.id) },
+                    shape = RoundedCornerShape(13.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp).clickable { onOpenCall(call.id) },
                 ) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(
-                            "🔗 ${call.method} ${call.path}  →  ${call.status ?: "…"}",
-                            fontWeight = FontWeight.SemiBold,
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Icon(
+                            imageVector = SnoopIcons.Link,
+                            contentDescription = null,
+                            tint = colors.accent.content,
+                            modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            "Tap to open the request",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            "${call.method} ${call.path}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Pill(call.status?.toString() ?: "…", colors.statusTint(call), mono = true)
+                        Icon(
+                            imageVector = SnoopIcons.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }
             }
 
-            SectionLabel("Parameters")
-            if (entry.properties.isEmpty()) {
-                Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            } else {
-                PropertiesView(entry.properties)
+            Column(Modifier.padding(top = 16.dp)) {
+                if (entry.properties.isEmpty()) {
+                    SectionLabel("Parameters")
+                    Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    PropertiesView(entry.properties, label = "Parameters")
+                }
             }
         }
     }
