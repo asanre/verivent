@@ -145,7 +145,7 @@ private fun TextTabs(selected: NetworkDetailTab, onSelect: (NetworkDetailTab) ->
 private fun Overview(transaction: NetworkTransaction) {
     SectionCard {
         Column(Modifier.padding(12.dp)) {
-            SectionLabel("URL", fontSize = 10.sp)
+            SectionLabel("URL", fontSize = 10.sp, topPadding = 0.dp)
             Text(transaction.url, style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace))
 
             transaction.protocol?.let {
@@ -191,7 +191,7 @@ private fun HeadersAndBody(
     }
     SectionCard(modifier = Modifier.padding(top = 12.dp)) {
         Column(Modifier.padding(12.dp)) {
-            SectionLabel("Body", fontSize = 10.sp)
+            SectionLabel("Body", fontSize = 10.sp, topPadding = 0.dp)
             if (body.isNullOrEmpty()) {
                 Text("Empty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {

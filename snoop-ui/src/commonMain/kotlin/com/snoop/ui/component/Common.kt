@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,13 +71,18 @@ internal fun SectionCard(modifier: Modifier = Modifier, content: @Composable () 
 }
 
 @Composable
-internal fun SectionLabel(text: String, fontSize: TextUnit = 11.sp) {
+internal fun SectionLabel(
+    text: String,
+    fontSize: TextUnit = 11.sp,
+    topPadding: Dp = 16.dp,
+    bottomPadding: Dp = 6.dp,
+) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall.copy(fontSize = fontSize),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
+        modifier = Modifier.padding(top = topPadding, bottom = bottomPadding),
     )
 }
 
@@ -177,7 +183,7 @@ internal fun PropertiesView(properties: List<KeyValue>, label: String) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SectionLabel(label)
+            SectionLabel(label, topPadding = 0.dp, bottomPadding = 0.dp)
             SegmentedToggle(
                 options = listOf("Pretty", "Raw"),
                 selectedIndex = if (showRaw) 1 else 0,

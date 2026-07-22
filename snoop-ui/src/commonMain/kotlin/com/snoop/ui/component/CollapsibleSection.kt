@@ -34,7 +34,7 @@ internal fun CollapsibleSection(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded }
-            .padding(top = 16.dp, bottom = 6.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {

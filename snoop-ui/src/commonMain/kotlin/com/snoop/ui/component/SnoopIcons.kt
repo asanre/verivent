@@ -9,9 +9,9 @@ import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.unit.dp
 
 /**
- * Icon set of the Snoop design, translated from the SVGs in `assets-nocommit/icons` (feather-style
- * outline, stroke 1.6-1.8, round caps/joins). Paths are 1:1 with the source SVG `d` data; each
- * icon is a single color so [androidx.compose.material3.Icon]'s `tint` recolors it at the call site.
+ * Icon set of the Snoop design (feather-style outline, stroke 1.6-1.8, round caps/joins). Paths
+ * are 1:1 with the design's SVG `d` data — the web viewer inlines the same paths — and each icon
+ * is a single color so [androidx.compose.material3.Icon]'s `tint` recolors it at the call site.
  */
 internal object SnoopIcons {
 
