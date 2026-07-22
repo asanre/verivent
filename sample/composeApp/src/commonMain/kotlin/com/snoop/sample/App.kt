@@ -16,12 +16,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.ui.SnoopScreen
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SampleApp() {
     val sampler = remember { Sampler() }
@@ -29,6 +32,7 @@ fun SampleApp() {
     var showInspector by remember { mutableStateOf(false) }
 
     if (showInspector) {
+        BackHandler { showInspector = false }
         SnoopScreen(Modifier.fillMaxSize())
         return
     }
