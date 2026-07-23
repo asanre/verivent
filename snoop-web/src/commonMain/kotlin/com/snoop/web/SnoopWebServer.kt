@@ -22,10 +22,12 @@ import kotlinx.coroutines.delay
 
 /**
  * A tiny embedded HTTP server that serves the Snoop timeline as a live web page, so you can inspect
- * traffic from a desktop browser while debugging from Android Studio (`adb forward tcp:9394`).
+ * traffic from a desktop browser while debugging.
  *
- * Binds loopback only — the page is never reachable from other devices on the LAN.
- * Reads the same shared [SnoopCore] store the on-device UI uses. Android-only in v1.
+ * Binds loopback only — the page is never reachable from other devices on the LAN. Reach it from
+ * your Mac via `adb forward tcp:9394` on Android, or directly at `http://localhost:9394` on the iOS
+ * simulator (which shares the host loopback). On a physical device it is reachable only on-device.
+ * Reads the same shared [SnoopCore] store the on-device UI uses.
  */
 object SnoopWebServer {
 

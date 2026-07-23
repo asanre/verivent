@@ -35,12 +35,14 @@ kotlin {
         optIn.add("kotlin.time.ExperimentalTime")
         optIn.add("kotlin.concurrent.atomics.ExperimentalAtomicApi")
     }
-    // Android-only for now; ktor-server-cio 3.3.3 publishes iOS klibs, so iOS can be added later.
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonMain {

@@ -22,6 +22,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.ui.SnoopScreen
+import com.snoop.web.SnoopWebServer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -57,7 +58,38 @@ fun SampleApp() {
 
         Section("Inspector")
         Wide("Open Snoop (embedded)") { showInspector = true }
+        WebViewerControl()
         PlatformExtras()
+    }
+}
+
+@Composable
+private fun WebViewerControl() {
+    var serverUrl by remember {
+        mutableStateOf<String?>(if (SnoopWebServer.isRunning) SnoopWebServer.url else null)
+    }
+    Button(
+        onClick = {
+            if (SnoopWebServer.isRunning) {
+                SnoopWebServer.stop()
+                serverUrl = null
+            } else {
+                serverUrl = SnoopWebServer.start()
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(if (serverUrl != null) "Stop web viewer" else "Start web viewer")
+    }
+    serverUrl?.let {
+        Column(Modifier.fillMaxWidth().padding(top = 2.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("Web viewer at $it", style = MaterialTheme.typography.labelMedium)
+            Text(
+                webViewerHint,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

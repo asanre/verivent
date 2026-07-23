@@ -19,12 +19,12 @@ You add one artifact per capture source; everything else arrives transitively.
 
 | Artifact | What it does | Brings along |
 |---|---|---|
-| `snoop-ktor` | Ktor client plugin that captures traffic | inspector UI, web viewer (Android) |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | inspector UI, web viewer (Android) |
+| `snoop-ktor` | Ktor client plugin that captures traffic | inspector UI, web viewer |
+| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | inspector UI, web viewer |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds | matching no-op stubs |
 
 Internally those share `snoop-core` (models, ring buffer store, redaction, Compose UI) and
-`snoop-web` (embedded HTTP server, Android-only for now) — you never declare them yourself.
+`snoop-web` (embedded HTTP server) — you never declare them yourself.
 
 ## Install
 
@@ -107,14 +107,20 @@ The event detail then shows "sent over POST /collect → 204" with a tap-through
 
 ## Web viewer
 
-Inspect from a desktop browser while debugging from Android Studio:
+Inspect from a desktop browser while debugging:
 
 ```kotlin
 SnoopWebServer.start()   // http://localhost:9394
 ```
+
+The server binds loopback only. Reach it from your Mac by platform:
+
 ```bash
-adb forward tcp:9394 tcp:9394   # then open http://localhost:9394
+adb forward tcp:9394 tcp:9394   # Android: then open http://localhost:9394
 ```
+
+- **iOS simulator** — open <http://localhost:9394> directly (the simulator shares the Mac's loopback).
+- **Physical device** — not reachable from a desktop browser (loopback binding); use the embedded `SnoopScreen` on-device.
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 

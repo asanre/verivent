@@ -21,8 +21,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.snoopCore)
-        }
-        androidMain.dependencies {
             api(projects.snoopWeb)
         }
         commonTest.dependencies {
