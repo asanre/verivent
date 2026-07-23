@@ -124,11 +124,13 @@ private fun redaction() {
         headerPredicates = listOf { it == "x" },
         propertyPredicates = listOf { it == "x" },
         queryParamPredicates = listOf { it == "x" },
+        bodyTransforms = listOf { it },
         placeholder = "*",
     )
     val header: KeyValue = custom.redactHeader("n", "v")
     val property: KeyValue = custom.redactProperty("k", "v")
     val url: String = custom.redactUrl("https://x?token=y")
+    val body: String = custom.redactBody("b")
     val placeholder: String = RedactionEngine.DEFAULT_PLACEHOLDER
     val headers: Set<String> = RedactionEngine.DEFAULT_HEADERS
     val queryParams: Set<String> = RedactionEngine.DEFAULT_QUERY_PARAMS

@@ -178,6 +178,27 @@ class RedactionEngineTest {
     }
 
     @Test
+    fun bodyTransformsApplyInOrder() {
+        val engine = RedactionEngine(bodyTransforms = listOf({ it.replace("a", "b") }, { it.replace("b", "c") }))
+        assertEquals("cc", engine.redactBody("ab"))
+        assertEquals("untouched", RedactionEngine().redactBody("untouched"))
+    }
+
+    @Test
+    fun throwingBodyTransformFailsClosed() {
+        val engine = RedactionEngine(bodyTransforms = listOf { error("host bug") })
+        assertEquals("(body sanitizer failed)", engine.redactBody("card=4111111111111111"))
+    }
+
+    @Test
+    fun predicatesMatchEitherCaseOfTheName() {
+        // HTTP/2 lowercases header names; a rule written in either spelling has to match.
+        assertTrue(RedactionEngine(headerPredicates = listOf { it == "x-api-key" }).redactHeader("X-Api-Key", "v").redacted)
+        assertTrue(RedactionEngine(headerPredicates = listOf { it == "X-Api-Key" }).redactHeader("X-Api-Key", "v").redacted)
+        assertFalse(RedactionEngine(headerPredicates = listOf { it == "other" }).redactHeader("X-Api-Key", "v").redacted)
+    }
+
+    @Test
     fun throwingPredicateFailsClosed() {
         val engine = RedactionEngine(queryParamPredicates = listOf { error("host bug") })
         assertEquals(

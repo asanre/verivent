@@ -29,12 +29,18 @@ import kotlinx.io.readByteArray
  * Ktor client plugin that feeds every request/response into the shared [SnoopCore] store.
  * Install once: `install(Snoop) { ... }`. All capture is wrapped so the debug tooling can never
  * break a real request — any failure inside Snoop is swallowed.
+ *
+ * With `HttpRequestRetry` installed, each physical attempt is timed and shown as its own entry:
+ * Ktor hands every attempt a fresh attribute set, so there is no key to fold them together on.
+ * Attempts retried on a status code carry that status; ones retried on an exception the retry
+ * plugin swallows stay pending.
  */
 val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
     val config = pluginConfig
     val redaction = RedactionEngine(
         headerPredicates = config.headerRedactors,
         queryParamPredicates = config.queryParamRedactors,
+        bodyTransforms = config.bodyTransforms,
     )
     val maxLen = config.maxContentLength
 
@@ -63,18 +69,19 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
                     path = url.encodedPath,
                     requestContentType = content.contentType?.toString(),
                     requestHeaders = captureRequestHeaders(request, content, redaction),
-                    requestBody = captureOutgoing(content, maxLen)?.sanitized(config.bodyTransforms),
+                    requestBody = captureOutgoing(content, maxLen)?.redactedBy(redaction),
                 ),
             )
         }
     }
 
     onResponse { response ->
-        val callId = response.call.attributes.getOrNull(callIdKey) ?: return@onResponse
-        val body = readResponseBody(response, maxLen)?.sanitized(config.bodyTransforms)
         runSafely {
             if (!SnoopCore.enabled) return@runSafely
+            val callId = response.call.attributes.getOrNull(callIdKey) ?: return@runSafely
+            // Stop the clock before Snoop reads the body, or the host's call looks slower than it was.
             val duration = response.call.attributes.getOrNull(startKey)?.elapsedNow()?.inWholeMilliseconds
+            val body = readResponseBody(response, maxLen)?.redactedBy(redaction)
             SnoopCore.updateNetwork(callId) {
                 it.copy(
                     status = response.status.value,
@@ -101,9 +108,10 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
             val callId = request.attributes.getOrNull(callIdKey)
             if (callId != null) {
                 runSafely {
-                    SnoopCore.updateNetwork(callId) {
-                        it.copy(error = cause.message ?: cause::class.simpleName ?: "error")
-                    }
+                    // Ktor's timeout message embeds the full URL, query string and all, so it has
+                    // to go through redaction like any other captured URL would.
+                    val message = redaction.redactUrl(cause.message ?: cause::class.simpleName ?: "error")
+                    SnoopCore.updateNetwork(callId) { it.copy(error = message) }
                 }
             }
             throw cause
@@ -111,13 +119,20 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
     }
 }
 
-private fun BodyPreview.sanitized(transforms: List<(String) -> String>): BodyPreview {
-    if (transforms.isEmpty()) return this
-    // A throwing transform replaces the preview instead of leaking the unsanitized text.
-    val text = transforms.fold(text) { acc, transform ->
-        runCatching { transform(acc) }.getOrDefault("(body sanitizer failed)")
-    }
-    return copy(text = text)
+private fun BodyPreview.redactedBy(redaction: RedactionEngine): BodyPreview =
+    copy(text = redaction.redactBody(text))
+
+private fun binaryPlaceholder(contentType: ContentType?, byteCount: Long): BodyPreview =
+    BodyPreview("(binary body: ${contentType ?: "unknown"} — not captured)", byteCount, false)
+
+/**
+ * Largest cut at or below [limit] that doesn't land inside a multi-byte UTF-8 sequence, so a
+ * truncated body never ends in a replacement char the payload never had.
+ */
+private fun ByteArray.utf8SnappedEnd(limit: Int): Int {
+    var end = limit.coerceIn(0, size)
+    while (end in 1 until size && (this[end].toInt() and 0xC0) == 0x80) end--
+    return end
 }
 
 private fun captureRequestHeaders(
@@ -141,10 +156,10 @@ private fun captureOutgoing(content: OutgoingContent, maxLen: Long): BodyPreview
         val bytes = content.bytes()
         if (content.contentType.isTextLike()) {
             val truncated = bytes.size > maxLen
-            val slice = if (truncated) bytes.copyOf(maxLen.toInt()) else bytes
-            BodyPreview(slice.decodeToString(), bytes.size.toLong(), truncated)
+            val end = if (truncated) bytes.utf8SnappedEnd(maxLen.toInt()) else bytes.size
+            BodyPreview(bytes.decodeToString(0, end), bytes.size.toLong(), truncated)
         } else {
-            BodyPreview("(binary body: ${content.contentType ?: "unknown"} — not captured)", bytes.size.toLong(), false)
+            binaryPlaceholder(content.contentType, bytes.size.toLong())
         }
     }
     is OutgoingContent.NoContent -> null
@@ -158,25 +173,25 @@ private fun captureOutgoing(content: OutgoingContent, maxLen: Long): BodyPreview
  * Streaming paths (`prepareGet {}.execute {}`, `bodyAsChannel`, SSE) skip saving; reading those
  * would steal the host's bytes, so they get a placeholder instead. Binary bodies are skipped to
  * keep huge blobs out of the store.
+ *
+ * Failures propagate: the caller already runs inside `runSafely`.
  */
-private suspend fun readResponseBody(response: HttpResponse, maxLen: Long): BodyPreview? = try {
+private suspend fun readResponseBody(response: HttpResponse, maxLen: Long): BodyPreview? {
     val contentType = response.contentType()
-    when {
+    return when {
         !response.isSaved ->
             BodyPreview("(streaming body — not captured)", response.contentLength() ?: -1, false)
         !contentType.isTextLike() ->
-            BodyPreview("(binary body: ${contentType ?: "unknown"} — not captured)", response.contentLength() ?: -1, false)
+            binaryPlaceholder(contentType, response.contentLength() ?: -1)
         else -> {
             val channel = response.bodyAsChannel()
             val head = channel.readRemaining(maxLen + 1).readByteArray()
             val remaining = channel.discard()
             val truncated = head.size > maxLen
-            val slice = if (truncated) head.copyOf(maxLen.toInt()) else head
-            BodyPreview(slice.decodeToString(), head.size + remaining, truncated)
+            val end = if (truncated) head.utf8SnappedEnd(maxLen.toInt()) else head.size
+            BodyPreview(head.decodeToString(0, end), head.size + remaining, truncated)
         }
     }
-} catch (_: Throwable) {
-    null
 }
 
 private fun ContentType?.isTextLike(): Boolean = when {

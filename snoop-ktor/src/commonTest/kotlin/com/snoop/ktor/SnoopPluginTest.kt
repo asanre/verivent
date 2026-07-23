@@ -6,6 +6,7 @@ import com.snoop.core.model.NetworkTransaction
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -206,5 +207,85 @@ class SnoopPluginTest {
         val txn = transactions().single()
         assertEquals(NetworkState.Failed, txn.state)
         assertNotNull(txn.error)
+    }
+
+    @Test
+    fun transportErrorMessageIsRedacted() = runTest {
+        val client = HttpClient(MockEngine) {
+            engine {
+                // Ktor's own timeout message has this shape: the failing URL, query string and all.
+                addHandler { throw RuntimeException("Request timeout [url=https://api.test/u?token=hunter2]") }
+            }
+            install(Snoop)
+        }
+        assertFailsWith<RuntimeException> { client.get("https://api.test/u?token=hunter2") }
+
+        val error = assertNotNull(transactions().single().error)
+        assertTrue("hunter2" !in error, "unredacted secret in captured error: $error")
+        assertTrue("token=██" in error, "expected the redaction placeholder, got: $error")
+    }
+
+    @Test
+    fun headerPredicateMatchesRegardlessOfCase() = runTest {
+        // HTTP/2 lowercases header names, so a rule written in either spelling has to match.
+        client { sanitizeHeader { it == "x-api-key" } }
+            .get("https://api.test/") { header("X-Api-Key", "key-123") }
+        assertTrue(transactions().single().requestHeaders.single { it.name == "X-Api-Key" }.redacted)
+    }
+
+    @Test
+    fun truncationNeverSplitsAMultibyteCharacter() = runTest {
+        // "é" is two bytes, so a 5-byte limit lands mid-character.
+        client { maxContentLength = 5 }.post("https://api.test/orders") { setBody("ééé") }
+
+        val body = assertNotNull(transactions().single().requestBody)
+        assertTrue(body.truncated)
+        assertEquals("éé", body.text)
+        assertTrue('�' !in body.text, "truncation split a UTF-8 sequence: ${body.text}")
+        assertEquals(6, body.byteCount)
+    }
+
+    @Test
+    fun disabledCoreSkipsResponseCaptureEntirely() = runTest {
+        val client = client()
+        client.get("https://api.test/users")
+        SnoopCore.enabled = false
+        try {
+            assertEquals("response-body", client.get("https://api.test/users").bodyAsText())
+        } finally {
+            SnoopCore.enabled = true
+        }
+        // The disabled call is neither recorded nor patched onto the earlier one.
+        assertEquals(1, transactions().size)
+        assertEquals(200, transactions().single().status)
+    }
+
+    @Test
+    fun eachRetryAttemptIsRecordedWithItsOwnOutcome() = runTest {
+        var attempts = 0
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler {
+                    attempts++
+                    if (attempts == 1) {
+                        respond("nope", HttpStatusCode.ServiceUnavailable)
+                    } else {
+                        respond("ok", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/plain"))
+                    }
+                }
+            }
+            install(HttpRequestRetry) {
+                retryOnServerErrors(maxRetries = 1)
+                constantDelay(millis = 1, randomizationMs = 0)
+            }
+            install(Snoop)
+        }
+        assertEquals("ok", client.get("https://api.test/flaky").bodyAsText())
+
+        // Ktor gives every attempt a fresh attribute set, so attempts can't be folded into one
+        // entry. Both are recorded and — for a status-code retry — both carry their real outcome.
+        assertEquals(2, attempts)
+        assertEquals(listOf(503, 200), transactions().map { it.status })
+        assertTrue(transactions().none { it.state == NetworkState.Pending })
     }
 }

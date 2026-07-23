@@ -7,6 +7,7 @@ class RedactionEngine(
     headerPredicates: List<(String) -> Boolean> = emptyList(),
     propertyPredicates: List<(String) -> Boolean> = emptyList(),
     queryParamPredicates: List<(String) -> Boolean> = emptyList(),
+    bodyTransforms: List<(String) -> String> = emptyList(),
     placeholder: String = DEFAULT_PLACEHOLDER,
 ) {
 
@@ -15,6 +16,8 @@ class RedactionEngine(
     fun redactProperty(key: String, value: String): KeyValue = KeyValue(key, value)
 
     fun redactUrl(url: String): String = url
+
+    fun redactBody(text: String): String = text
 
     companion object {
         const val DEFAULT_PLACEHOLDER = "██"
