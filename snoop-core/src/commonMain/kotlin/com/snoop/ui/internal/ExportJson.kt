@@ -5,41 +5,33 @@ import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
 private val exportJson = Json { prettyPrint = true }
 
-/** Serialize the whole session to a JSON array for the "Export" action (share/copy). */
-internal fun entriesToJson(entries: List<SnoopEntry>): String =
-    exportJson.encodeToString(
-        JsonArray.serializer(),
-        buildJsonArray { entries.forEach { add(it.toJson()) } },
-    )
+/** Must match [exportJson]'s pretty-print indent, so joined entries line up as array elements. */
+private const val ARRAY_INDENT = "    "
 
 /**
- * Like [entriesToJson] but capped to roughly [maxChars], keeping the newest entries (the clipboard
- * transaction has a hard binder limit around 1MB). Returns the JSON and how many entries made it.
+ * Serialize the session to a JSON array for the "Export" action (share/copy), capped to roughly
+ * [maxChars] and keeping the newest entries (the clipboard transaction has a hard binder limit
+ * around 1MB). Returns the JSON and how many entries made it.
  */
 internal fun entriesToJsonCapped(entries: List<SnoopEntry>, maxChars: Int = 400_000): Pair<String, Int> {
-    val keptNewestFirst = mutableListOf<JsonObject>()
+    val keptNewestFirst = mutableListOf<String>()
     var used = 0
     for (entry in entries.asReversed()) {
-        val obj = entry.toJson()
-        val cost = exportJson.encodeToString(JsonObject.serializer(), obj).length
-        if (keptNewestFirst.isNotEmpty() && used + cost > maxChars) break
-        keptNewestFirst += obj
-        used += cost
+        val text = exportJson.encodeToString(JsonObject.serializer(), entry.toJson())
+        if (keptNewestFirst.isNotEmpty() && used + text.length > maxChars) break
+        keptNewestFirst += text
+        used += text.length
     }
-    val json = exportJson.encodeToString(
-        JsonArray.serializer(),
-        buildJsonArray { keptNewestFirst.asReversed().forEach { add(it) } },
-    )
+    if (keptNewestFirst.isEmpty()) return "[]" to 0
+    val json = keptNewestFirst.asReversed()
+        .joinToString(",\n", prefix = "[\n", postfix = "\n]") { it.prependIndent(ARRAY_INDENT) }
     return json to keptNewestFirst.size
 }
 

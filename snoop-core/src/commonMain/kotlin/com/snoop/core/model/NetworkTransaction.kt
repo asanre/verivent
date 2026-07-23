@@ -30,4 +30,17 @@ data class NetworkTransaction(
             status == null -> NetworkState.Pending
             else -> NetworkState.Complete
         }
+
+    /**
+     * Approximate retained size, cached because the store re-checks its byte budget on every
+     * capture. [copy] gets a fresh estimate, which is what makes a response body arriving count.
+     */
+    internal val approxBytes: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        (
+            ENTRY_OVERHEAD_BYTES + url.length +
+                (requestBody?.text?.length ?: 0) + (responseBody?.text?.length ?: 0) +
+                requestHeaders.sumOf { it.name.length + it.value.length } +
+                responseHeaders.sumOf { it.name.length + it.value.length }
+            ).toLong()
+    }
 }

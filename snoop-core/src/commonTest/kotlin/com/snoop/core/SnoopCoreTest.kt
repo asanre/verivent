@@ -83,6 +83,14 @@ class SnoopStoreTest {
     }
 
     @Test
+    fun newestSurvivesEvenWhenItAloneExceedsTheBudget() {
+        val store = SnoopStore(capacity = 100, maxTotalBytes = 1_000)
+        store.record(txn("a"))
+        store.record(bigTxn("b", bodyChars = 5_000))
+        assertEquals(listOf("b"), store.entries.value.map { it.id })
+    }
+
+    @Test
     fun byteBudgetEvictsOldestOnGrowingUpdate() {
         val store = SnoopStore(capacity = 100, maxTotalBytes = 2_000)
         store.record(txn("a"))

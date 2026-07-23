@@ -71,25 +71,22 @@ class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT
 }
 
 private fun List<SnoopEntry>.capped(capacity: Int, maxTotalBytes: Long): List<SnoopEntry> {
-    var dropUntil = (size - capacity).coerceAtLeast(0)
-    var total = sumOf { it.approxBytes() } - subList(0, dropUntil).sumOf { it.approxBytes() }
-    // Keep at least the newest entry even if it alone exceeds the budget.
-    while (total > maxTotalBytes && dropUntil < size - 1) {
-        total -= this[dropUntil].approxBytes()
-        dropUntil++
+    val overCapacity = (size - capacity).coerceAtLeast(0)
+    var dropUntil = overCapacity
+    var total = 0L
+    // Newest-first, so the budget is spent on the entries we keep and the walk stops at the cut
+    // instead of measuring the whole store. The newest entry stays even if it alone exceeds it.
+    for (index in lastIndex downTo overCapacity) {
+        total += this[index].approxBytes()
+        if (total > maxTotalBytes && index < lastIndex) {
+            dropUntil = index + 1
+            break
+        }
     }
     return if (dropUntil == 0) this else subList(dropUntil, size).toList()
 }
 
 private fun SnoopEntry.approxBytes(): Long = when (this) {
-    is NetworkTransaction ->
-        ENTRY_OVERHEAD_BYTES + url.length +
-            (requestBody?.text?.length ?: 0) + (responseBody?.text?.length ?: 0) +
-            requestHeaders.sumOf { it.name.length + it.value.length } +
-            responseHeaders.sumOf { it.name.length + it.value.length }
-    is AnalyticsEntry ->
-        ENTRY_OVERHEAD_BYTES + name.length + channel.length +
-            properties.sumOf { it.name.length + it.value.length }
-}.toLong()
-
-private const val ENTRY_OVERHEAD_BYTES = 256
+    is NetworkTransaction -> approxBytes
+    is AnalyticsEntry -> approxBytes
+}

@@ -8,6 +8,9 @@ sealed interface SnoopEntry {
     val timestamp: Instant
 }
 
+/** Fixed per-entry allowance for the fields the byte estimate doesn't walk (ids, timestamps, refs). */
+internal const val ENTRY_OVERHEAD_BYTES = 256
+
 /** A captured header or analytics property, with [redacted] flagging that [value] is a placeholder. */
 data class KeyValue(
     val name: String,

@@ -6,7 +6,6 @@ import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.internal.buildCurl
-import com.snoop.ui.internal.entriesToJson
 import com.snoop.ui.internal.entriesToJsonCapped
 import com.snoop.ui.internal.groupEntries
 import com.snoop.ui.internal.stableKey
@@ -17,6 +16,8 @@ import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class CurlTest {
     @Test
@@ -78,12 +79,13 @@ class CurlTest {
 class ExportJsonTest {
     @Test
     fun serializesNetworkAndAnalytics() {
-        val json = entriesToJson(
+        val (json, kept) = entriesToJsonCapped(
             listOf(
                 NetworkTransaction("1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a", status = 200),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "purchase", "firebase"),
             ),
         )
+        assertEquals(2, kept)
         assertTrue(json.contains("\"type\": \"network\""))
         assertTrue(json.contains("\"type\": \"analytics\""))
         assertTrue(json.contains("\"purchase\""))
@@ -106,14 +108,22 @@ class ExportJsonTest {
     }
 
     @Test
-    fun cappedExportReturnsEverythingUnderTheCap() {
-        val entries = listOf(
-            NetworkTransaction("1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a"),
-            AnalyticsEntry("2", Instant.fromEpochMilliseconds(1), "purchase", "firebase"),
-        )
-        val (json, kept) = entriesToJsonCapped(entries)
-        assertEquals(2, kept)
-        assertEquals(entriesToJson(entries), json)
+    fun uncappedExportKeepsEveryEntryOldestFirst() {
+        val entries = (1..5).map {
+            NetworkTransaction("$it", Instant.fromEpochMilliseconds(it.toLong()), "GET", "https://h/$it", "h", "/$it")
+        }
+        val (json, kept) = entriesToJsonCapped(entries, maxChars = Int.MAX_VALUE)
+
+        assertEquals(5, kept)
+        val ids = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject.getValue("id").jsonPrimitive.content }
+        assertEquals(listOf("1", "2", "3", "4", "5"), ids)
+    }
+
+    @Test
+    fun emptySessionExportsAnEmptyArray() {
+        val (json, kept) = entriesToJsonCapped(emptyList())
+        assertEquals(0, kept)
+        assertEquals(0, Json.parseToJsonElement(json).jsonArray.size)
     }
 }
 

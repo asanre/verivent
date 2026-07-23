@@ -28,4 +28,13 @@ data class AnalyticsEntry(
     val annotations: List<Annotation> = emptyList(),
     /** Set when this event was sent over a network call marked as analytics transport. */
     val correlatedCallId: String? = null,
-) : SnoopEntry
+) : SnoopEntry {
+
+    /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
+    internal val approxBytes: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        (
+            ENTRY_OVERHEAD_BYTES + name.length + channel.length +
+                properties.sumOf { it.name.length + it.value.length }
+            ).toLong()
+    }
+}
