@@ -4,19 +4,24 @@ package com.snoop.web
 
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
+import kotlinx.cinterop.convert
+import kotlinx.cinterop.get
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
+import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
-import platform.UIKit.UIDevice
 import platform.darwin.freeifaddrs
 import platform.darwin.getifaddrs
 import platform.darwin.ifaddrs
 import platform.posix.AF_INET
+import platform.posix.arc4random_buf
 import platform.posix.sockaddr_in
+import platform.posix.uint8_tVar
 
 // en0 is the Wi-Fi interface on iOS devices; on the simulator it maps to the Mac's LAN interface.
 private const val WIFI_INTERFACE = "en0"
@@ -33,10 +38,10 @@ internal actual fun localHostAddress(): String? = memScoped {
                 addr.pointed.sa_family.toInt() == AF_INET &&
                 ifa.ifa_name?.toKString() == WIFI_INTERFACE
             ) {
-                // s_addr is a uint32 in network byte order; on little-endian ARM the first octet is
-                // the least significant byte, so this reads left-to-right without inet_ntop.
-                val s = addr.reinterpret<sockaddr_in>().pointed.sin_addr.s_addr
-                return@memScoped "${s and 0xFFu}.${(s shr 8) and 0xFFu}.${(s shr 16) and 0xFFu}.${(s shr 24) and 0xFFu}"
+                // s_addr is in network byte order, so its four bytes sit in memory already ordered
+                // left-to-right — reading them directly holds on any host endianness.
+                val octets = addr.reinterpret<sockaddr_in>().pointed.sin_addr.ptr.reinterpret<uint8_tVar>()
+                return@memScoped "${octets[0]}.${octets[1]}.${octets[2]}.${octets[3]}"
             }
             cur = ifa.ifa_next
         }
@@ -46,4 +51,5 @@ internal actual fun localHostAddress(): String? = memScoped {
     }
 }
 
-internal actual fun localDeviceName(): String = UIDevice.currentDevice.name
+internal actual fun secureRandomBytes(size: Int): ByteArray =
+    ByteArray(size).also { bytes -> bytes.usePinned { arc4random_buf(it.addressOf(0), size.convert()) } }

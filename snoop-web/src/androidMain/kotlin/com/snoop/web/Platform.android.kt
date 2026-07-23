@@ -1,17 +1,17 @@
 package com.snoop.web
 
-import android.os.Build
 import java.net.Inet4Address
 import java.net.NetworkInterface
-import java.util.Collections
+import java.security.SecureRandom
 
 internal actual fun localHostAddress(): String? = runCatching {
-    Collections.list(NetworkInterface.getNetworkInterfaces())
+    NetworkInterface.getNetworkInterfaces().asSequence()
         .filter { it.isUp && !it.isLoopback }
-        .flatMap { Collections.list(it.inetAddresses) }
+        .flatMap { it.inetAddresses.asSequence() }
         .filterIsInstance<Inet4Address>()
         .firstOrNull { it.isSiteLocalAddress }
         ?.hostAddress
 }.getOrNull()
 
-internal actual fun localDeviceName(): String = "${Build.MANUFACTURER} ${Build.MODEL}"
+internal actual fun secureRandomBytes(size: Int): ByteArray =
+    ByteArray(size).also { SecureRandom().nextBytes(it) }

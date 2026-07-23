@@ -123,11 +123,12 @@ adb forward tcp:9394 tcp:9394   # Android: then open http://localhost:9394
 - **Physical device** — bind to the LAN and open the device's IP from your Mac (same Wi-Fi):
 
   ```kotlin
-  SnoopWebServer.start(host = "0.0.0.0")   // then read SnoopWebServer.lanUrl, e.g. http://192.168.1.10:9394
+  SnoopWebServer.start(host = "0.0.0.0")   // then read SnoopWebServer.lanUrl(), e.g. http://192.168.1.10:9394/?t=…
   ```
 
   Each device serves only its own logs, so three developers on three phones don't collide — each
-  opens their own device's IP. On an untrusted network add `token = "…"` to gate access.
+  opens their own device's IP. LAN binds are always token-gated: `start` generates one unless you
+  pass `token = "…"`, and `lanUrl()` already carries it.
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 

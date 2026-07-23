@@ -162,8 +162,11 @@ private fun analytics() {
 private fun webServer() {
     val started: String = SnoopWebServer.start()
     val onPort: String = SnoopWebServer.start(port = 1234)
+    val onLan: String = SnoopWebServer.start(port = 1234, host = "0.0.0.0", token = "t")
     val running: Boolean = SnoopWebServer.isRunning
     val url: String = SnoopWebServer.url
+    val token: String? = SnoopWebServer.token
+    val lanUrl: String? = SnoopWebServer.lanUrl()
     SnoopWebServer.stop()
     val defaultPort: Int = SnoopWebServer.DEFAULT_PORT
 }

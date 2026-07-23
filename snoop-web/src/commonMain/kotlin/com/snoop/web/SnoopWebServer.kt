@@ -5,7 +5,8 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
+import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.application.call
 import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
@@ -27,97 +28,139 @@ import kotlinx.coroutines.delay
  *
  * Binds loopback by default (`adb forward tcp:9394` on Android; `http://localhost:9394` on the iOS
  * simulator, which shares the host loopback). Pass `host = "0.0.0.0"` to reach a physical device
- * from your Mac over Wi-Fi via [lanUrl], optionally gated by a [token]. Reads the same shared
+ * from your Mac over Wi-Fi via [lanUrl]; those binds are always token-gated. Reads the same shared
  * [SnoopCore] store the on-device UI uses.
  */
 object SnoopWebServer {
 
-    private val server = AtomicReference<EmbeddedServer<*, *>?>(null)
-    private var port: Int = DEFAULT_PORT
-    private var boundHost: String = LOOPBACK
-    private var activeToken: String? = null
+    private val running = AtomicReference<Running?>(null)
 
-    val isRunning: Boolean get() = server.load() != null
+    val isRunning: Boolean get() = running.load() != null
 
-    val url: String get() = "http://localhost:$port"
+    val url: String get() = urlOf(running.load())
 
-    /** The access token in effect, or null when the server is open (the default). */
-    val token: String? get() = activeToken
-
-    /** A human label for this device (e.g. "iPhone de Toni"), to tell devices apart on a shared network. */
-    val deviceLabel: String get() = localDeviceName()
+    /**
+     * The access token every request must carry as `?t=`, or null when the server is open — which
+     * only happens on loopback binds. LAN binds always have one; see [start].
+     */
+    val token: String? get() = running.load()?.token
 
     /**
      * The URL to reach this device from another machine on the LAN, or null when bound to loopback
-     * (nothing is listening off-device) or when no LAN address is available. Includes the token when set.
+     * (nothing is listening off-device) or when no LAN address is available. Includes the token.
      */
-    val lanUrl: String? get() {
-        if (boundHost == LOOPBACK) return null
-        val ip = localHostAddress() ?: return null
-        val base = "http://$ip:$port"
-        return activeToken?.let { "$base/?t=$it" } ?: base
-    }
+    fun lanUrl(): String? = lanUrlOf(running.load(), localHostAddress())
 
     /**
      * Start the server (idempotent, thread-safe). Returns the local URL.
      *
      * @param host bind address. Defaults to loopback; pass `"0.0.0.0"` to reach it from another
      *   machine on the LAN (see [lanUrl]).
-     * @param token when non-null, every request must carry a matching `?t=` query parameter. Opt-in:
-     *   the server is open by default, which is fine on a trusted network.
+     * @param token when non-null, every request must carry a matching `?t=` query parameter.
+     *   Loopback binds are open when this is null; LAN binds get a generated token instead, so
+     *   captured traffic is never served to the whole network unauthenticated — read it from [token].
      */
     fun start(port: Int = DEFAULT_PORT, host: String = LOOPBACK, token: String? = null): String {
-        val candidate = runCatching { createServer(port, host, token) }.getOrNull() ?: return url
-        if (!server.compareAndSet(null, candidate)) return url
-        this.port = port
-        this.boundHost = host
-        this.activeToken = token
+        val resolvedToken = effectiveToken(host, token)
+        val candidate = runCatching { createServer(port, host, resolvedToken) }.getOrNull() ?: return url
+        val started = Running(candidate, port, host, resolvedToken)
+        if (!running.compareAndSet(null, started)) return url
         // Bind failure (port in use, restricted env) must never crash the host app.
         runCatching { candidate.start(wait = false) }
-            .onFailure { server.compareAndSet(candidate, null) }
-        return url
+            .onFailure { running.compareAndSet(started, null) }
+        return urlOf(started)
     }
 
     fun stop() {
-        val running = server.exchange(null) ?: return
-        activeToken = null
-        boundHost = LOOPBACK
-        running.stop(gracePeriodMillis = 300, timeoutMillis = 1000)
+        val started = running.exchange(null) ?: return
+        started.server.stop(gracePeriodMillis = 300, timeoutMillis = 1000)
     }
 
     internal fun createServer(port: Int, host: String = LOOPBACK, token: String? = null): EmbeddedServer<*, *> =
-        embeddedServer(CIO, host = host, port = port) { snoopModule(port, token) }
+        embeddedServer(CIO, host = host, port = port) { snoopModule(token) }
 
     const val DEFAULT_PORT: Int = 9394
     internal const val LOOPBACK: String = "127.0.0.1"
 }
 
-internal fun Application.snoopModule(port: Int = SnoopWebServer.DEFAULT_PORT, token: String? = null) {
+/** Everything that describes a live server, swapped in and out as one value so it can't half-update. */
+internal data class Running(
+    val server: EmbeddedServer<*, *>,
+    val port: Int,
+    val host: String,
+    val token: String?,
+)
+
+internal fun urlOf(running: Running?): String =
+    "http://localhost:${running?.port ?: SnoopWebServer.DEFAULT_PORT}"
+
+internal fun lanUrlOf(running: Running?, address: String?): String? {
+    if (running == null || running.host == SnoopWebServer.LOOPBACK || address == null) return null
+    val base = "http://$address:${running.port}"
+    return running.token?.let { "$base/?t=$it" } ?: base
+}
+
+/** A LAN bind is never open: without a caller-supplied token it gets a generated one. */
+internal fun effectiveToken(host: String, token: String?): String? = when {
+    token != null -> token
+    host == SnoopWebServer.LOOPBACK -> null
+    else -> secureRandomToken()
+}
+
+/**
+ * DNS-rebinding guard. A hostile page can point its own domain at this device and then talk to us
+ * same-origin, which slips past both CORS and the `Origin` check below. Reaching a debug server on
+ * a device legitimately only ever happens through `localhost` or a literal address, so a request
+ * carrying any real hostname is refused.
+ */
+internal fun hostHeaderAllowed(host: String?): Boolean {
+    if (host.isNullOrEmpty()) return true
+    val name = if (host.startsWith("[")) host.substringAfter('[').substringBefore(']') else host.substringBefore(':')
+    return name == "localhost" || name.isAddressLiteral()
+}
+
+private fun String.isAddressLiteral(): Boolean = when {
+    ':' in this -> all { it.isDigit() || it in "abcdefABCDEF:." }
+    else -> '.' in this && all { it.isDigit() || it == '.' }
+}
+
+/** Constant-time compare, so a LAN attacker can't recover the token by timing prefixes. */
+internal fun tokensEqual(expected: String, actual: String): Boolean {
+    val a = expected.encodeToByteArray()
+    val b = actual.encodeToByteArray()
+    if (b.isEmpty()) return a.isEmpty()
+    var diff = a.size xor b.size
+    for (index in a.indices) diff = diff or (a[index].toInt() xor b[index % b.size].toInt())
+    return diff == 0
+}
+
+internal fun Application.snoopModule(token: String? = null) {
     install(SSE)
-    // Token gate is opt-in: when no token is configured every request passes, as before.
-    fun ApplicationCall.authorized(): Boolean =
-        token == null || request.queryParameters["t"] == token
+    // One gate in front of routing, so a route added later can't ship unguarded.
+    intercept(ApplicationCallPipeline.Plugins) {
+        if (!hostHeaderAllowed(call.request.header(HttpHeaders.Host))) {
+            call.respondText("forbidden", status = HttpStatusCode.Forbidden)
+            return@intercept finish()
+        }
+        if (token != null && !tokensEqual(token, call.request.queryParameters["t"].orEmpty())) {
+            call.respondText("unauthorized", status = HttpStatusCode.Unauthorized)
+            return@intercept finish()
+        }
+    }
     routing {
         get("/") {
-            if (!call.authorized()) return@get call.respondText("unauthorized", status = HttpStatusCode.Unauthorized)
             call.respondText(INDEX_HTML, ContentType.Text.Html)
         }
         get("/api/entries") {
-            if (!call.authorized()) return@get call.respondText("unauthorized", status = HttpStatusCode.Unauthorized)
             call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
         }
         post("/api/clear") {
-            if (!call.authorized()) return@post call.respondText("unauthorized", status = HttpStatusCode.Unauthorized)
             // CSRF guard: the custom header forces a preflight this server never approves, and any
             // cross-origin caller (a hostile page open in the same browser) carries a foreign Origin.
-            // Same-origin is judged against the Host actually used, so it holds for any bind address.
+            // Same-origin is judged against the Host actually used, which the gate above vouches for.
             val origin = call.request.header(HttpHeaders.Origin)
             val host = call.request.header(HttpHeaders.Host)
-            val originAllowed = origin == null ||
-                (host != null && origin == "http://$host") ||
-                origin == "http://localhost:$port" ||
-                origin == "http://127.0.0.1:$port"
-            if (call.request.header("X-Snoop") != "1" || !originAllowed) {
+            if (call.request.header("X-Snoop") != "1" || !(origin == null || origin == "http://$host")) {
                 call.respondText("forbidden", status = HttpStatusCode.Forbidden)
                 return@post
             }
@@ -125,7 +168,6 @@ internal fun Application.snoopModule(port: Int = SnoopWebServer.DEFAULT_PORT, to
             call.respondText("ok")
         }
         sse("/api/stream") {
-            if (!call.authorized()) return@sse
             // StateFlow collection is conflated by design: during the delay intermediate bursts
             // collapse and the collector resumes on the latest state, so encoding is capped at
             // ~4 frames/s and the final state is always delivered.

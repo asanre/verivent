@@ -22,6 +22,10 @@ import kotlinx.coroutines.withTimeout
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
@@ -70,6 +74,7 @@ class SnoopWebServerTest {
         application { snoopModule() }
         val response = client.post("/api/clear") {
             header("X-Snoop", "1")
+            header(HttpHeaders.Host, "localhost:${SnoopWebServer.DEFAULT_PORT}")
             header(HttpHeaders.Origin, "http://localhost:${SnoopWebServer.DEFAULT_PORT}")
         }
         assertEquals(HttpStatusCode.OK, response.status)
@@ -143,4 +148,76 @@ class SnoopWebServerTest {
         assertTrue(urls.all { it == "http://localhost:$port" })
         assertTrue(SnoopWebServer.isRunning)
     }
+
+    @Test
+    fun streamWithoutTokenIsRejectedOutright() = testApplication {
+        application { snoopModule(token = "secret") }
+        // A silently-closed stream would leave EventSource reconnecting forever instead of failing.
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/stream").status)
+    }
+
+    @Test
+    fun everyRouteIsBehindTheSameGate() = testApplication {
+        application { snoopModule(token = "secret") }
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
+    }
+
+    @Test
+    fun foreignHostHeaderIsRejected() = testApplication {
+        seedEntry()
+        application { snoopModule() }
+        val response = client.get("/api/entries") { header(HttpHeaders.Host, "evil.example:9394") }
+        assertEquals(HttpStatusCode.Forbidden, response.status)
+    }
+
+    @Test
+    fun literalAddressHostsAreAccepted() {
+        assertTrue(hostHeaderAllowed("localhost:9394"))
+        assertTrue(hostHeaderAllowed("127.0.0.1:9394"))
+        assertTrue(hostHeaderAllowed("192.168.1.10:9394"))
+        assertTrue(hostHeaderAllowed("[::1]:9394"))
+        assertTrue(hostHeaderAllowed(null))
+        assertFalse(hostHeaderAllowed("evil.example:9394"))
+        assertFalse(hostHeaderAllowed("snoop.local"))
+    }
+
+    @Test
+    fun loopbackStaysOpenButLanBindsGenerateAToken() {
+        assertNull(effectiveToken(SnoopWebServer.LOOPBACK, null))
+        assertEquals("mine", effectiveToken(SnoopWebServer.LOOPBACK, "mine"))
+        assertEquals("mine", effectiveToken("0.0.0.0", "mine"))
+
+        val generated = effectiveToken("0.0.0.0", null)
+        assertNotNull(generated)
+        assertTrue(generated.length >= 16, "expected a long token, got '$generated'")
+        assertNotEquals(generated, effectiveToken("0.0.0.0", null))
+    }
+
+    @Test
+    fun tokenCompareIsExactAndLengthSafe() {
+        assertTrue(tokensEqual("secret", "secret"))
+        assertFalse(tokensEqual("secret", ""))
+        assertFalse(tokensEqual("secret", "secre"))
+        assertFalse(tokensEqual("secret", "secretx"))
+        assertFalse(tokensEqual("secret", "Secret"))
+        assertTrue(tokensEqual("", ""))
+    }
+
+    @Test
+    fun derivedUrlsFallBackWhenNotRunning() {
+        assertEquals("http://localhost:${SnoopWebServer.DEFAULT_PORT}", urlOf(null))
+        assertNull(lanUrlOf(null, "192.168.1.10"))
+        assertNull(lanUrlOf(running(host = SnoopWebServer.LOOPBACK), "192.168.1.10"))
+        assertNull(lanUrlOf(running(host = "0.0.0.0"), null))
+        assertEquals("http://192.168.1.10:9394/?t=abc", lanUrlOf(running(host = "0.0.0.0"), "192.168.1.10"))
+    }
+
+    private fun running(host: String) = Running(
+        server = SnoopWebServer.createServer(9394, host, "abc"),
+        port = 9394,
+        host = host,
+        token = "abc",
+    )
 }
