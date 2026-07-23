@@ -37,13 +37,6 @@ import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.propertiesToJson
 import com.snoop.ui.theme.LocalSnoopColors
 
-private fun annotationLabel(annotation: Annotation): String = when (annotation) {
-    Annotation.Ecommerce -> "ecommerce"
-    Annotation.Conversion -> "conversion"
-    Annotation.Consent -> "consent"
-    Annotation.ScreenView -> "screen"
-}
-
 @Composable
 internal fun AnalyticsDetailScreen(
     entry: AnalyticsEntry,
@@ -77,7 +70,7 @@ internal fun AnalyticsDetailScreen(
                 Pill(entry.channel, tint)
                 entry.annotations.forEach {
                     val annotationTint = if (it == Annotation.Ecommerce) colors.ecom else tint
-                    Pill(annotationLabel(it), annotationTint)
+                    Pill(it.label, annotationTint)
                 }
                 Pill(formatClock(entry.timestamp), colors.neutral, mono = true)
             }

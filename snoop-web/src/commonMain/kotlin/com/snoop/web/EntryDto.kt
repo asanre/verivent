@@ -63,7 +63,7 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         ts = timestamp.toEpochMilliseconds(),
         name = name,
         channel = channel,
-        annotations = annotations.map { it.name },
+        annotations = annotations.map { it.label },
         correlatedCallId = correlatedCallId,
         properties = properties.map { it.toDto() },
     )
