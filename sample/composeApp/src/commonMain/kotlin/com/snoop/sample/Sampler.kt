@@ -19,7 +19,9 @@ class Sampler {
         install(Snoop) {
             maxContentLength = 200_000
             sanitizeHeader { it == HttpHeaders.Authorization }
-            markAsAnalyticsTransport { it.url.host.contains("collect") }
+            // Real collectors (GA4, GTM) flush batches to a /collect endpoint; events logged just
+            // before such a call get linked to it. See flushToCollector().
+            markAsAnalyticsTransport { it.url.encodedPathSegments.lastOrNull() == "collect" }
         }
     }
 
@@ -63,5 +65,19 @@ class Sampler {
 
     fun logServerSide() {
         analytics.log("checkout_started", channel = "gtm", properties = mapOf("cart_size" to 3))
+    }
+
+    /**
+     * Log a batch of events and immediately flush them to a collector endpoint — the shape that
+     * makes correlation visible: both events show "sent over" this call in their detail.
+     * The demo endpoint answers 404; correlation only needs the call to come back.
+     */
+    suspend fun flushToCollector() {
+        analytics.log("add_to_cart", channel = "gtm", properties = mapOf("item" to "SN-42"))
+        analytics.log("checkout_started", channel = "gtm", properties = mapOf("cart_size" to 3))
+        client.post("https://jsonplaceholder.typicode.com/collect") {
+            contentType(ContentType.Application.Json)
+            setBody("""{"events":["add_to_cart","checkout_started"]}""")
+        }.bodyAsText()
     }
 }

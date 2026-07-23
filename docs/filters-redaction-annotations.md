@@ -44,9 +44,9 @@ val snoop = SnoopAnalytics {
 
 ## Redaction
 
-Redacted values are replaced with a visible `██` placeholder and marked with a lock in the UI, so a
-reviewer can confirm the field was sent without exposing its value. Redaction happens at capture
-time — raw secrets never enter the in-memory store.
+Redacted values are replaced with a visible `██` placeholder, so a reviewer can confirm the field
+was sent without exposing its value. Redaction happens at capture time — raw secrets never enter
+the in-memory store.
 
 ## Buffer size
 
