@@ -17,7 +17,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.snoopCore)
+            api(projects.snoopCoreNoOp)
+        }
+        androidMain.dependencies {
+            api(projects.snoopWebNoOp)
         }
     }
 }

@@ -23,6 +23,9 @@ kotlin {
             api(projects.snoopCore)
             api(libs.ktor.client.core)
         }
+        androidMain.dependencies {
+            api(projects.snoopWeb)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
