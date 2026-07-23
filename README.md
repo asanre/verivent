@@ -15,14 +15,16 @@ SDK. Snoop does both, and correlates analytics events to the request that carrie
 
 ## Modules
 
-| Artifact | What it does | Depends on |
+You add one artifact per capture source; everything else arrives transitively.
+
+| Artifact | What it does | Brings along |
 |---|---|---|
-| `snoop-core` | Model, in-memory ring buffer store, redaction | coroutines |
-| `snoop-ktor` | Ktor client plugin that captures traffic | core, ktor-client |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | core |
-| `snoop-ui` | Compose Multiplatform inspector UI + Android Activity/notification | core, compose |
-| `snoop-web` | Embedded HTTP server serving the live timeline in a browser (Android v1) | core, ktor-server |
-| `snoop-*-no-op` | Empty mirrors with the identical API for release builds | — |
+| `snoop-ktor` | Ktor client plugin that captures traffic | inspector UI, web viewer (Android) |
+| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | inspector UI, web viewer (Android) |
+| `snoop-*-no-op` | Empty mirrors with the identical API for release builds | matching no-op stubs |
+
+Internally those share `snoop-core` (models, ring buffer store, redaction, Compose UI) and
+`snoop-web` (embedded HTTP server, Android-only for now) — you never declare them yourself.
 
 ## Install
 
@@ -31,12 +33,11 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 debugImplementation("dev.snoop:snoop-ktor:<version>")
-debugImplementation("dev.snoop:snoop-analytics:<version>")
-debugImplementation("dev.snoop:snoop-ui:<version>")
-
 releaseImplementation("dev.snoop:snoop-ktor-no-op:<version>")
+
+// optional, only if you also want analytics inspection:
+debugImplementation("dev.snoop:snoop-analytics:<version>")
 releaseImplementation("dev.snoop:snoop-analytics-no-op:<version>")
-releaseImplementation("dev.snoop:snoop-ui-no-op:<version>")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.
