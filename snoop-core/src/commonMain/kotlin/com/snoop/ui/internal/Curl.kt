@@ -9,11 +9,11 @@ import com.snoop.core.model.NetworkTransaction
 internal fun buildCurl(transaction: NetworkTransaction): String {
     val parts = mutableListOf("curl")
     if (transaction.method.uppercase() != "GET") {
-        parts += "-X ${transaction.method.uppercase()}"
+        parts += "-X ${transaction.method.uppercase().escapeSingleQuotes()}"
     }
-    parts += "'${transaction.url}'"
+    parts += "'${transaction.url.escapeSingleQuotes()}'"
     transaction.requestHeaders.forEach { header ->
-        parts += "-H '${header.name}: ${header.value.escapeSingleQuotes()}'"
+        parts += "-H '${header.name.escapeSingleQuotes()}: ${header.value.escapeSingleQuotes()}'"
     }
     transaction.requestBody?.text?.takeIf { it.isNotEmpty() }?.let { body ->
         parts += "--data '${body.escapeSingleQuotes()}'"

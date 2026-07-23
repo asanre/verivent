@@ -28,7 +28,7 @@ function icon(name,size){
   return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+ic.w+'" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">'+ic.d+'</svg>';
 }
 
-function esc(s){s=(s==null)?'':(''+s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){s=(s==null)?'':(''+s);return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function pad(n,l){n=''+n;while(n.length<l)n='0'+n;return n;}
 function clock(ts){var d=new Date(ts);return pad(d.getHours(),2)+':'+pad(d.getMinutes(),2)+':'+pad(d.getSeconds(),2)+'.'+pad(d.getMilliseconds(),3);}
 function dur(ms){if(ms==null)return '';return ms<1000?(ms+' ms'):((ms/1000).toFixed(1)+' s');}
@@ -54,7 +54,7 @@ function matches(e){
 
 function rowHtml(e){
   if(e.type==='network'){
-    return "<div class='row"+(e.id===selectedId?' sel':'')+"' onclick='sel(\""+e.id+"\")'>"+
+    return "<div class='row"+(e.id===selectedId?' sel':'')+"' data-id='"+esc(e.id)+"'>"+
       "<span class='time mono'>"+clock(e.ts)+"</span>"+
       pill(e.method,tintStyle(methodTint(e.method)),true)+
       "<div class='grow'><div class='title'>"+esc(e.path||'/')+"</div><div class='sub'>"+esc(e.host)+"</div></div>"+
@@ -70,7 +70,7 @@ function rowHtml(e){
     var n=(e.properties||[]).length;
     sub=n+(n===1?' param':' params');
   }
-  return "<div class='row"+(e.id===selectedId?' sel':'')+"' onclick='sel(\""+e.id+"\")'>"+
+  return "<div class='row"+(e.id===selectedId?' sel':'')+"' data-id='"+esc(e.id)+"'>"+
     "<span class='time mono'>"+clock(e.ts)+"</span>"+
     "<div class='abox' style='"+chanStyle(pair)+"'>"+icon('bars',16)+"</div>"+
     "<div class='grow'><div class='title'>"+esc(e.name)+"</div><div class='sub'>"+sub+"</div></div>"+
@@ -113,7 +113,7 @@ function listHtml(){
       }else{
         label='screen_view';
       }
-      html+="<div class='hgroup' onclick='toggleGroup(\""+k+"\")'>"+
+      html+="<div class='hgroup' data-group='"+esc(k)+"'>"+
         "<span class='chev"+(col?'':' open')+"'>"+icon('chevron',14)+"</span>"+
         icon('phone',14)+" "+esc(g.screen)+
         "<span class='hlabel'>"+esc(label)+"</span></div>";
@@ -145,7 +145,7 @@ function hl(s){
 function toggleHeaders(k){openHeaders[k]=!openHeaders[k];renderDetail();}
 function headersSection(label,items,key){
   var open=!!openHeaders[key];
-  var h="<div class='shead' onclick='toggleHeaders(\""+key+"\")'><span class='chev"+(open?' open':'')+"'>"+icon('chevron',12)+"</span>"+esc(label)+" ("+(items||[]).length+")</div>";
+  var h="<div class='shead' data-headers='"+esc(key)+"'><span class='chev"+(open?' open':'')+"'>"+icon('chevron',12)+"</span>"+esc(label)+" ("+(items||[]).length+")</div>";
   if(open)h+=(kvHtml(items,false)||"<div class='sub'>None</div>");
   return h;
 }
@@ -155,12 +155,13 @@ function segHtml(active,fn){
 function setRaw(v){rawBody=v;renderDetail();}
 function setRawParams(v){rawParams=v;renderDetail();}
 
+function shq(s){return (''+s).replace(/'/g,"'\\''");}
 function curlCmd(e){
   var parts=['curl'];
-  if((e.method||'GET').toUpperCase()!=='GET')parts.push('-X '+e.method.toUpperCase());
-  parts.push("'"+e.url+"'");
-  (e.requestHeaders||[]).forEach(function(k){parts.push("-H '"+k.name+": "+(''+k.value).replace(/'/g,"'\\''")+"'");});
-  if(e.requestBody)parts.push("--data '"+e.requestBody.replace(/'/g,"'\\''")+"'");
+  if((e.method||'GET').toUpperCase()!=='GET')parts.push('-X '+shq(e.method.toUpperCase()));
+  parts.push("'"+shq(e.url)+"'");
+  (e.requestHeaders||[]).forEach(function(k){parts.push("-H '"+shq(k.name)+": "+shq(k.value)+"'");});
+  if(e.requestBody)parts.push("--data '"+shq(e.requestBody)+"'");
   return parts.join(' \\\n  ');
 }
 function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(err){}document.body.removeChild(ta);}
@@ -189,7 +190,7 @@ function toast(msg){
   toastTimer=setTimeout(function(){t.className='toast';},1800);
 }
 function clearAll(){
-  fetch('/api/clear',{method:'POST'}).then(function(){return fetch('/api/entries');}).then(function(r){return r.json();}).then(function(j){
+  fetch('/api/clear',{method:'POST',headers:{'X-Snoop':'1'}}).then(function(){return fetch('/api/entries');}).then(function(r){return r.json();}).then(function(j){
     latest=j;entries=j;selectedId=null;toast('Cleared');render();
   });
 }
@@ -210,13 +211,14 @@ function togglePause(){
 }
 function setDetailTab(t){detailTab=t;renderDetail();}
 
-function requestResponseHtml(key,label,headers,body){
+function requestResponseHtml(key,label,headers,body,truncated,byteCount){
   var h="<div class='card'>"+headersSection('Headers',headers,key)+"</div>";
   h+="<div class='card'>";
   h+="<div class='shrow' style='margin-top:0'><div class='section'>"+esc(label)+"</div>"+(body?segHtml(rawBody,'setRaw'):'')+"</div>";
   if(!body){
     h+="<div class='sub'>Empty</div>";
   }else{
+    if(truncated)h+="<div class='sub'>Showing first "+body.length+" of "+byteCount+" bytes</div>";
     h+="<div class='code mono' style='margin-top:8px'>"+(rawBody?esc(compact(body)):hl(pretty(body)))+"</div>";
   }
   h+="</div>";
@@ -225,7 +227,7 @@ function requestResponseHtml(key,label,headers,body){
 function networkDetailHtml(e){
   var h="<div class='dwrap'>";
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.method)+" "+esc(e.path||'/')+"</div><div class='dsub'>"+esc(e.host)+"</div></div>"+
-    "<button class='copybtn' onclick='copyCurl(\""+e.id+"\")'>"+icon('copy',14)+" Copy as cURL</button></div>";
+    "<button class='copybtn' data-curl='"+esc(e.id)+"'>"+icon('copy',14)+" Copy as cURL</button></div>";
   h+="<div class='pillrow'>"+pill(statusLabel(e),tintStyle(statusTint(e)),true);
   if(e.durationMillis!=null)h+=pill(dur(e.durationMillis),tintStyle('neu'),true);
   h+="</div>";
@@ -237,13 +239,28 @@ function networkDetailHtml(e){
   if(detailTab==='overview'){
     h+="<div class='card'>";
     h+="<div class='section'>URL</div><div class='mono' style='word-break:break-all'>"+esc(e.url)+"</div>";
+    if(e.protocol)h+="<div class='section'>Protocol</div><div class='mono'>"+esc(e.protocol)+"</div>";
+    if(e.requestContentType)h+="<div class='section'>Request type</div><div class='mono'>"+esc(e.requestContentType)+"</div>";
+    if(e.responseContentType)h+="<div class='section'>Response type</div><div class='mono'>"+esc(e.responseContentType)+"</div>";
     if(e.error)h+="<div class='section'>Error</div><div style='color:var(--err-fg)'>"+esc(e.error)+"</div>";
-    if(e.correlatedCallId)h+="<div class='section'>Analytics</div><div>An analytics event was sent over this call.</div>";
     h+="</div>";
+    if(e.correlatedEventIds&&e.correlatedEventIds.length){
+      h+="<div class='card'><div class='section'>Analytics sent over this call</div>";
+      e.correlatedEventIds.forEach(function(id){
+        var ev=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){ev=entries[i];break;}}
+        if(!ev)return;
+        var pair=pal(ev.channel);
+        h+="<div class='corr' data-id='"+esc(ev.id)+"'>"+icon('link',16)+
+          "<div class='grow'>"+esc(ev.name)+"</div>"+
+          pill(ev.channel,chanStyle(pair),false)+
+          icon('chevron',16)+"</div>";
+      });
+      h+="</div>";
+    }
   }else if(detailTab==='request'){
-    h+=requestResponseHtml(e.id+':req','Body',e.requestHeaders,e.requestBody);
+    h+=requestResponseHtml(e.id+':req','Body',e.requestHeaders,e.requestBody,e.requestBodyTruncated,e.requestByteCount);
   }else{
-    h+=requestResponseHtml(e.id+':res','Body',e.responseHeaders,e.responseBody);
+    h+=requestResponseHtml(e.id+':res','Body',e.responseHeaders,e.responseBody,e.responseBodyTruncated,e.responseByteCount);
   }
   h+="</div>";
   return h;
@@ -252,7 +269,7 @@ function analyticsDetailHtml(e){
   var pair=pal(e.channel);
   var h="<div class='dwrap'>";
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.name)+"</div><div class='dsub'>event · "+esc(e.channel)+"</div></div>"+
-    "<button class='copybtn' onclick='copyPayload(\""+e.id+"\")'>"+icon('copy',14)+" Copy payload</button></div>";
+    "<button class='copybtn' data-payload='"+esc(e.id)+"'>"+icon('copy',14)+" Copy payload</button></div>";
   h+="<div class='pillrow'>"+pill(e.channel,chanStyle(pair),false);
   (e.annotations||[]).forEach(function(a){
     var style=a==='ecommerce'?tintStyle('ecom'):tintStyle('neu');
@@ -263,7 +280,7 @@ function analyticsDetailHtml(e){
   if(e.correlatedCallId){
     var call=null;for(var i=0;i<entries.length;i++){if(entries[i].id===e.correlatedCallId){call=entries[i];break;}}
     if(call){
-      h+="<div class='corr' onclick='sel(\""+call.id+"\")'>"+icon('link',16)+
+      h+="<div class='corr' data-id='"+esc(call.id)+"'>"+icon('link',16)+
         "<div class='grow'>"+esc(call.method+' '+call.path)+"</div>"+
         pill(statusLabel(call),tintStyle(statusTint(call)),true)+
         icon('chevron',16)+"</div>";
@@ -307,7 +324,7 @@ function render(){
     var pair=pal(c);
     var on=channelFilter===c;
     var style=on?('background:'+pair[0]+';color:'+pair[1]+';border:2px solid '+pair[1]):'';
-    return "<span class='chip"+(on?' on':'')+"' style='"+style+"' onclick='setChan(\""+c+"\")'><span class='chipdot' style='background:"+pair[1]+"'></span>"+esc(c)+"</span>";
+    return "<span class='chip"+(on?' on':'')+"' style='"+style+"' data-chan='"+esc(c)+"'><span class='chipdot' style='background:"+pair[1]+"'></span>"+esc(c)+"</span>";
   }).join('');
   document.getElementById('list').innerHTML=listHtml()||emptyHtml();
   renderDetail();
@@ -320,6 +337,28 @@ document.getElementById('playIcon').innerHTML=icon('play',18);
 document.getElementById('clearBtn').innerHTML=icon('clear',18);
 document.getElementById('exportBtn').innerHTML=icon('export',18);
 document.getElementById('q').addEventListener('input',function(ev){search=ev.target.value;render();});
+// Delegated clicks: entry data (ids, channels, header keys) never lands in inline handlers,
+// so a crafted value can't execute as script even if it survives escaping.
+document.getElementById('chanchips').addEventListener('click',function(ev){
+  var t=ev.target.closest('[data-chan]');
+  if(t)setChan(t.getAttribute('data-chan'));
+});
+document.getElementById('list').addEventListener('click',function(ev){
+  var g=ev.target.closest('[data-group]');
+  if(g){toggleGroup(g.getAttribute('data-group'));return;}
+  var r=ev.target.closest('[data-id]');
+  if(r)sel(r.getAttribute('data-id'));
+});
+document.getElementById('detail').addEventListener('click',function(ev){
+  var c=ev.target.closest('[data-curl]');
+  if(c){copyCurl(c.getAttribute('data-curl'));return;}
+  var p=ev.target.closest('[data-payload]');
+  if(p){copyPayload(p.getAttribute('data-payload'));return;}
+  var hd=ev.target.closest('[data-headers]');
+  if(hd){toggleHeaders(hd.getAttribute('data-headers'));return;}
+  var r=ev.target.closest('[data-id]');
+  if(r)sel(r.getAttribute('data-id'));
+});
 var es=new EventSource('/api/stream');
 es.onmessage=function(ev){latest=JSON.parse(ev.data);if(!paused){entries=latest;render();}};
 fetch('/api/entries').then(function(r){return r.json();}).then(function(j){if(!latest){latest=j;entries=j;render();}});

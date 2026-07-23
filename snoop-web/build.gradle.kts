@@ -33,6 +33,7 @@ val generateWebPage = tasks.register("generateWebPage") {
 kotlin {
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
+        optIn.add("kotlin.concurrent.atomics.ExperimentalAtomicApi")
     }
     // Android-only for now; ktor-server-cio 3.3.3 publishes iOS klibs, so iOS can be added later.
     androidTarget {
@@ -55,6 +56,8 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.ktor.server.test.host)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
