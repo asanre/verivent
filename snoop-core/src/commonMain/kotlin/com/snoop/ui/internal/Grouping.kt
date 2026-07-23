@@ -10,6 +10,12 @@ internal data class TimelineGroup(
 )
 
 /**
+ * Collapse-state key for a group. Entries are newest-first, so `last()` is the opening
+ * screen_view — stable while the group grows, unlike `first()` which changes on every new entry.
+ */
+internal fun TimelineGroup.stableKey(): String = entries.last().id
+
+/**
  * Split the (chronological) entries into collapsible groups keyed by [groupByEvent] (à la Tag
  * Assistant). Groups and their entries come back newest-first for display. When [groupByEvent] is
  * null, everything lands in a single unnamed group.

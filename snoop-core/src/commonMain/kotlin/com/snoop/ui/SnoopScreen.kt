@@ -46,10 +46,12 @@ import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.component.SnoopToast
 import com.snoop.ui.detail.AnalyticsDetailScreen
 import com.snoop.ui.detail.NetworkDetailScreen
-import com.snoop.ui.internal.entriesToJson
+import com.snoop.ui.internal.entriesToJsonCapped
 import com.snoop.ui.theme.LocalSnoopColors
 import com.snoop.ui.theme.SnoopTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * The whole Snoop inspector as one embeddable composable. Host it anywhere (a screen, a bottom
@@ -83,8 +85,77 @@ private fun SnoopContent(groupByEvent: String?) {
 
     val selected = entries.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
-    if (selected != null) {
+
+    // The detail overlays the timeline instead of replacing it, so TimelineTab never leaves
+    // composition and query/filters/collapsed groups/scroll survive opening an entry.
+    Box {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(
+                        imageVector = SnoopIcons.LogoMark,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp),
+                    )
+                    Text(
+                        "Snoop",
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    LiveDot(active = !paused && live.isNotEmpty())
+                    Text(
+                        "${entries.size}",
+                        style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = {
+                        if (!paused) frozen = live
+                        paused = !paused
+                    }) {
+                        Icon(
+                            imageVector = if (paused) SnoopIcons.Play else SnoopIcons.Pause,
+                            contentDescription = if (paused) "Resume" else "Pause",
+                        )
+                    }
+                    IconButton(onClick = { SnoopCore.store.clear() }) {
+                        Icon(SnoopIcons.Clear, contentDescription = "Clear")
+                    }
+                    IconButton(onClick = {
+                        // Serialize off the main thread and cap before ClipData (binder ~1MB limit).
+                        val snapshot = entries
+                        scope.launch(Dispatchers.Default) {
+                            val (text, kept) = entriesToJsonCapped(snapshot)
+                            withContext(Dispatchers.Main) {
+                                clipboard.setText(AnnotatedString(text))
+                                snackbar.showSnackbar(
+                                    if (kept < snapshot.size) {
+                                        "Copied newest $kept of ${snapshot.size} entries as JSON"
+                                    } else {
+                                        "Copied ${snapshot.size} entries as JSON"
+                                    },
+                                )
+                            }
+                        }
+                    }) {
+                        Icon(SnoopIcons.Export, contentDescription = "Export as JSON")
+                    }
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
+        ) { padding ->
+            Box(Modifier.padding(padding)) {
+                TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
+            }
+        }
         when (selected) {
+            null -> Unit
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })
             is AnalyticsEntry -> AnalyticsDetailScreen(
                 entry = selected,
@@ -92,61 +163,6 @@ private fun SnoopContent(groupByEvent: String?) {
                 onOpenCall = { selectedId = it },
                 onBack = { selectedId = null },
             )
-        }
-        return
-    }
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector = SnoopIcons.LogoMark,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp),
-                )
-                Text(
-                    "Snoop",
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
-                    fontWeight = FontWeight.SemiBold,
-                )
-                LiveDot(active = !paused && live.isNotEmpty())
-                Text(
-                    "${entries.size}",
-                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = {
-                    if (!paused) frozen = live
-                    paused = !paused
-                }) {
-                    Icon(
-                        imageVector = if (paused) SnoopIcons.Play else SnoopIcons.Pause,
-                        contentDescription = if (paused) "Resume" else "Pause",
-                    )
-                }
-                IconButton(onClick = { SnoopCore.store.clear() }) {
-                    Icon(SnoopIcons.Clear, contentDescription = "Clear")
-                }
-                IconButton(onClick = {
-                    val text = entriesToJson(entries)
-                    clipboard.setText(AnnotatedString(text))
-                    scope.launch { snackbar.showSnackbar("Copied ${entries.size} entries as JSON") }
-                }) {
-                    Icon(SnoopIcons.Export, contentDescription = "Export as JSON")
-                }
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
-    ) { padding ->
-        Box(Modifier.padding(padding)) {
-            TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
         }
     }
 }

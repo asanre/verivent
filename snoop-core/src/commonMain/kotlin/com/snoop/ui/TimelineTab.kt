@@ -51,6 +51,7 @@ import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.groupEntries
+import com.snoop.ui.internal.stableKey
 
 @Composable
 internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen: (String) -> Unit) {
@@ -69,7 +70,7 @@ internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpe
     val groups = groupEntries(entries, if (grouped) groupByEvent else null)
         .mapNotNull { group ->
             val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
-            if (shown.isEmpty()) null else group.entries.first().id to group.copy(entries = shown)
+            if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
         }
 
     val listState = rememberLazyListState()

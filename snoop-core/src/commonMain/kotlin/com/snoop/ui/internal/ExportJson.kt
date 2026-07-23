@@ -22,6 +22,27 @@ internal fun entriesToJson(entries: List<SnoopEntry>): String =
         buildJsonArray { entries.forEach { add(it.toJson()) } },
     )
 
+/**
+ * Like [entriesToJson] but capped to roughly [maxChars], keeping the newest entries (the clipboard
+ * transaction has a hard binder limit around 1MB). Returns the JSON and how many entries made it.
+ */
+internal fun entriesToJsonCapped(entries: List<SnoopEntry>, maxChars: Int = 400_000): Pair<String, Int> {
+    val keptNewestFirst = mutableListOf<JsonObject>()
+    var used = 0
+    for (entry in entries.asReversed()) {
+        val obj = entry.toJson()
+        val cost = exportJson.encodeToString(JsonObject.serializer(), obj).length
+        if (keptNewestFirst.isNotEmpty() && used + cost > maxChars) break
+        keptNewestFirst += obj
+        used += cost
+    }
+    val json = exportJson.encodeToString(
+        JsonArray.serializer(),
+        buildJsonArray { keptNewestFirst.asReversed().forEach { add(it) } },
+    )
+    return json to keptNewestFirst.size
+}
+
 private fun SnoopEntry.toJson(): JsonObject = when (this) {
     is NetworkTransaction -> buildJsonObject {
         put("type", "network")
