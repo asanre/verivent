@@ -27,11 +27,9 @@ object SnoopCore {
 
     fun recordAnalytics(entry: AnalyticsEntry) = Unit
 
-    fun correlateRecentAnalytics(callId: String, within: Duration = DEFAULT_CORRELATION_WINDOW) = Unit
+    fun correlateRecentAnalytics(callId: String, within: Duration = 2.seconds) = Unit
 
     fun reset() = Unit
 
     val entriesSnapshot: List<SnoopEntry> get() = emptyList()
-
-    private val DEFAULT_CORRELATION_WINDOW: Duration = 2.seconds
 }

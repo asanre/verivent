@@ -6,6 +6,7 @@
             android:name="com.snoop.ui.SnoopActivity"
             android:exported="false"
             android:label="Snoop"
+            android:launchMode="singleTask"
             android:theme="@style/Theme.Snoop" />
 
         <receiver

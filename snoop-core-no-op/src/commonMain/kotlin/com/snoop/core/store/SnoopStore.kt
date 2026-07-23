@@ -7,13 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 /** No-op mirror: never stores anything; every instance exposes the same empty [StateFlow]. */
 class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT_MAX_TOTAL_BYTES) {
 
-    var capacity: Int = capacity
-        private set
+    val capacity: Int = capacity
 
-    var maxTotalBytes: Long = maxTotalBytes
-        private set
+    val maxTotalBytes: Long = maxTotalBytes
 
-    val entries: StateFlow<List<SnoopEntry>> get() = EMPTY
+    val entries: StateFlow<List<SnoopEntry>> = EMPTY
 
     fun reconfigure(
         capacity: Int = this.capacity,
