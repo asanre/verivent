@@ -22,15 +22,17 @@ object SnoopCore {
 
     private val idCounter = AtomicLong(0)
 
-    private var _store = SnoopStore()
-    val store: SnoopStore get() = _store
+    val store: SnoopStore = SnoopStore()
 
     /** Master switch; when false, adapters drop everything (used by no-op / release gating). */
     var enabled: Boolean = true
 
-    /** Reconfigure the ring buffer size. Call before traffic starts; clears existing entries. */
-    fun configure(capacity: Int) {
-        _store = SnoopStore(capacity)
+    /**
+     * Reconfigure the store limits. Call before traffic starts; clears existing entries. The store
+     * and its StateFlow survive, so already-attached collectors (Compose UI, SSE) keep working.
+     */
+    fun configure(capacity: Int = store.capacity, maxTotalBytes: Long = store.maxTotalBytes) {
+        store.reconfigure(capacity = capacity, maxTotalBytes = maxTotalBytes)
     }
 
     fun nextId(): String = idCounter.incrementAndFetch().toString()
