@@ -3,8 +3,8 @@ package com.snoop.ktor
 import io.ktor.client.request.HttpRequestBuilder
 
 /**
- * DSL for `install(Snoop) { ... }`. Kotlin-friendly like KtorMonitor: everything is a lambda so the
- * host filters and redacts with plain predicates. All lists are additive across multiple calls.
+ * DSL for `install(Snoop) { ... }`. Everything is a lambda so the host filters and redacts with
+ * plain predicates. All lists are additive across multiple calls.
  */
 class SnoopConfig {
 

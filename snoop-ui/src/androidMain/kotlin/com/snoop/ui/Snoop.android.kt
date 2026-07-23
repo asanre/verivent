@@ -13,7 +13,7 @@ import com.snoop.core.SnoopCore
 
 /**
  * Android entry points: open the inspector as its own Activity, or post a persistent notification
- * that opens it while you navigate the host app (Chucker/KtorMonitor style).
+ * that reopens it while you navigate the host app.
  */
 object Snoop {
 

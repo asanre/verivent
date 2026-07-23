@@ -15,7 +15,7 @@ import kotlin.time.Instant
 /**
  * Central, DI-agnostic entry point that the capture adapters (Ktor, analytics) write to and the UI
  * reads from. Holds the single shared [SnoopStore]. Adapters never reference the UI or each other —
- * they only talk to this bridge, mirroring KtorMonitor's InternalLibraryBridge decoupling.
+ * they only talk to this bridge, keeping capture, storage and UI fully decoupled.
  */
 @OptIn(ExperimentalAtomicApi::class)
 object SnoopCore {
