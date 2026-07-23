@@ -1,6 +1,7 @@
 package com.snoop.ui
 
 import com.snoop.ui.internal.TimelineFilters
+import com.snoop.ui.internal.TypeFilter
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

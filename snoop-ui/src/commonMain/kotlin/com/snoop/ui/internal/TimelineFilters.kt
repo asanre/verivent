@@ -1,6 +1,6 @@
 package com.snoop.ui.internal
 
-import com.snoop.ui.TypeFilter
+internal enum class TypeFilter { All, Network, Analytics }
 
 /**
  * Type and channel selection for the timeline. Channels only exist on analytics entries, so the
