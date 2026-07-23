@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>Snoop</title>
+<link rel='icon' href='data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%231B1B20%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Ccircle%20cx=%2210.5%22%20cy=%2210.5%22%20r=%226.6%22%3E%3C/circle%3E%3Cpath%20d=%22M20.2%2020.2l-4.3-4.3%22%3E%3C/path%3E%3Cpath%20d=%22M6.9%2011.1l1.9-2.4%201.9%203.2%201.9-4.1%201.6%203.3%22%3E%3C/path%3E%3C/svg%3E'>
+<style>
+@SNOOP_CSS@
+</style>
+</head>
+<body>
+<header>
+  <div class='hrow hrow-top'>
+    <div class='hleft'>
+      <span class='brand'><svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='10.5' cy='10.5' r='6.6'></circle><path d='M20.2 20.2l-4.3-4.3'></path><path d='M6.9 11.1l1.9-2.4 1.9 3.2 1.9-4.1 1.6 3.3'></path></svg>Snoop</span>
+      <span id='dot' class='dot'></span>
+      <span id='count' class='count mono'>0</span>
+    </div>
+    <div class='actions'>
+      <button class='iconbtn' id='pauseToggle' title='Pause' onclick='togglePause()'><span id='pauseIcon' style='display:inline-flex'></span><span id='playIcon' style='display:none'></span></button>
+      <button class='iconbtn' id='clearBtn' title='Clear' onclick='clearAll()'></button>
+      <button class='iconbtn' id='exportBtn' title='Export' onclick='exportJson()'></button>
+    </div>
+  </div>
+  <div class='hrow'>
+    <div class='search'><svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'></circle><path d='M20 20l-3.2-3.2'></path></svg><input id='q' placeholder='Search url or event'></div>
+    <div class='chips' id='typechips'></div>
+    <div class='chips' id='chanchips'></div>
+  </div>
+</header>
+<main>
+  <div class='list' id='list'></div>
+  <div class='detail' id='detail'></div>
+</main>
+<div class='toastwrap'><div class='toast' id='toast'></div></div>
+<script>
+@SNOOP_JS@
+</script>
+</body>
+</html>
