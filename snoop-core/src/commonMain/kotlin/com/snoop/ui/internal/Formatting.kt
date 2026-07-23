@@ -8,6 +8,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.math.round
 import kotlin.time.Instant
 
 private val prettyJson = Json { prettyPrint = true }
@@ -34,19 +35,29 @@ internal fun compactPrintJson(raw: String): String? = try {
     null
 }
 
+private const val KB = 1024L
+private const val MB = KB * 1024
+private const val GB = MB * 1024
+
+/** Sizes come off the wire, so an unknown length (-1) or a bad count must not render as garbage. */
 internal fun formatBytes(bytes: Long): String = when {
-    bytes < 1024 -> "$bytes B"
-    bytes < 1024 * 1024 -> "${oneDecimal(bytes / 1024.0)} KB"
-    else -> "${oneDecimal(bytes / (1024.0 * 1024))} MB"
+    bytes < 0 -> "—"
+    bytes < KB -> "$bytes B"
+    bytes < MB -> "${oneDecimal(bytes / KB.toDouble())} KB"
+    bytes < GB -> "${oneDecimal(bytes / MB.toDouble())} MB"
+    else -> "${oneDecimal(bytes / GB.toDouble())} GB"
 }
 
 private fun oneDecimal(value: Double): String {
-    val scaled = (value * 10).toLong()
+    val scaled = round(value * 10).toLong()
     return "${scaled / 10}.${scaled % 10}"
 }
 
-internal fun formatDuration(millis: Long): String =
-    if (millis < 1000) "$millis ms" else "${oneDecimal(millis / 1000.0)} s"
+internal fun formatDuration(millis: Long): String = when {
+    millis < 0 -> "—"
+    millis < 1000 -> "$millis ms"
+    else -> "${oneDecimal(millis / 1000.0)} s"
+}
 
 /** Render analytics properties as a JSON object so the payload gets the same Pretty/Raw treatment. */
 internal fun propertiesToJson(properties: List<KeyValue>): String =

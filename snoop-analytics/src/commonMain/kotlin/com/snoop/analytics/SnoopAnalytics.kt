@@ -49,7 +49,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             if (!SnoopCore.enabled) return@runSafely
             val event = AnalyticsEvent(name, channel, properties)
             // A throwing filter keeps the event visible (fail open): missing data is the worse bug.
-            if (config.filters.any { !runCatching { it(event) }.getOrDefault(true) }) return@runSafely
+            if (!config.filters.all { runCatching { it(event) }.getOrDefault(true) }) return@runSafely
 
             SnoopCore.recordAnalytics(
                 AnalyticsEntry(

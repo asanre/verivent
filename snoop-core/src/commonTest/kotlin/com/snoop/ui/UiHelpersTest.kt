@@ -7,6 +7,8 @@ import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.entriesToJsonCapped
+import com.snoop.ui.internal.formatBytes
+import com.snoop.ui.internal.formatDuration
 import com.snoop.ui.internal.groupEntries
 import com.snoop.ui.internal.stableKey
 import kotlin.test.Test
@@ -36,7 +38,7 @@ class CurlTest {
             requestBody = BodyPreview("""{"id":1}""", 8, false),
         )
         val curl = buildCurl(txn)
-        assertTrue(curl.contains("-X POST"))
+        assertTrue(curl.contains("-X 'POST'"))
         assertTrue(curl.contains("'https://api.test/orders'"))
         assertTrue(curl.contains("-H 'Authorization: ██'"))
         assertTrue(curl.contains("""--data '{"id":1}'"""))
@@ -73,6 +75,38 @@ class CurlTest {
             path = "/x",
         )
         assertTrue(!buildCurl(txn).contains("-X"))
+    }
+
+    @Test
+    fun quotesTheMethodSoItCannotEscapeTheCommand() {
+        val txn = NetworkTransaction(
+            id = "1",
+            timestamp = Instant.fromEpochMilliseconds(0),
+            method = "POST; rm -rf ~",
+            url = "https://api.test/x",
+            host = "api.test",
+            path = "/x",
+        )
+        assertTrue(buildCurl(txn).contains("-X 'POST; RM -RF ~'"), buildCurl(txn))
+    }
+}
+
+class FormattingTest {
+    @Test
+    fun formatBytesRoundsAndReachesGigabytes() {
+        assertEquals("512 B", formatBytes(512))
+        assertEquals("2.0 KB", formatBytes(2038))
+        assertEquals("1.5 MB", formatBytes(1_572_864))
+        assertEquals("2.0 GB", formatBytes(2_147_483_648))
+        assertEquals("—", formatBytes(-1))
+    }
+
+    @Test
+    fun formatDurationRoundsAndRejectsNegatives() {
+        assertEquals("999 ms", formatDuration(999))
+        assertEquals("1.0 s", formatDuration(1000))
+        assertEquals("2.0 s", formatDuration(1_950))
+        assertEquals("—", formatDuration(-1))
     }
 }
 

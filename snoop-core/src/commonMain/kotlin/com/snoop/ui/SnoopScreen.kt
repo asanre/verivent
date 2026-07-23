@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -130,18 +131,18 @@ private fun SnoopContent(groupByEvent: String?) {
                     IconButton(onClick = {
                         // Serialize off the main thread and cap before ClipData (binder ~1MB limit).
                         val snapshot = entries
-                        scope.launch(Dispatchers.Default) {
-                            val (text, kept) = entriesToJsonCapped(snapshot)
-                            withContext(Dispatchers.Main) {
-                                clipboard.setText(AnnotatedString(text))
-                                snackbar.showSnackbar(
-                                    if (kept < snapshot.size) {
-                                        "Copied newest $kept of ${snapshot.size} entries as JSON"
-                                    } else {
-                                        "Copied ${snapshot.size} entries as JSON"
-                                    },
-                                )
+                        scope.launch {
+                            val (text, kept) = withContext(Dispatchers.Default) {
+                                entriesToJsonCapped(snapshot)
                             }
+                            clipboard.setText(AnnotatedString(text))
+                            snackbar.showSnackbar(
+                                if (kept < snapshot.size) {
+                                    "Copied newest $kept of ${snapshot.size} entries as JSON"
+                                } else {
+                                    "Copied ${snapshot.size} entries as JSON"
+                                },
+                            )
                         }
                     }) {
                         Icon(SnoopIcons.Export, contentDescription = "Export as JSON")
@@ -150,7 +151,10 @@ private fun SnoopContent(groupByEvent: String?) {
             },
             snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
         ) { padding ->
-            Box(Modifier.padding(padding)) {
+            // The detail overlays this and swallows touches, but TalkBack and keyboard focus would
+            // still walk the timeline underneath it.
+            val hidden = if (selected != null) Modifier.clearAndSetSemantics {} else Modifier
+            Box(Modifier.padding(padding).then(hidden)) {
                 TimelineTab(entries, groupByEvent, onOpen = { selectedId = it })
             }
         }

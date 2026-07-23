@@ -44,6 +44,7 @@ internal data class SnoopColors(
         NetworkState.Pending -> neutral
         NetworkState.Failed -> error
         NetworkState.Complete -> when (transaction.status ?: 0) {
+            in 100..199 -> info
             in 200..299 -> success
             in 300..399 -> info
             in 400..499 -> warn

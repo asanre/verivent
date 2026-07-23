@@ -1,4 +1,13 @@
-var entries=[],latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,toastTimer=null;
+var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,toastTimer=null;
+
+// Detail rendering looks entries up by id on every SSE frame; index once per frame instead of
+// scanning the list per lookup. Null-prototype map so a captured id can't reach Object.prototype.
+function setEntries(list){
+  entries=list||[];
+  byId=Object.create(null);
+  for(var i=0;i<entries.length;i++)byId[entries[i].id]=entries[i];
+}
+function entryById(id){return (id==null)?null:(byId[id]||null);}
 
 var TOKEN=new URLSearchParams(location.search).get('t')||'';
 function apiUrl(p){return TOKEN?p+(p.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(TOKEN):p;}
@@ -39,7 +48,7 @@ function dur(ms){if(ms==null)return '';return ms<1000?(ms+' ms'):((ms/1000).toFi
 function pal(ch){var h=0;ch=ch||'';for(var i=0;i<ch.length;i++){h=(h*31+ch.charCodeAt(i))|0;}var idx=((h%channelPalette.length)+channelPalette.length)%channelPalette.length;return channelPalette[idx];}
 function chanStyle(pair){return 'background:'+pair[0]+';color:'+pair[1];}
 function methodTint(m){m=(m||'').toUpperCase();if(m==='GET')return 'info';if(m==='POST')return 'ok';if(m==='PUT'||m==='PATCH')return 'warn';if(m==='DELETE')return 'err';return 'neu';}
-function statusTint(e){if(e.state==='failed')return 'err';if(e.state==='pending')return 'neu';var s=e.status||0;if(s<300)return 'ok';if(s<400)return 'info';if(s<500)return 'warn';return 'err';}
+function statusTint(e){if(e.state==='failed')return 'err';if(e.state==='pending')return 'neu';var s=e.status||0;if(s<200)return 'info';if(s<300)return 'ok';if(s<400)return 'info';if(s<500)return 'warn';return 'err';}
 function tintStyle(key){return 'background:var(--'+key+'-bg);color:var(--'+key+'-fg)';}
 function statusLabel(e){if(e.state==='failed')return 'ERR';if(e.state==='pending')return '...';return ''+e.status;}
 function pill(text,style,mono){return "<span class='pill"+(mono?' mono':'')+"' style='"+style+"'>"+esc(text)+"</span>";}
@@ -49,7 +58,7 @@ function matches(e){
   if(channelFilter&&e.channel!==channelFilter)return false;
   if(search){
     var q=search.toLowerCase();
-    var hay=e.type==='network'?((e.path||'')+' '+(e.host||'')+' '+(e.method||'')):((e.name||'')+' '+(e.channel||''));
+    var hay=e.type==='network'?((e.url||'')+' '+(e.host||'')+' '+(e.method||'')):((e.name||'')+' '+(e.channel||''));
     if(hay.toLowerCase().indexOf(q)<0)return false;
   }
   return true;
@@ -67,7 +76,7 @@ function rowHtml(e){
   var pair=pal(e.channel);
   var sub;
   if(e.correlatedCallId){
-    var call=null;for(var i=0;i<entries.length;i++){if(entries[i].id===e.correlatedCallId){call=entries[i];break;}}
+    var call=entryById(e.correlatedCallId);
     sub=icon('link',12)+esc(call?(' sent over '+call.method+' '+call.path):' sent over a call');
   }else{
     var n=(e.properties||[]).length;
@@ -136,14 +145,23 @@ function kvHtml(items,alignEnd){
 }
 function pretty(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s),null,2);}catch(e){return s;}}
 function compact(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s));}catch(e){return s;}}
+// Tokenize the raw text and escape each piece as it is emitted. Matching against pre-escaped text
+// would never see a quote (esc turns it into &quot;) and would highlight the digits inside &#39;.
+// Every gap between matches has to be escaped too — replace() hands the callback only the matches.
 function hl(s){
-  return esc(s).replace(/("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b|([{}\[\],])/g,function(m,str,colon,num,kw,punc){
-    if(str)return "<span class='"+(colon?'jk':'js')+"'>"+str+"</span>"+(colon?("<span class='jp'>"+colon+"</span>"):'');
-    if(num)return "<span class='jn'>"+num+"</span>";
-    if(kw)return "<span class='jb'>"+kw+"</span>";
-    if(punc)return "<span class='jp'>"+punc+"</span>";
-    return m;
-  });
+  s=(s==null)?'':(''+s);
+  var re=/("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)|\b(true|false|null)\b|([{}\[\],])/g;
+  var out='',last=0,m;
+  while((m=re.exec(s))!==null){
+    out+=esc(s.slice(last,m.index));
+    if(m[1])out+="<span class='"+(m[2]?'jk':'js')+"'>"+esc(m[1])+"</span>"+(m[2]?("<span class='jp'>"+esc(m[2])+"</span>"):'');
+    else if(m[3])out+="<span class='jn'>"+esc(m[3])+"</span>";
+    else if(m[4])out+="<span class='jb'>"+esc(m[4])+"</span>";
+    else if(m[5])out+="<span class='jp'>"+esc(m[5])+"</span>";
+    else out+=esc(m[0]);
+    last=re.lastIndex;
+  }
+  return out+esc(s.slice(last));
 }
 function toggleHeaders(k){openHeaders[k]=!openHeaders[k];renderDetail();}
 function headersSection(label,items,key){
@@ -174,12 +192,12 @@ function copyText(text,message){
   else{fallbackCopy(text);done();}
 }
 function copyCurl(id){
-  var e=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){e=entries[i];break;}}
+  var e=entryById(id);
   if(!e)return;
   copyText(curlCmd(e),'Copied as cURL');
 }
 function copyPayload(id){
-  var e=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){e=entries[i];break;}}
+  var e=entryById(id);
   if(!e)return;
   var obj={};(e.properties||[]).forEach(function(k){obj[k.name]=k.value;});
   copyText(JSON.stringify(obj,null,2),'Copied payload');
@@ -193,9 +211,12 @@ function toast(msg){
   toastTimer=setTimeout(function(){t.className='toast';},1800);
 }
 function clearAll(){
-  fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Snoop':'1'}}).then(function(){return fetch(apiUrl('/api/entries'));}).then(function(r){return r.json();}).then(function(j){
-    latest=j;entries=j;selectedId=null;toast('Cleared');render();
-  });
+  fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Snoop':'1'}}).then(function(r){
+    if(!r.ok)throw new Error('clear rejected: '+r.status);
+    return fetch(apiUrl('/api/entries'));
+  }).then(function(r){return r.json();}).then(function(j){
+    latest=j;setEntries(j);selectedId=null;toast('Cleared');render();
+  }).catch(function(){toast('Clear failed');});
 }
 function exportJson(){
   var data=JSON.stringify(entries,null,2);
@@ -209,12 +230,17 @@ function exportJson(){
 }
 function togglePause(){
   paused=!paused;
-  if(!paused&&latest){entries=latest;}
+  if(!paused&&latest){setEntries(latest);}
   render();
 }
 function setDetailTab(t){detailTab=t;renderDetail();}
 
-function requestResponseHtml(key,label,headers,body,truncated,byteCount){
+function requestResponseHtml(e,side){
+  var key=e.id+':'+side,label='Body';
+  var headers=side==='req'?e.requestHeaders:e.responseHeaders;
+  var body=side==='req'?e.requestBody:e.responseBody;
+  var truncated=side==='req'?e.requestBodyTruncated:e.responseBodyTruncated;
+  var byteCount=side==='req'?e.requestByteCount:e.responseByteCount;
   var h="<div class='card'>"+headersSection('Headers',headers,key)+"</div>";
   h+="<div class='card'>";
   h+="<div class='shrow' style='margin-top:0'><div class='section'>"+esc(label)+"</div>"+(body?segHtml(rawBody,'setRaw'):'')+"</div>";
@@ -250,7 +276,7 @@ function networkDetailHtml(e){
     if(e.correlatedEventIds&&e.correlatedEventIds.length){
       h+="<div class='card'><div class='section'>Analytics sent over this call</div>";
       e.correlatedEventIds.forEach(function(id){
-        var ev=null;for(var i=0;i<entries.length;i++){if(entries[i].id===id){ev=entries[i];break;}}
+        var ev=entryById(id);
         if(!ev)return;
         var pair=pal(ev.channel);
         h+="<div class='corr' data-id='"+esc(ev.id)+"'>"+icon('link',16)+
@@ -261,9 +287,9 @@ function networkDetailHtml(e){
       h+="</div>";
     }
   }else if(detailTab==='request'){
-    h+=requestResponseHtml(e.id+':req','Body',e.requestHeaders,e.requestBody,e.requestBodyTruncated,e.requestByteCount);
+    h+=requestResponseHtml(e,'req');
   }else{
-    h+=requestResponseHtml(e.id+':res','Body',e.responseHeaders,e.responseBody,e.responseBodyTruncated,e.responseByteCount);
+    h+=requestResponseHtml(e,'res');
   }
   h+="</div>";
   return h;
@@ -281,7 +307,7 @@ function analyticsDetailHtml(e){
   h+=pill(clock(e.ts),tintStyle('neu'),true);
   h+="</div>";
   if(e.correlatedCallId){
-    var call=null;for(var i=0;i<entries.length;i++){if(entries[i].id===e.correlatedCallId){call=entries[i];break;}}
+    var call=entryById(e.correlatedCallId);
     if(call){
       h+="<div class='corr' data-id='"+esc(call.id)+"'>"+icon('link',16)+
         "<div class='grow'>"+esc(call.method+' '+call.path)+"</div>"+
@@ -303,7 +329,7 @@ function analyticsDetailHtml(e){
 }
 function renderDetail(){
   var d=document.getElementById('detail');
-  var e=null;for(var i=0;i<entries.length;i++){if(entries[i].id===selectedId){e=entries[i];break;}}
+  var e=entryById(selectedId);
   if(!e){d.className='detail';d.innerHTML='';return;}
   d.className='detail open';
   d.innerHTML=e.type==='network'?networkDetailHtml(e):analyticsDetailHtml(e);
@@ -363,6 +389,6 @@ document.getElementById('detail').addEventListener('click',function(ev){
   if(r)sel(r.getAttribute('data-id'));
 });
 var es=new EventSource(apiUrl('/api/stream'));
-es.onmessage=function(ev){latest=JSON.parse(ev.data);if(!paused){entries=latest;render();}};
-fetch(apiUrl('/api/entries')).then(function(r){return r.json();}).then(function(j){if(!latest){latest=j;entries=j;render();}});
+es.onmessage=function(ev){latest=JSON.parse(ev.data);if(!paused){setEntries(latest);render();}};
+fetch(apiUrl('/api/entries')).then(function(r){return r.json();}).then(function(j){if(!latest){latest=j;setEntries(j);render();}});
 render();

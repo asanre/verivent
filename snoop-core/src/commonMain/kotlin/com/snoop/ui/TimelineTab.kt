@@ -67,11 +67,13 @@ internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpe
         entries.filterIsInstance<NetworkTransaction>().associateBy { it.id }
     }
     // Group over all entries so screen headers survive filters that hide the grouping event.
-    val groups = groupEntries(entries, if (grouped) groupByEvent else null)
-        .mapNotNull { group ->
-            val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
-            if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
-        }
+    val groups = remember(entries, grouped, groupByEvent, filters, query) {
+        groupEntries(entries, if (grouped) groupByEvent else null)
+            .mapNotNull { group ->
+                val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
+                if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
+            }
+    }
 
     val listState = rememberLazyListState()
     val newestId = entries.lastOrNull()?.id
@@ -187,7 +189,7 @@ private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boo
     HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 }
 
-private fun matchesFilters(
+internal fun matchesFilters(
     entry: SnoopEntry,
     type: TypeFilter,
     channel: String?,
@@ -204,7 +206,8 @@ private fun matchesFilters(
     val q = query.trim().lowercase()
     return when (entry) {
         is NetworkTransaction ->
-            entry.path.lowercase().contains(q) ||
+            // The url carries the query string (already redacted), which path alone drops.
+            entry.url.lowercase().contains(q) ||
                 entry.host.lowercase().contains(q) ||
                 entry.method.lowercase().contains(q)
         is AnalyticsEntry ->
