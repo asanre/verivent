@@ -24,8 +24,7 @@ Start it from an internal-only entry point (a dev menu, the sample's "Start web 
 
 ## Open it from your Mac
 
-The server binds loopback only (`127.0.0.1`), so it is never reachable from other devices on the
-LAN. How you reach it depends on the platform:
+By default the server binds loopback only (`127.0.0.1`). How you reach it depends on the platform:
 
 - **Android (device or emulator)** — forward the port over adb, then open <http://localhost:9394>:
 
@@ -36,19 +35,40 @@ LAN. How you reach it depends on the platform:
 - **iOS simulator** — open <http://localhost:9394> directly, no forwarding. The simulator shares the
   Mac's network stack, so the app's loopback listener is the Mac's loopback.
 
-- **Physical iOS device** — not reachable from a desktop browser: there is no adb-style tunnel to the
-  device loopback, and the server does not listen on the Wi-Fi interface. Use the embedded
-  `SnoopScreen` on-device instead.
+- **Physical iOS device** — bind to the LAN and browse to the device's Wi-Fi IP:
+
+  ```kotlin
+  val url = SnoopWebServer.start(host = "0.0.0.0")
+  SnoopWebServer.lanUrl        // "http://192.168.1.10:9394" — open this from your Mac
+  SnoopWebServer.deviceLabel   // "iPhone de Toni" — to tell devices apart
+  ```
+
+  `lanUrl` is null while bound to loopback or when no LAN address is found.
 
 The page streams updates live over SSE — new network calls and analytics events appear as they
 happen. It mirrors the native inspector: unified timeline, type and channel filters, search, and a
 detail panel with headers (redaction preserved), pretty-printed bodies, and event↔request correlation.
 
+## Several developers on one network
+
+Each device runs its own server over its own network stack, serving only its own in-memory store.
+`0.0.0.0:9394` means "listen on every interface **of this device**", and the port is per-host — so
+three phones are `…10:9394`, `…11:9394`, `…12:9394` and never collide. Every developer opens their
+own device's IP (shown in-app as `deviceLabel · lanUrl`) and sees only that device's logs.
+
+Binding `0.0.0.0` does expose the captured traffic to anyone on the LAN who reaches the IP. On a
+trusted network that's fine. Otherwise pass a token — it is opt-in (no token by default) and gates
+every route; the served `lanUrl` carries it as `?t=…`:
+
+```kotlin
+SnoopWebServer.start(host = "0.0.0.0", token = "team-standup")
+```
+
 ## Notes
 
 - **Android** needs the `INTERNET` permission (to open the listening socket). iOS needs no
   permission to listen — the Local Network privacy prompt applies to outgoing connections, not an
-  inbound loopback listener.
+  inbound listener.
 - **iOS backgrounding** suspends the app process, which pauses the server; keep the app foregrounded
   while inspecting.
 - **Release builds on KMP/iOS**: the `debugImplementation`/`releaseImplementation` swap is

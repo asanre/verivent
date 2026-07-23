@@ -2,6 +2,7 @@ package com.snoop.web
 
 import com.snoop.core.SnoopCore
 import com.snoop.core.model.AnalyticsEntry
+import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
@@ -73,6 +74,38 @@ class SnoopWebServerTest {
         }
         assertEquals(HttpStatusCode.OK, response.status)
         assertTrue(SnoopCore.store.entries.value.isEmpty())
+    }
+
+    @Test
+    fun clearWithLanSameOriginClears() = testApplication {
+        seedEntry()
+        application { snoopModule() }
+        val response = client.post("/api/clear") {
+            header("X-Snoop", "1")
+            header(HttpHeaders.Host, "192.168.1.10:9394")
+            header(HttpHeaders.Origin, "http://192.168.1.10:9394")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(SnoopCore.store.entries.value.isEmpty())
+    }
+
+    @Test
+    fun entriesOpenWhenNoTokenConfigured() = testApplication {
+        application { snoopModule() }
+        assertEquals(HttpStatusCode.OK, client.get("/api/entries").status)
+    }
+
+    @Test
+    fun entriesRejectedWithoutOrWithWrongToken() = testApplication {
+        application { snoopModule(token = "secret") }
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries?t=nope").status)
+    }
+
+    @Test
+    fun entriesAllowedWithMatchingToken() = testApplication {
+        application { snoopModule(token = "secret") }
+        assertEquals(HttpStatusCode.OK, client.get("/api/entries?t=secret").status)
     }
 
     @Test

@@ -113,14 +113,21 @@ Inspect from a desktop browser while debugging:
 SnoopWebServer.start()   // http://localhost:9394
 ```
 
-The server binds loopback only. Reach it from your Mac by platform:
+By default it binds loopback only. Reach it from your Mac by platform:
 
 ```bash
 adb forward tcp:9394 tcp:9394   # Android: then open http://localhost:9394
 ```
 
 - **iOS simulator** — open <http://localhost:9394> directly (the simulator shares the Mac's loopback).
-- **Physical device** — not reachable from a desktop browser (loopback binding); use the embedded `SnoopScreen` on-device.
+- **Physical device** — bind to the LAN and open the device's IP from your Mac (same Wi-Fi):
+
+  ```kotlin
+  SnoopWebServer.start(host = "0.0.0.0")   // then read SnoopWebServer.lanUrl, e.g. http://192.168.1.10:9394
+  ```
+
+  Each device serves only its own logs, so three developers on three phones don't collide — each
+  opens their own device's IP. On an untrusted network add `token = "…"` to gate access.
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 
