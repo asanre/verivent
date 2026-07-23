@@ -8,6 +8,9 @@ plugins {
 }
 
 kotlin {
+    compilerOptions {
+        optIn.add("kotlin.time.ExperimentalTime")
+    }
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
@@ -19,6 +22,8 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            // StateFlow in the mirrored SnoopStore surface; accepted cost of full API parity.
+            api(libs.kotlinx.coroutines.core)
             implementation(compose.runtime)
             implementation(compose.ui)
         }

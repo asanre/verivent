@@ -1,12 +1,37 @@
 package com.snoop.core
 
-/**
- * No-op mirror of the consumer-facing `SnoopCore` surface for release builds. Adapter-facing API
- * (`store`, `record*`) is intentionally not mirrored: reading captured entries from shared app
- * code is a debug-only affair.
- */
+import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.SnoopEntry
+import com.snoop.core.store.SnoopStore
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+
+/** No-op mirror of `SnoopCore` for release builds: records nothing, stores nothing. */
 object SnoopCore {
+
+    val store: SnoopStore = SnoopStore()
+
     var enabled: Boolean = false
-    fun configure(capacity: Int) = Unit
+
+    fun configure(capacity: Int = store.capacity, maxTotalBytes: Long = store.maxTotalBytes) = Unit
+
+    fun nextId(): String = "0"
+
+    fun now(): Instant = Instant.fromEpochMilliseconds(0)
+
+    fun recordNetwork(transaction: NetworkTransaction) = Unit
+
+    fun updateNetwork(id: String, transform: (NetworkTransaction) -> NetworkTransaction) = Unit
+
+    fun recordAnalytics(entry: AnalyticsEntry) = Unit
+
+    fun correlateRecentAnalytics(callId: String, within: Duration = DEFAULT_CORRELATION_WINDOW) = Unit
+
     fun reset() = Unit
+
+    val entriesSnapshot: List<SnoopEntry> get() = emptyList()
+
+    private val DEFAULT_CORRELATION_WINDOW: Duration = 2.seconds
 }

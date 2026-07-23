@@ -1,0 +1,181 @@
+@file:Suppress("unused", "UNUSED_VARIABLE", "UNUSED_PARAMETER", "UnusedPrivateMember")
+
+package com.snoop.paritycheck
+
+import android.content.Context
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.snoop.analytics.AnalyticsEvent
+import com.snoop.analytics.SnoopAnalytics
+import com.snoop.core.SnoopCore
+import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.Annotation
+import com.snoop.core.model.BodyPreview
+import com.snoop.core.model.KeyValue
+import com.snoop.core.model.NetworkState
+import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.SnoopEntry
+import com.snoop.core.redaction.RedactionEngine
+import com.snoop.core.store.SnoopStore
+import com.snoop.ktor.Snoop as SnoopPlugin
+import com.snoop.ktor.SnoopConfig
+import com.snoop.ui.Snoop as SnoopEntryPoints
+import com.snoop.ui.SnoopScreen
+import com.snoop.web.SnoopWebServer
+import io.ktor.client.plugins.api.ClientPlugin
+import io.ktor.client.request.HttpRequestBuilder
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+import kotlinx.coroutines.flow.StateFlow
+
+/*
+ * Parity enforcement: this file references every symbol the no-op modules mirror, with exact
+ * types, and is compiled twice — once against the real modules (:snoop-parity-check:real) and once
+ * against the no-op modules (:snoop-parity-check:noop). API drift in either direction is a compile
+ * failure in `./gradlew check`. Never executed. `SnoopActivity` is intentionally out of scope:
+ * hosts reach it only through `Snoop.open`, which is mirrored.
+ */
+
+private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
+    val store: SnoopStore = SnoopCore.store
+    val enabled: Boolean = SnoopCore.enabled
+    SnoopCore.enabled = enabled
+    SnoopCore.configure()
+    SnoopCore.configure(capacity = 100)
+    SnoopCore.configure(capacity = 100, maxTotalBytes = 1_000L)
+    val id: String = SnoopCore.nextId()
+    val now: Instant = SnoopCore.now()
+    SnoopCore.recordNetwork(txn)
+    SnoopCore.updateNetwork("id") { transaction: NetworkTransaction -> transaction }
+    SnoopCore.recordAnalytics(event)
+    SnoopCore.correlateRecentAnalytics("id")
+    SnoopCore.correlateRecentAnalytics("id", within = 2.seconds)
+    SnoopCore.reset()
+    val snapshot: List<SnoopEntry> = SnoopCore.entriesSnapshot
+}
+
+private fun model() {
+    val kv = KeyValue(name = "n", value = "v", redacted = false)
+    val body = BodyPreview(text = "t", byteCount = 1L, truncated = false)
+    val isEmpty: Boolean = body.isEmpty
+    val states = listOf(NetworkState.Pending, NetworkState.Complete, NetworkState.Failed)
+    val txn = NetworkTransaction(
+        id = "1",
+        timestamp = Instant.fromEpochMilliseconds(0),
+        method = "GET",
+        url = "u",
+        host = "h",
+        path = "/",
+        requestContentType = null,
+        requestHeaders = listOf(kv),
+        requestBody = body,
+        status = 200,
+        responseContentType = null,
+        responseHeaders = emptyList(),
+        responseBody = null,
+        protocol = null,
+        durationMillis = 1L,
+        error = null,
+        correlatedEventIds = emptyList(),
+    )
+    val state: NetworkState = txn.state
+    val event = AnalyticsEntry(
+        id = "2",
+        timestamp = Instant.fromEpochMilliseconds(0),
+        name = "e",
+        channel = "c",
+        properties = listOf(kv),
+        annotations = listOf(
+            Annotation.Ecommerce,
+            Annotation.Conversion,
+            Annotation.Consent,
+            Annotation.ScreenView,
+            Annotation("custom"),
+        ),
+        correlatedCallId = null,
+    )
+    val label: String = Annotation.Ecommerce.label
+    val entries: List<SnoopEntry> = listOf(txn, event)
+    entries.forEach { entry ->
+        val entryId: String = entry.id
+        val at: Instant = entry.timestamp
+    }
+}
+
+private fun store(entry: SnoopEntry) {
+    val store = SnoopStore()
+    val sized = SnoopStore(capacity = 10, maxTotalBytes = 1_000L)
+    val capacity: Int = store.capacity
+    val budget: Long = store.maxTotalBytes
+    val flow: StateFlow<List<SnoopEntry>> = store.entries
+    store.reconfigure(capacity = 10)
+    store.reconfigure(capacity = 10, maxTotalBytes = 1_000L, clear = false)
+    store.record(entry)
+    store.update("id") { it }
+    store.mutate { it }
+    store.clear()
+    val defaultCapacity: Int = SnoopStore.DEFAULT_CAPACITY
+    val defaultBytes: Long = SnoopStore.DEFAULT_MAX_TOTAL_BYTES
+}
+
+private fun redaction() {
+    val default = RedactionEngine()
+    val custom = RedactionEngine(
+        headerPredicates = listOf { it == "x" },
+        propertyPredicates = listOf { it == "x" },
+        queryParamPredicates = listOf { it == "x" },
+        placeholder = "*",
+    )
+    val header: KeyValue = custom.redactHeader("n", "v")
+    val property: KeyValue = custom.redactProperty("k", "v")
+    val url: String = custom.redactUrl("https://x?token=y")
+    val placeholder: String = RedactionEngine.DEFAULT_PLACEHOLDER
+    val headers: Set<String> = RedactionEngine.DEFAULT_HEADERS
+    val queryParams: Set<String> = RedactionEngine.DEFAULT_QUERY_PARAMS
+}
+
+private fun ktorPlugin(config: SnoopConfig) {
+    val plugin: ClientPlugin<SnoopConfig> = SnoopPlugin
+    config.maxContentLength = 1L
+    val max: Long = config.maxContentLength
+    config.sanitizeHeader { it == "x" }
+    config.sanitizeQueryParameter { it == "x" }
+    config.sanitizeBody { it }
+    config.filter { request: HttpRequestBuilder -> true }
+    config.markAsAnalyticsTransport { request: HttpRequestBuilder -> true }
+}
+
+private fun analytics() {
+    val plain: SnoopAnalytics = SnoopAnalytics()
+    val configured: SnoopAnalytics = SnoopAnalytics {
+        filter { event: AnalyticsEvent ->
+            event.name.isNotEmpty() && event.channel.isNotEmpty() && event.properties.isEmpty()
+        }
+        sanitizeProperty { it == "x" }
+        annotate { listOf(Annotation.Ecommerce) }
+    }
+    configured.log("name", "channel")
+    configured.log("name", "channel", mapOf("k" to 1))
+    val event = AnalyticsEvent(name = "n", channel = "c", properties = mapOf("k" to null))
+}
+
+private fun webServer() {
+    val started: String = SnoopWebServer.start()
+    val onPort: String = SnoopWebServer.start(port = 1234)
+    val running: Boolean = SnoopWebServer.isRunning
+    val url: String = SnoopWebServer.url
+    SnoopWebServer.stop()
+    val defaultPort: Int = SnoopWebServer.DEFAULT_PORT
+}
+
+private fun androidEntryPoints(context: Context) {
+    SnoopEntryPoints.open(context)
+    SnoopEntryPoints.showNotification(context)
+    SnoopEntryPoints.dismissNotification(context)
+}
+
+@Composable
+private fun screen() {
+    SnoopScreen()
+    SnoopScreen(modifier = Modifier, groupByEvent = null)
+}

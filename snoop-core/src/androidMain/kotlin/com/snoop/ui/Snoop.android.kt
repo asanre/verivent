@@ -1,5 +1,6 @@
 package com.snoop.ui
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -28,6 +29,7 @@ object Snoop {
     }
 
     /** Show/refresh the ongoing notification. Call again to update the captured-entry count. */
+    @SuppressLint("MissingPermission") // notify() is guarded by the SecurityException catch below.
     fun showNotification(context: Context) {
         ensureChannel(context)
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

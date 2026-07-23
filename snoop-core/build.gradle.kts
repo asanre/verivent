@@ -30,9 +30,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
-            implementation(libs.compose.material.icons.extended)
             implementation(libs.compose.ui.backhandler)
-            implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
         }
