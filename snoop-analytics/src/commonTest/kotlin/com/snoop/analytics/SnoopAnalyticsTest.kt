@@ -44,6 +44,22 @@ class SnoopAnalyticsTest {
     }
 
     @Test
+    fun throwingLambdasNeverReachTheCaller() {
+        val snoop = SnoopAnalytics {
+            filter { error("broken filter") }
+            annotate { error("broken annotator") }
+            sanitizeProperty { error("broken sanitizer") }
+        }
+        // Must not throw; filter fails open (event visible), annotator falls back to no badges,
+        // sanitizer fails closed (property redacted).
+        snoop.log("purchase", "firebase", mapOf("value" to 9.99))
+        val entry = entries().single()
+        assertEquals("purchase", entry.name)
+        assertTrue(entry.annotations.isEmpty())
+        assertTrue(entry.properties.single { it.name == "value" }.redacted)
+    }
+
+    @Test
     fun annotatesEvents() {
         val ecommerce = setOf("purchase", "add_to_cart")
         val snoop = SnoopAnalytics {

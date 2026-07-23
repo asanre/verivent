@@ -1,21 +1,29 @@
 package com.snoop.ktor
 
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.runSafely
 import com.snoop.core.model.BodyPreview
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.redaction.RedactionEngine
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.api.SendingRequest
+import io.ktor.client.plugins.isSaved
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.plugin
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentLength
+import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
+import io.ktor.utils.io.discard
+import io.ktor.utils.io.readRemaining
 import kotlin.time.TimeSource
+import kotlinx.io.readByteArray
 
 /**
  * Ktor client plugin that feeds every request/response into the shared [SnoopCore] store.
@@ -24,7 +32,10 @@ import kotlin.time.TimeSource
  */
 val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
     val config = pluginConfig
-    val redaction = RedactionEngine(headerPredicates = config.headerRedactors)
+    val redaction = RedactionEngine(
+        headerPredicates = config.headerRedactors,
+        queryParamPredicates = config.queryParamRedactors,
+    )
     val maxLen = config.maxContentLength
 
     val callIdKey = AttributeKey<String>("SnoopCallId")
@@ -47,12 +58,12 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
                     id = callId,
                     timestamp = SnoopCore.now(),
                     method = request.method.value,
-                    url = url.toString(),
+                    url = redaction.redactUrl(url.toString()),
                     host = url.host,
                     path = url.encodedPath,
                     requestContentType = content.contentType?.toString(),
                     requestHeaders = captureRequestHeaders(request, content, redaction),
-                    requestBody = captureOutgoing(content, maxLen),
+                    requestBody = captureOutgoing(content, maxLen)?.sanitized(config.bodyTransforms),
                 ),
             )
         }
@@ -60,7 +71,7 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
 
     onResponse { response ->
         val callId = response.call.attributes.getOrNull(callIdKey) ?: return@onResponse
-        val body = readResponseBody(response, maxLen)
+        val body = readResponseBody(response, maxLen)?.sanitized(config.bodyTransforms)
         runSafely {
             if (!SnoopCore.enabled) return@runSafely
             val duration = response.call.attributes.getOrNull(startKey)?.elapsedNow()?.inWholeMilliseconds
@@ -100,12 +111,13 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
     }
 }
 
-private inline fun runSafely(block: () -> Unit) {
-    try {
-        block()
-    } catch (_: Throwable) {
-        // Debug tooling must never break the host's request pipeline.
+private fun BodyPreview.sanitized(transforms: List<(String) -> String>): BodyPreview {
+    if (transforms.isEmpty()) return this
+    // A throwing transform replaces the preview instead of leaking the unsanitized text.
+    val text = transforms.fold(text) { acc, transform ->
+        runCatching { transform(acc) }.getOrDefault("(body sanitizer failed)")
     }
+    return copy(text = text)
 }
 
 private fun captureRequestHeaders(
@@ -127,23 +139,53 @@ private fun captureRequestHeaders(
 private fun captureOutgoing(content: OutgoingContent, maxLen: Long): BodyPreview? = when (content) {
     is OutgoingContent.ByteArrayContent -> {
         val bytes = content.bytes()
-        val truncated = bytes.size > maxLen
-        val slice = if (truncated) bytes.copyOf(maxLen.toInt()) else bytes
-        BodyPreview(slice.decodeToString(), bytes.size.toLong(), truncated)
+        if (content.contentType.isTextLike()) {
+            val truncated = bytes.size > maxLen
+            val slice = if (truncated) bytes.copyOf(maxLen.toInt()) else bytes
+            BodyPreview(slice.decodeToString(), bytes.size.toLong(), truncated)
+        } else {
+            BodyPreview("(binary body: ${content.contentType ?: "unknown"} — not captured)", bytes.size.toLong(), false)
+        }
     }
     is OutgoingContent.NoContent -> null
     // WriteChannelContent / ReadChannelContent / ProtocolUpgrade: reading would consume the stream.
     else -> null
 }
 
+/**
+ * Ktor's default SaveBody plugin saves regular responses before `onResponse` runs, and each
+ * `rawContent` access on a saved call replays a fresh channel — reading here can't affect the host.
+ * Streaming paths (`prepareGet {}.execute {}`, `bodyAsChannel`, SSE) skip saving; reading those
+ * would steal the host's bytes, so they get a placeholder instead. Binary bodies are skipped to
+ * keep huge blobs out of the store.
+ */
 private suspend fun readResponseBody(response: HttpResponse, maxLen: Long): BodyPreview? = try {
-    val text = response.bodyAsText()
-    val truncated = text.length > maxLen
-    BodyPreview(
-        text = if (truncated) text.substring(0, maxLen.toInt()) else text,
-        byteCount = text.length.toLong(),
-        truncated = truncated,
-    )
+    val contentType = response.contentType()
+    when {
+        !response.isSaved ->
+            BodyPreview("(streaming body — not captured)", response.contentLength() ?: -1, false)
+        !contentType.isTextLike() ->
+            BodyPreview("(binary body: ${contentType ?: "unknown"} — not captured)", response.contentLength() ?: -1, false)
+        else -> {
+            val channel = response.bodyAsChannel()
+            val head = channel.readRemaining(maxLen + 1).readByteArray()
+            val remaining = channel.discard()
+            val truncated = head.size > maxLen
+            val slice = if (truncated) head.copyOf(maxLen.toInt()) else head
+            BodyPreview(slice.decodeToString(), head.size + remaining, truncated)
+        }
+    }
 } catch (_: Throwable) {
     null
 }
+
+private fun ContentType?.isTextLike(): Boolean = when {
+    this == null -> false
+    contentType == "text" -> contentSubtype != "event-stream"
+    contentType == "application" ->
+        contentSubtype in TEXT_APPLICATION_SUBTYPES ||
+            contentSubtype.endsWith("+json") || contentSubtype.endsWith("+xml")
+    else -> false
+}
+
+private val TEXT_APPLICATION_SUBTYPES = setOf("json", "xml", "javascript", "x-www-form-urlencoded")

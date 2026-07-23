@@ -1,6 +1,7 @@
 package com.snoop.analytics
 
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
 import com.snoop.core.redaction.RedactionEngine
@@ -44,22 +45,27 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
     private val redaction = RedactionEngine(propertyPredicates = config.propertyRedactors)
 
     fun log(name: String, channel: String, properties: Map<String, Any?> = emptyMap()) {
-        if (!SnoopCore.enabled) return
-        val event = AnalyticsEvent(name, channel, properties)
-        if (config.filters.any { !it(event) }) return
+        runSafely {
+            if (!SnoopCore.enabled) return@runSafely
+            val event = AnalyticsEvent(name, channel, properties)
+            // A throwing filter keeps the event visible (fail open): missing data is the worse bug.
+            if (config.filters.any { !runCatching { it(event) }.getOrDefault(true) }) return@runSafely
 
-        SnoopCore.recordAnalytics(
-            AnalyticsEntry(
-                id = SnoopCore.nextId(),
-                timestamp = SnoopCore.now(),
-                name = name,
-                channel = channel,
-                properties = properties.map { (key, value) ->
-                    redaction.redactProperty(key, value?.toString() ?: "null")
-                },
-                annotations = config.annotators.flatMap { it(event) }.distinct(),
-            ),
-        )
+            SnoopCore.recordAnalytics(
+                AnalyticsEntry(
+                    id = SnoopCore.nextId(),
+                    timestamp = SnoopCore.now(),
+                    name = name,
+                    channel = channel,
+                    properties = properties.map { (key, value) ->
+                        redaction.redactProperty(key, value?.toString() ?: "null")
+                    },
+                    annotations = config.annotators
+                        .flatMap { runCatching { it(event) }.getOrDefault(emptyList()) }
+                        .distinct(),
+                ),
+            )
+        }
     }
 }
 

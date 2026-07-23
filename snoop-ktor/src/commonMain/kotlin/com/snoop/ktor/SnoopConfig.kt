@@ -12,6 +12,8 @@ class SnoopConfig {
     var maxContentLength: Long = 250_000
 
     internal val headerRedactors = mutableListOf<(String) -> Boolean>()
+    internal val queryParamRedactors = mutableListOf<(String) -> Boolean>()
+    internal val bodyTransforms = mutableListOf<(String) -> String>()
     internal val requestFilters = mutableListOf<(HttpRequestBuilder) -> Boolean>()
     internal var analyticsTransport: ((HttpRequestBuilder) -> Boolean)? = null
 
@@ -21,6 +23,23 @@ class SnoopConfig {
      */
     fun sanitizeHeader(predicate: (String) -> Boolean) {
         headerRedactors += predicate
+    }
+
+    /**
+     * Redact matching query parameter values in the captured URL. Matches on the parameter name.
+     * Common secret-bearing parameters (`api_key`, `token`, ...) are always redacted on top of these.
+     */
+    fun sanitizeQueryParameter(predicate: (String) -> Boolean) {
+        queryParamRedactors += predicate
+    }
+
+    /**
+     * Rewrite captured body previews (request and response) before they are stored — e.g. blank out
+     * a JSON field. Transforms apply in registration order, after truncation; only the stored
+     * preview is affected, never the real traffic.
+     */
+    fun sanitizeBody(transform: (String) -> String) {
+        bodyTransforms += transform
     }
 
     /** Keep only requests for which every filter returns true; a false skips capture entirely. */
