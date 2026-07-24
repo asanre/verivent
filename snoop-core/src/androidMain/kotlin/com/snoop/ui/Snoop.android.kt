@@ -11,15 +11,27 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.snoop.core.R
 import com.snoop.core.SnoopCore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
- * Android entry points: open the inspector as its own Activity, or post a persistent notification
- * that reopens it while you navigate the host app.
+ * Android entry points: open the inspector as its own Activity, or post a live notification that
+ * lists the latest captured entries and reopens the inspector while you navigate the host app.
  */
 object Snoop {
 
     private const val CHANNEL_ID = "snoop_inspector"
     private const val NOTIFICATION_ID = 0x50_00
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var job: Job? = null
 
     fun open(context: Context) {
         context.startActivity(
@@ -27,10 +39,36 @@ object Snoop {
         )
     }
 
-    /** Show/refresh the ongoing notification. Call again to update the captured-entry count. */
-    @SuppressLint("MissingPermission") // notify() is guarded by the SecurityException catch below.
+    /**
+     * Post the ongoing notification and keep it in sync with the store — each new capture refreshes
+     * the listed lines. Idempotent: calling it again restarts the collection.
+     */
     fun showNotification(context: Context) {
         ensureChannel(context)
+        // The collection outlives the caller, so hold the application context, never an Activity.
+        val app = context.applicationContext
+        job?.cancel()
+        job = scope.launch {
+            SnoopCore.store.entries
+                .map { notificationLines(it) }
+                .distinctUntilChanged()
+                .conflate()
+                .collect { lines ->
+                    notify(app, lines)
+                    // Soft throttle: coalesce bursts to at most a few refreshes per second.
+                    delay(300)
+                }
+        }
+    }
+
+    fun dismissNotification(context: Context) {
+        job?.cancel()
+        job = null
+        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
+    }
+
+    @SuppressLint("MissingPermission") // notify() is guarded by the SecurityException catch below.
+    private fun notify(context: Context, lines: List<String>) {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         val open = PendingIntent.getActivity(
             context,
@@ -44,10 +82,15 @@ object Snoop {
             Intent(context, SnoopClearReceiver::class.java),
             flags,
         )
+        val count = SnoopCore.store.entries.value.size
+        val style = NotificationCompat.InboxStyle()
+        lines.forEach(style::addLine)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.snoop_ic_logo)
             .setContentTitle("Snoop")
-            .setContentText("${SnoopCore.store.entries.value.size} entries captured — tap to inspect")
+            .setContentText("$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect")
+            .setStyle(style)
+            .setOnlyAlertOnce(true)
             .setOngoing(true)
             .setContentIntent(open)
             .addAction(0, "Clear", clear)
@@ -57,10 +100,6 @@ object Snoop {
         } catch (_: SecurityException) {
             // POST_NOTIFICATIONS not granted (API 33+); the host must request it.
         }
-    }
-
-    fun dismissNotification(context: Context) {
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
     }
 
     private fun ensureChannel(context: Context) {
