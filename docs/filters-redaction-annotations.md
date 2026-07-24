@@ -9,7 +9,6 @@ All configuration is plain Kotlin predicates — no annotations, no codegen.
 | `maxContentLength` | `Long` (default 250_000) | Bodies larger than this are captured truncated, flagged in the UI. |
 | `sanitizeHeader { name -> Bool }` | additive | Redact matching request/response headers. `Authorization`, `Cookie`, `Set-Cookie` are always redacted. |
 | `filter { request -> Bool }` | additive | Keep a request only if **every** filter returns true. A `false` skips capture entirely. |
-| `markAsAnalyticsTransport { request -> Bool }` | single | Requests that carry analytics batches; recent events correlate to them. |
 
 ```kotlin
 install(Snoop) {

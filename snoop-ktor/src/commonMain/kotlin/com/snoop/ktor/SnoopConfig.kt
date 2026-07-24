@@ -15,7 +15,6 @@ class SnoopConfig {
     internal val queryParamRedactors = mutableListOf<(String) -> Boolean>()
     internal val bodyTransforms = mutableListOf<(String) -> String>()
     internal val requestFilters = mutableListOf<(HttpRequestBuilder) -> Boolean>()
-    internal var analyticsTransport: ((HttpRequestBuilder) -> Boolean)? = null
 
     /**
      * Redact matching headers with a visible placeholder. Matches on the header name.
@@ -45,13 +44,5 @@ class SnoopConfig {
     /** Keep only requests for which every filter returns true; a false skips capture entirely. */
     fun filter(predicate: (HttpRequestBuilder) -> Boolean) {
         requestFilters += predicate
-    }
-
-    /**
-     * Mark requests whose body carries analytics events (e.g. a GTM/collector endpoint). When such a
-     * call completes, recent analytics events are correlated to it and shown in the event detail.
-     */
-    fun markAsAnalyticsTransport(predicate: (HttpRequestBuilder) -> Boolean) {
-        analyticsTransport = predicate
     }
 }

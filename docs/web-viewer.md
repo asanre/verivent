@@ -54,7 +54,7 @@ By default the server binds loopback only. How you reach it depends on the platf
 
 The page streams updates live over SSE — new network calls and analytics events appear as they
 happen. It mirrors the native inspector: unified timeline, type and channel filters, search, and a
-detail panel with headers (redaction preserved), pretty-printed bodies, and event↔request correlation.
+detail panel with headers (redaction preserved) and pretty-printed bodies.
 
 ## Several developers on one network
 

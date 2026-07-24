@@ -25,7 +25,6 @@ import com.snoop.web.SnoopBind
 import com.snoop.web.SnoopWebServer
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.StateFlow
 
@@ -49,8 +48,6 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.recordNetwork(txn)
     SnoopCore.updateNetwork("id") { transaction: NetworkTransaction -> transaction }
     SnoopCore.recordAnalytics(event)
-    SnoopCore.correlateRecentAnalytics("id")
-    SnoopCore.correlateRecentAnalytics("id", within = 2.seconds)
     SnoopCore.reset()
     val snapshot: List<SnoopEntry> = SnoopCore.entriesSnapshot
 }
@@ -77,7 +74,6 @@ private fun model() {
         protocol = null,
         durationMillis = 1L,
         error = null,
-        correlatedEventIds = emptyList(),
     )
     val state: NetworkState = txn.state
     val event = AnalyticsEntry(
@@ -93,7 +89,6 @@ private fun model() {
             Annotation.ScreenView,
             Annotation("custom"),
         ),
-        correlatedCallId = null,
     )
     val label: String = Annotation.Ecommerce.label
     val entries: List<SnoopEntry> = listOf(txn, event)
@@ -145,7 +140,6 @@ private fun ktorPlugin(config: SnoopConfig) {
     config.sanitizeQueryParameter { it == "x" }
     config.sanitizeBody { it }
     config.filter { request: HttpRequestBuilder -> true }
-    config.markAsAnalyticsTransport { request: HttpRequestBuilder -> true }
 }
 
 private fun analytics() {

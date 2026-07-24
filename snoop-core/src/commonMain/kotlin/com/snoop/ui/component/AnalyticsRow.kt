@@ -20,13 +20,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
 import com.snoop.ui.theme.LocalSnoopColors
 
 @Composable
 internal fun AnalyticsRow(
     entry: AnalyticsEntry,
-    correlatedCall: NetworkTransaction?,
     onClick: () -> Unit,
 ) {
     val colors = LocalSnoopColors.current
@@ -57,31 +55,13 @@ internal fun AnalyticsRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (correlatedCall != null) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(
-                        imageVector = SnoopIcons.Link,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(12.dp),
-                    )
-                    Text(
-                        text = "sent over ${correlatedCall.method} ${correlatedCall.path}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            } else {
-                Text(
-                    text = "${entry.properties.size} param${if (entry.properties.size == 1) "" else "s"}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            Text(
+                text = "${entry.properties.size} param${if (entry.properties.size == 1) "" else "s"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Pill(entry.channel, tint)
     }

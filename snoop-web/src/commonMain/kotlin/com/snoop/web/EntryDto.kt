@@ -36,12 +36,10 @@ internal data class EntryDto(
     val responseBody: String? = null,
     val responseBodyTruncated: Boolean? = null,
     val responseByteCount: Long? = null,
-    val correlatedEventIds: List<String>? = null,
     // analytics
     val name: String? = null,
     val channel: String? = null,
     val annotations: List<String>? = null,
-    val correlatedCallId: String? = null,
     val properties: List<KvDto>? = null,
 )
 
@@ -71,7 +69,6 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         responseBody = responseBody?.text,
         responseBodyTruncated = responseBody?.truncated,
         responseByteCount = responseBody?.byteCount,
-        correlatedEventIds = correlatedEventIds.ifEmpty { null },
     )
     is AnalyticsEntry -> EntryDto(
         type = "analytics",
@@ -80,7 +77,6 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         name = name,
         channel = channel,
         annotations = annotations.map { it.label },
-        correlatedCallId = correlatedCallId,
         properties = properties.map { it.toDto() },
     )
 }

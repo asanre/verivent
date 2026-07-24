@@ -9,5 +9,4 @@ class SnoopConfig {
     fun sanitizeQueryParameter(predicate: (String) -> Boolean) = Unit
     fun sanitizeBody(transform: (String) -> String) = Unit
     fun filter(predicate: (HttpRequestBuilder) -> Boolean) = Unit
-    fun markAsAnalyticsTransport(predicate: (HttpRequestBuilder) -> Boolean) = Unit
 }

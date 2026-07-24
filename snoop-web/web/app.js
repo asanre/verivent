@@ -24,7 +24,6 @@ var ICONS={
   clear:{d:'<path d="M4 7h16"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12"></path>',w:1.6},
   export:{d:'<path d="M12 4v11"></path><path d="M8 11l4 4 4-4"></path><path d="M5 20h14"></path>',w:1.6},
   copy:{d:'<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>',w:1.6},
-  link:{d:'<path d="M9 17H7a4 4 0 0 1 0-8h1"></path><path d="M15 7h2a4 4 0 0 1 0 8h-1"></path><path d="M8 12h8"></path>',w:1.6},
   phone:{d:'<rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M11 18h2"></path>',w:1.6},
   bars:{d:'<path d="M5 20V11"></path><path d="M12 20V4"></path><path d="M19 20v-6"></path>',w:1.6},
   pause:{d:'<rect x="6" y="5" width="4" height="14" rx="1.3"></rect><rect x="14" y="5" width="4" height="14" rx="1.3"></rect>',fill:true},
@@ -74,14 +73,8 @@ function rowHtml(e){
       "</div>";
   }
   var pair=pal(e.channel);
-  var sub;
-  if(e.correlatedCallId){
-    var call=entryById(e.correlatedCallId);
-    sub=icon('link',12)+esc(call?(' sent over '+call.method+' '+call.path):' sent over a call');
-  }else{
-    var n=(e.properties||[]).length;
-    sub=n+(n===1?' param':' params');
-  }
+  var n=(e.properties||[]).length;
+  var sub=n+(n===1?' param':' params');
   return "<div class='row"+(e.id===selectedId?' sel':'')+"' data-id='"+esc(e.id)+"'>"+
     "<span class='time mono'>"+clock(e.ts)+"</span>"+
     "<div class='abox' style='"+chanStyle(pair)+"'>"+icon('bars',16)+"</div>"+
@@ -273,19 +266,6 @@ function networkDetailHtml(e){
     if(e.responseContentType)h+="<div class='section'>Response type</div><div class='mono'>"+esc(e.responseContentType)+"</div>";
     if(e.error)h+="<div class='section'>Error</div><div style='color:var(--err-fg)'>"+esc(e.error)+"</div>";
     h+="</div>";
-    if(e.correlatedEventIds&&e.correlatedEventIds.length){
-      h+="<div class='card'><div class='section'>Analytics sent over this call</div>";
-      e.correlatedEventIds.forEach(function(id){
-        var ev=entryById(id);
-        if(!ev)return;
-        var pair=pal(ev.channel);
-        h+="<div class='corr' data-id='"+esc(ev.id)+"'>"+icon('link',16)+
-          "<div class='grow'>"+esc(ev.name)+"</div>"+
-          pill(ev.channel,chanStyle(pair),false)+
-          icon('chevron',16)+"</div>";
-      });
-      h+="</div>";
-    }
   }else if(detailTab==='request'){
     h+=requestResponseHtml(e,'req');
   }else{
@@ -306,15 +286,6 @@ function analyticsDetailHtml(e){
   });
   h+=pill(clock(e.ts),tintStyle('neu'),true);
   h+="</div>";
-  if(e.correlatedCallId){
-    var call=entryById(e.correlatedCallId);
-    if(call){
-      h+="<div class='corr' data-id='"+esc(call.id)+"'>"+icon('link',16)+
-        "<div class='grow'>"+esc(call.method+' '+call.path)+"</div>"+
-        pill(statusLabel(call),tintStyle(statusTint(call)),true)+
-        icon('chevron',16)+"</div>";
-    }
-  }
   h+="<div class='shrow'><div class='section'>Parameters</div>"+segHtml(rawParams,'setRawParams')+"</div>";
   if(!(e.properties||[]).length){
     h+="<div class='sub'>None</div>";

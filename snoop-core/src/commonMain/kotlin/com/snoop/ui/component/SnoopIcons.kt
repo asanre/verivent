@@ -80,13 +80,6 @@ internal object SnoopIcons {
         )
     }
 
-    val Link: ImageVector by lazy {
-        outline(
-            name = "Snoop.Link",
-            d = "M9 17H7a4 4 0 0 1 0-8h1" + " M15 7h2a4 4 0 0 1 0 8h-1" + " M8 12h8",
-        )
-    }
-
     val BarsAnalytics: ImageVector by lazy {
         outline(
             name = "Snoop.BarsAnalytics",

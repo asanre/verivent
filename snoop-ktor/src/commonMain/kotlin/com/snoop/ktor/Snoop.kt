@@ -34,7 +34,6 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
 
     val callIdKey = AttributeKey<String>("SnoopCallId")
     val startKey = AttributeKey<TimeSource.Monotonic.ValueTimeMark>("SnoopStart")
-    val transportKey = AttributeKey<Boolean>("SnoopTransport")
 
     on(SendingRequest) { request, content ->
         runSafely {
@@ -44,7 +43,6 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
             val callId = SnoopCore.nextId()
             request.attributes.put(callIdKey, callId)
             request.attributes.put(startKey, TimeSource.Monotonic.markNow())
-            config.analyticsTransport?.let { request.attributes.put(transportKey, it(request)) }
 
             val url = request.url.build()
             SnoopCore.recordNetwork(
@@ -81,9 +79,6 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
                     responseBody = body,
                     durationMillis = duration,
                 )
-            }
-            if (response.call.attributes.getOrNull(transportKey) == true) {
-                SnoopCore.correlateRecentAnalytics(callId)
             }
         }
     }

@@ -212,37 +212,13 @@ class RedactionEngineTest {
     }
 }
 
-class SnoopCoreCorrelationTest {
+class SnoopCoreTest {
 
     @BeforeTest
     fun setup() = SnoopCore.reset()
 
     @AfterTest
     fun tearDown() = SnoopCore.reset()
-
-    @Test
-    fun recentAnalyticsEventsAreLinkedToCall() {
-        val now = SnoopCore.now()
-        SnoopCore.recordAnalytics(event("e1", now))
-        SnoopCore.recordNetwork(
-            NetworkTransaction(
-                id = "call1",
-                timestamp = now,
-                method = "POST",
-                url = "https://c/collect",
-                host = "c",
-                path = "/collect",
-                status = 204,
-            ),
-        )
-
-        SnoopCore.correlateRecentAnalytics("call1")
-
-        val event = SnoopCore.entriesSnapshot.filterIsInstance<AnalyticsEntry>().single()
-        val call = SnoopCore.entriesSnapshot.filterIsInstance<NetworkTransaction>().single()
-        assertEquals("call1", event.correlatedCallId)
-        assertEquals(listOf("e1"), call.correlatedEventIds)
-    }
 
     @Test
     fun disabledCoreDropsEntries() {

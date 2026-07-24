@@ -64,9 +64,6 @@ internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpe
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
-    val callsById = remember(entries) {
-        entries.filterIsInstance<NetworkTransaction>().associateBy { it.id }
-    }
     // Group over all entries so screen headers survive filters that hide the grouping event.
     val groups = remember(entries, grouped, groupByEvent, filters, query) {
         groupEntries(entries, if (grouped) groupByEvent else null)
@@ -132,7 +129,6 @@ internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpe
                                     is NetworkTransaction -> NetworkRow(entry) { onOpen(entry.id) }
                                     is AnalyticsEntry -> AnalyticsRow(
                                         entry = entry,
-                                        correlatedCall = entry.correlatedCallId?.let(callsById::get),
                                         onClick = { onOpen(entry.id) },
                                     )
                                 }

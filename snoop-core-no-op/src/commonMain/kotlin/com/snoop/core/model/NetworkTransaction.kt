@@ -22,7 +22,6 @@ data class NetworkTransaction(
     val protocol: String? = null,
     val durationMillis: Long? = null,
     val error: String? = null,
-    val correlatedEventIds: List<String> = emptyList(),
 ) : SnoopEntry {
     val state: NetworkState
         get() = when {

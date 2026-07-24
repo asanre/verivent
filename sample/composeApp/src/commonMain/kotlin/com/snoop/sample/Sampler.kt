@@ -19,9 +19,6 @@ class Sampler {
         install(Snoop) {
             maxContentLength = 200_000
             sanitizeHeader { it == HttpHeaders.Authorization }
-            // Real collectors (GA4, GTM) flush batches to a /collect endpoint; events logged just
-            // before such a call get linked to it. See flushToCollector().
-            markAsAnalyticsTransport { it.url.encodedPathSegments.lastOrNull() == "collect" }
         }
     }
 
@@ -68,9 +65,9 @@ class Sampler {
     }
 
     /**
-     * Log a batch of events and immediately flush them to a collector endpoint — the shape that
-     * makes correlation visible: both events show "sent over" this call in their detail.
-     * The demo endpoint answers 404; correlation only needs the call to come back.
+     * Log a batch of events and immediately flush them to a collector endpoint — the shape a
+     * client-side GTM/GA4 setup produces. The demo endpoint answers 404; the timeline shows the
+     * two events followed by the flush call.
      */
     suspend fun flushToCollector() {
         analytics.log("add_to_cart", channel = "gtm", properties = mapOf("item" to "SN-42"))

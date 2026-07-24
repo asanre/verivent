@@ -4,8 +4,6 @@ import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.store.SnoopStore
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /** No-op mirror of `SnoopCore` for release builds: records nothing, stores nothing. */
@@ -26,8 +24,6 @@ object SnoopCore {
     fun updateNetwork(id: String, transform: (NetworkTransaction) -> NetworkTransaction) = Unit
 
     fun recordAnalytics(entry: AnalyticsEntry) = Unit
-
-    fun correlateRecentAnalytics(callId: String, within: Duration = 2.seconds) = Unit
 
     fun reset() = Unit
 

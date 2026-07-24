@@ -56,7 +56,6 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
         put("timestamp", timestamp.toString())
         put("name", name)
         put("channel", channel)
-        put("correlatedCallId", correlatedCallId)
         put("annotations", annotations.joinToString(",") { it.label })
         putJsonObject("properties") { headers(properties) }
     }

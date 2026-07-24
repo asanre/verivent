@@ -10,8 +10,6 @@ data class AnalyticsEntry(
     val channel: String,
     val properties: List<KeyValue> = emptyList(),
     val annotations: List<Annotation> = emptyList(),
-    /** Set when this event was sent over a network call marked as analytics transport. */
-    val correlatedCallId: String? = null,
 ) : SnoopEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */

@@ -8,8 +8,6 @@ import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 /**
@@ -56,35 +54,6 @@ object SnoopCore {
         if (enabled) store.record(entry)
     }
 
-    /**
-     * Link analytics events logged shortly before a request completed to that request, so the event
-     * detail can show "sent over POST /collect". Heuristic: any un-linked event within [within] of
-     * [callId]'s completion is attributed to it.
-     */
-    fun correlateRecentAnalytics(callId: String, within: Duration = DEFAULT_CORRELATION_WINDOW) {
-        if (!enabled) return
-        val cutoff = now() - within
-        // Built inside mutate: MutableStateFlow.update retries the lambda on contention, so the set
-        // must come from this call's `list`, not a value hoisted outside. `toSet()` keeps timeline
-        // order (LinkedHashSet), which the "sent over" list and its test depend on.
-        store.mutate { list ->
-            val linkedIds = list
-                .filterIsInstance<AnalyticsEntry>()
-                .filter { it.correlatedCallId == null && it.timestamp >= cutoff }
-                .map { it.id }
-                .toSet()
-            if (linkedIds.isEmpty()) return@mutate list
-            list.map { entry ->
-                when {
-                    entry is AnalyticsEntry && entry.id in linkedIds -> entry.copy(correlatedCallId = callId)
-                    entry is NetworkTransaction && entry.id == callId ->
-                        entry.copy(correlatedEventIds = entry.correlatedEventIds + linkedIds)
-                    else -> entry
-                }
-            }
-        }
-    }
-
     /** Test/utility hook to reset all state. */
     fun reset() {
         idCounter.store(0)
@@ -93,6 +62,4 @@ object SnoopCore {
     }
 
     val entriesSnapshot: List<SnoopEntry> get() = store.entries.value
-
-    private val DEFAULT_CORRELATION_WINDOW: Duration = 2.seconds
 }

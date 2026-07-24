@@ -55,7 +55,6 @@ class EntryDtoTest {
                     responseContentType = "application/json",
                     requestBody = BodyPreview("req", 3, false),
                     responseBody = BodyPreview("res-head", 5_000, true),
-                    correlatedEventIds = listOf("2"),
                 ),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "purchase", "firebase"),
             ),
@@ -65,7 +64,7 @@ class EntryDtoTest {
         val newFields = listOf(
             "protocol", "requestContentType", "responseContentType",
             "requestBodyTruncated", "requestByteCount",
-            "responseBodyTruncated", "responseByteCount", "correlatedEventIds",
+            "responseBodyTruncated", "responseByteCount",
         )
         newFields.forEach { assertTrue(it in network, "expected $it on network entry") }
         newFields.forEach { assertTrue(it !in analytics, "expected $it absent on analytics entry") }

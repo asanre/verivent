@@ -11,7 +11,7 @@ and [KtorMonitor](https://github.com/cosminmihu/KtorMonitor).
 
 Network inspection in KMP is a solved problem, but nothing unifies **network + analytics** in one
 Compose Multiplatform surface, and no tool inspects analytics events independently of the vendor
-SDK. Snoop does both, and correlates analytics events to the request that carried them.
+SDK. Snoop does both, on one timeline.
 
 ## Modules
 
@@ -92,18 +92,6 @@ transport exceptions via an `HttpSend` interceptor. Every capture path is wrappe
 the debug tooling can never break a real request. Response bodies are read through Ktor 3's saved
 body, so the host still consumes them normally. Sensitive header/property values are replaced with a
 visible `██` placeholder — you see that a field exists, not its value.
-
-## Correlation
-
-Mark the requests that carry analytics batches and Snoop links recent events to them:
-
-```kotlin
-install(Snoop) {
-    markAsAnalyticsTransport { it.url.host == "collector.example.com" }
-}
-```
-
-The event detail then shows "sent over POST /collect → 204" with a tap-through to the request.
 
 ## Web viewer
 

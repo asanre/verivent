@@ -10,5 +10,4 @@ data class AnalyticsEntry(
     val channel: String,
     val properties: List<KeyValue> = emptyList(),
     val annotations: List<Annotation> = emptyList(),
-    val correlatedCallId: String? = null,
 ) : SnoopEntry

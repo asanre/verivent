@@ -59,17 +59,3 @@ private fun AnalyticsEvent.channelLabel() = when (this) {
     is GtmEvent -> "gtm"
 }
 ```
-
-## Correlating events with their transport
-
-If some channels ship over an HTTP endpoint served by the **same Ktor client** Snoop already watches
-(e.g. a GTM/collector call), mark it as analytics transport and Snoop links the events to the call:
-
-```kotlin
-install(Snoop) {
-    markAsAnalyticsTransport { it.url.host == "collector.example.com" }
-}
-```
-
-Events sent to vendor SDKs (Firebase) won't correlate — their transport is invisible — and that's
-expected; they still show up on the timeline as events.

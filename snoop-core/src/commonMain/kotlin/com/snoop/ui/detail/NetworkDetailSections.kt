@@ -34,14 +34,6 @@ internal fun Overview(transaction: NetworkTransaction) {
                 SectionLabel("Error", fontSize = 10.sp)
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             }
-
-            if (transaction.correlatedEventIds.isNotEmpty()) {
-                SectionLabel("Analytics", fontSize = 10.sp)
-                Text(
-                    "${transaction.correlatedEventIds.size} analytics event(s) sent over this call.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
         }
     }
 }

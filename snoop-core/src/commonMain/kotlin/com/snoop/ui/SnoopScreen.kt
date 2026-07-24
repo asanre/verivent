@@ -163,8 +163,6 @@ private fun SnoopContent(groupByEvent: String?) {
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })
             is AnalyticsEntry -> AnalyticsDetailScreen(
                 entry = selected,
-                allEntries = entries,
-                onOpenCall = { selectedId = it },
                 onBack = { selectedId = null },
             )
         }
