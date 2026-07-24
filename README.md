@@ -23,8 +23,8 @@ You add one artifact per capture source; everything else arrives transitively.
 | `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | inspector UI, web viewer |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds | matching no-op stubs |
 
-Internally those share `snoop-core` (models, ring buffer store, redaction, Compose UI) and
-`snoop-web` (embedded HTTP server) — you never declare them yourself.
+Internally those share `snoop-core` (models, ring buffer store, redaction, Compose UI and the
+embedded web-viewer server) — you never declare it yourself.
 
 ## Install
 

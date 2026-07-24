@@ -1,6 +1,6 @@
 package com.snoop.web
 
-/** No-op mirror of `snoop-web` for release builds: the web server never starts. */
+/** No-op mirror of `SnoopWebServer` for release builds: the web server never starts. */
 object SnoopWebServer {
     val isRunning: Boolean get() = false
     val url: String get() = "http://localhost:$DEFAULT_PORT"

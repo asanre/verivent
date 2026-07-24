@@ -18,7 +18,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.snoopCoreNoOp)
-            api(projects.snoopWebNoOp)
             api(libs.ktor.client.core)
         }
     }

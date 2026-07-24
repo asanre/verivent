@@ -1,15 +1,13 @@
 # Web viewer
 
-`snoop-web` runs a tiny embedded HTTP server inside your app and serves the live Snoop timeline as a
+Snoop runs a tiny embedded HTTP server inside your app and serves the live Snoop timeline as a
 web page, so you can inspect traffic from a desktop browser while debugging. It reads the same
 in-memory store as the on-device UI, and runs on Android and iOS.
 
 ## Add it
 
-```kotlin
-debugImplementation("dev.snoop:snoop-web:<version>")
-releaseImplementation("dev.snoop:snoop-web-no-op:<version>")
-```
+Nothing to add: the server (`SnoopWebServer`) ships inside `snoop-core`, so it already arrives with
+`snoop-ktor` or `snoop-analytics` — and the no-op mirror keeps `SnoopWebServer` inert in release.
 
 ## Start / stop
 

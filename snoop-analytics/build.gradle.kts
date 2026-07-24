@@ -21,7 +21,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(projects.snoopCore)
-            api(projects.snoopWeb)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -26,7 +26,6 @@ kotlin {
                 implementation(projects.snoopCore)
                 implementation(projects.snoopKtor)
                 implementation(projects.snoopAnalytics)
-                implementation(projects.snoopWeb)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(compose.runtime)
