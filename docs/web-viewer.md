@@ -14,17 +14,24 @@ releaseImplementation("dev.snoop:snoop-web-no-op:<version>")
 ## Start / stop
 
 ```kotlin
-val url = SnoopWebServer.start()   // default port 9394, idempotent; returns "http://localhost:9394"
+val url = SnoopWebServer.start()   // SnoopBind.Local, port 9394, idempotent; returns "http://localhost:9394"
 SnoopWebServer.stop()
 SnoopWebServer.isRunning
 ```
 
-Start it from an internal-only entry point (a dev menu, the sample's "Start web viewer" button, or
-`Application.onCreate` in the internal variant).
+`start` returns the URL you'd actually open — the LAN address with its token for a reachable bind,
+or the local URL otherwise. Start it from an internal-only entry point (a dev menu, the sample's
+"Start web viewer" button, or `Application.onCreate` in the internal variant).
+
+Where it listens is a `SnoopBind`:
+
+- `SnoopBind.Local` (default) — loopback only (`127.0.0.1`), open.
+- `SnoopBind.Lan` — every interface (`0.0.0.0`), reachable across the LAN, token-gated.
+- `SnoopBind.Host("192.168.1.5")` — a specific interface, token-gated.
 
 ## Open it from your Mac
 
-By default the server binds loopback only (`127.0.0.1`). How you reach it depends on the platform:
+By default the server binds loopback only. How you reach it depends on the platform:
 
 - **Android (device or emulator)** — forward the port over adb, then open <http://localhost:9394>:
 
@@ -38,12 +45,12 @@ By default the server binds loopback only (`127.0.0.1`). How you reach it depend
 - **Physical iOS device** — bind to the LAN and browse to the device's Wi-Fi IP:
 
   ```kotlin
-  val url = SnoopWebServer.start(host = "0.0.0.0")
-  SnoopWebServer.lanUrl()   // "http://192.168.1.10:9394/?t=…" — open this from your Mac
+  val url = SnoopWebServer.start(SnoopBind.Lan)   // "http://192.168.1.10:9394/?t=…" — open this from your Mac
+  SnoopWebServer.lanUrl()   // the same reachable URL, recomputed on demand
   SnoopWebServer.token      // the token that URL carries
   ```
 
-  `lanUrl()` is null while bound to loopback or when no LAN address is found.
+  `lanUrl()` is null while bound with `SnoopBind.Local` or when no LAN address is found.
 
 The page streams updates live over SSE — new network calls and analytics events appear as they
 happen. It mirrors the native inspector: unified timeline, type and channel filters, search, and a
@@ -52,17 +59,17 @@ detail panel with headers (redaction preserved), pretty-printed bodies, and even
 ## Several developers on one network
 
 Each device runs its own server over its own network stack, serving only its own in-memory store.
-`0.0.0.0:9394` means "listen on every interface **of this device**", and the port is per-host — so
-three phones are `…10:9394`, `…11:9394`, `…12:9394` and never collide. Every developer opens their
-own device's `lanUrl()` and sees only that device's logs.
+`SnoopBind.Lan` listens on every interface **of this device**, and the port is per-host — so three
+phones are `…10:9394`, `…11:9394`, `…12:9394` and never collide. Every developer opens their own
+device's `lanUrl()` and sees only that device's logs.
 
-LAN binds are always token-gated: captured bodies routinely carry session tokens and personal data,
-so a `0.0.0.0` bind never serves them to the whole network unauthenticated. Pass your own token, or
-let `start` generate one and read it back:
+`SnoopBind.Lan` and `SnoopBind.Host` are always token-gated: captured bodies routinely carry session
+tokens and personal data, so a LAN bind never serves them to the whole network unauthenticated. Pass
+your own token, or let `start` generate one and read it back:
 
 ```kotlin
-SnoopWebServer.start(host = "0.0.0.0")                          // token generated, see lanUrl()
-SnoopWebServer.start(host = "0.0.0.0", token = "team-standup")  // or pick your own
+SnoopWebServer.start(SnoopBind.Lan)                          // token generated, in the return value / lanUrl()
+SnoopWebServer.start(SnoopBind.Lan, token = "team-standup")  // or pick your own
 ```
 
 The token gates every route, and `lanUrl()` carries it as `?t=…` so the link works as-is. Loopback

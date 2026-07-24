@@ -144,9 +144,16 @@ class SnoopWebServerTest {
     @Test
     fun concurrentStartYieldsOneServer() = runTest {
         val port = 9378
-        val urls = (1..8).map { async(Dispatchers.Default) { SnoopWebServer.start(port) } }.awaitAll()
+        val urls = (1..8).map { async(Dispatchers.Default) { SnoopWebServer.start(port = port) } }.awaitAll()
         assertTrue(urls.all { it == "http://localhost:$port" })
         assertTrue(SnoopWebServer.isRunning)
+    }
+
+    @Test
+    fun startReturnsAnOpenLocalUrlForLocalBinds() = runTest {
+        val url = SnoopWebServer.start(SnoopBind.Local, port = 9379)
+        assertEquals("http://localhost:9379", url)
+        assertNull(SnoopWebServer.token)
     }
 
     @Test
@@ -184,15 +191,24 @@ class SnoopWebServerTest {
     }
 
     @Test
-    fun loopbackStaysOpenButLanBindsGenerateAToken() {
-        assertNull(effectiveToken(SnoopWebServer.LOOPBACK, null))
-        assertEquals("mine", effectiveToken(SnoopWebServer.LOOPBACK, "mine"))
-        assertEquals("mine", effectiveToken("0.0.0.0", "mine"))
+    fun onlyLocalIsOpenEveryReachableBindGeneratesAToken() {
+        assertNull(resolveToken(SnoopBind.Local, null))
+        assertEquals("mine", resolveToken(SnoopBind.Local, "mine"))
+        assertEquals("mine", resolveToken(SnoopBind.Lan, "mine"))
 
-        val generated = effectiveToken("0.0.0.0", null)
-        assertNotNull(generated)
-        assertTrue(generated.length >= 16, "expected a long token, got '$generated'")
-        assertNotEquals(generated, effectiveToken("0.0.0.0", null))
+        val lan = resolveToken(SnoopBind.Lan, null)
+        assertNotNull(lan)
+        assertTrue(lan.length >= 16, "expected a long token, got '$lan'")
+        assertNotEquals(lan, resolveToken(SnoopBind.Lan, null))
+        // A custom host is gated too, even one pointed at loopback.
+        assertNotNull(resolveToken(SnoopBind.Host("127.0.0.1"), null))
+    }
+
+    @Test
+    fun bindAddressMapsEachMode() {
+        assertEquals("127.0.0.1", SnoopBind.Local.bindAddress)
+        assertEquals("0.0.0.0", SnoopBind.Lan.bindAddress)
+        assertEquals("192.168.1.5", SnoopBind.Host("192.168.1.5").bindAddress)
     }
 
     @Test
@@ -209,15 +225,21 @@ class SnoopWebServerTest {
     fun derivedUrlsFallBackWhenNotRunning() {
         assertEquals("http://localhost:${SnoopWebServer.DEFAULT_PORT}", urlOf(null))
         assertNull(lanUrlOf(null, "192.168.1.10"))
-        assertNull(lanUrlOf(running(host = SnoopWebServer.LOOPBACK), "192.168.1.10"))
-        assertNull(lanUrlOf(running(host = "0.0.0.0"), null))
-        assertEquals("http://192.168.1.10:9394/?t=abc", lanUrlOf(running(host = "0.0.0.0"), "192.168.1.10"))
+        assertNull(lanUrlOf(running(SnoopBind.Local), "192.168.1.10"))
+        assertNull(lanUrlOf(running(SnoopBind.Lan), null))
+        assertEquals("http://192.168.1.10:9394/?t=abc", lanUrlOf(running(SnoopBind.Lan), "192.168.1.10"))
     }
 
-    private fun running(host: String) = Running(
-        server = SnoopWebServer.createServer(9394, host, "abc"),
+    @Test
+    fun localUrlCarriesTheTokenWhenGated() {
+        assertEquals("http://localhost:9394", urlOf(running(SnoopBind.Local, token = null)))
+        assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Lan)))
+    }
+
+    private fun running(bind: SnoopBind, token: String? = "abc") = Running(
+        server = SnoopWebServer.createServer(9394, bind.bindAddress, token),
         port = 9394,
-        host = host,
-        token = "abc",
+        bind = bind,
+        token = token,
     )
 }

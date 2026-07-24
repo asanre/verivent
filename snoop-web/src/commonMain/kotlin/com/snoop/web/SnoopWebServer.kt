@@ -26,9 +26,9 @@ import kotlinx.coroutines.delay
  * A tiny embedded HTTP server that serves the Snoop timeline as a live web page, so you can inspect
  * traffic from a desktop browser while debugging.
  *
- * Binds loopback by default (`adb forward tcp:9394` on Android; `http://localhost:9394` on the iOS
- * simulator, which shares the host loopback). Pass `host = "0.0.0.0"` to reach a physical device
- * from your Mac over Wi-Fi via [lanUrl]; those binds are always token-gated. Reads the same shared
+ * Binds loopback by default ([SnoopBind.Local]: `adb forward tcp:9394` on Android; `localhost:9394`
+ * on the iOS simulator, which shares the host loopback). Pass [SnoopBind.Lan] to reach a physical
+ * device from your Mac over Wi-Fi; those binds are always token-gated. Reads the same shared
  * [SnoopCore] store the on-device UI uses.
  */
 object SnoopWebServer {
@@ -37,38 +37,36 @@ object SnoopWebServer {
 
     val isRunning: Boolean get() = running.load() != null
 
+    /** The URL for local access; carries the `?t=` token when the server is gated. */
     val url: String get() = urlOf(running.load())
 
-    /**
-     * The access token every request must carry as `?t=`, or null when the server is open — which
-     * only happens on loopback binds. LAN binds always have one; see [start].
-     */
+    /** The access token every request must carry as `?t=`, or null when the server is open ([SnoopBind.Local]). */
     val token: String? get() = running.load()?.token
 
     /**
-     * The URL to reach this device from another machine on the LAN, or null when bound to loopback
-     * (nothing is listening off-device) or when no LAN address is available. Includes the token.
+     * The URL to reach this device from another machine on the LAN, or null on a [SnoopBind.Local]
+     * bind (nothing off-device) or when no LAN address is available. Includes the token.
      */
     fun lanUrl(): String? = lanUrlOf(running.load(), localHostAddress())
 
     /**
-     * Start the server (idempotent, thread-safe). Returns the local URL.
+     * Start the server (idempotent, thread-safe). Returns the URL you'd actually open: [lanUrl]
+     * when reachable off-device, otherwise the local [url] — token included when gated.
      *
-     * @param host bind address. Defaults to loopback; pass `"0.0.0.0"` to reach it from another
-     *   machine on the LAN (see [lanUrl]).
-     * @param token when non-null, every request must carry a matching `?t=` query parameter.
-     *   Loopback binds are open when this is null; LAN binds get a generated token instead, so
-     *   captured traffic is never served to the whole network unauthenticated — read it from [token].
+     * @param bind where to listen. [SnoopBind.Local] (default) is loopback-only and open;
+     *   [SnoopBind.Lan] and [SnoopBind.Host] are reachable off-device and always token-gated.
+     * @param token forces this exact token instead of the generated one; ignored for [SnoopBind.Local],
+     *   which is always open.
      */
-    fun start(port: Int = DEFAULT_PORT, host: String = LOOPBACK, token: String? = null): String {
-        val resolvedToken = effectiveToken(host, token)
-        val candidate = runCatching { createServer(port, host, resolvedToken) }.getOrNull() ?: return url
-        val started = Running(candidate, port, host, resolvedToken)
+    fun start(bind: SnoopBind = SnoopBind.Local, port: Int = DEFAULT_PORT, token: String? = null): String {
+        val resolvedToken = resolveToken(bind, token)
+        val candidate = runCatching { createServer(port, bind.bindAddress, resolvedToken) }.getOrNull() ?: return url
+        val started = Running(candidate, port, bind, resolvedToken)
         if (!running.compareAndSet(null, started)) return url
         // Bind failure (port in use, restricted env) must never crash the host app.
         runCatching { candidate.start(wait = false) }
             .onFailure { running.compareAndSet(started, null) }
-        return urlOf(started)
+        return lanUrlOf(started, localHostAddress()) ?: urlOf(started)
     }
 
     fun stop() {
@@ -87,23 +85,25 @@ object SnoopWebServer {
 internal data class Running(
     val server: EmbeddedServer<*, *>,
     val port: Int,
-    val host: String,
+    val bind: SnoopBind,
     val token: String?,
 )
 
-internal fun urlOf(running: Running?): String =
-    "http://localhost:${running?.port ?: SnoopWebServer.DEFAULT_PORT}"
+internal fun urlOf(running: Running?): String {
+    val base = "http://localhost:${running?.port ?: SnoopWebServer.DEFAULT_PORT}"
+    return running?.token?.let { "$base/?t=$it" } ?: base
+}
 
 internal fun lanUrlOf(running: Running?, address: String?): String? {
-    if (running == null || running.host == SnoopWebServer.LOOPBACK || address == null) return null
+    if (running == null || running.bind.isOpen || address == null) return null
     val base = "http://$address:${running.port}"
     return running.token?.let { "$base/?t=$it" } ?: base
 }
 
-/** A LAN bind is never open: without a caller-supplied token it gets a generated one. */
-internal fun effectiveToken(host: String, token: String?): String? = when {
+/** Only [SnoopBind.Local] is open; every reachable bind gets a token, generated unless one is given. */
+internal fun resolveToken(bind: SnoopBind, token: String?): String? = when {
     token != null -> token
-    host == SnoopWebServer.LOOPBACK -> null
+    bind.isOpen -> null
     else -> secureRandomToken()
 }
 

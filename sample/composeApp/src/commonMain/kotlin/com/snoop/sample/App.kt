@@ -22,6 +22,7 @@ import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.snoop.ui.SnoopScreen
+import com.snoop.web.SnoopBind
 import com.snoop.web.SnoopWebServer
 import kotlinx.coroutines.launch
 
@@ -67,7 +68,7 @@ fun SampleApp() {
 @Composable
 private fun WebViewerControl() {
     var serverUrl by remember {
-        mutableStateOf<String?>(if (SnoopWebServer.isRunning) SnoopWebServer.url else null)
+        mutableStateOf<String?>(if (SnoopWebServer.isRunning) SnoopWebServer.lanUrl() ?: SnoopWebServer.url else null)
     }
     Button(
         onClick = {
@@ -75,7 +76,8 @@ private fun WebViewerControl() {
                 SnoopWebServer.stop()
                 serverUrl = null
             } else {
-                serverUrl = SnoopWebServer.start()
+                // start() hands back the reachable URL — the LAN address with its token.
+                serverUrl = SnoopWebServer.start(SnoopBind.Lan)
             }
         },
         modifier = Modifier.fillMaxWidth(),

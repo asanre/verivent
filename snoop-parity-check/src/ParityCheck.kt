@@ -21,6 +21,7 @@ import com.snoop.ktor.Snoop as SnoopPlugin
 import com.snoop.ktor.SnoopConfig
 import com.snoop.ui.Snoop as SnoopEntryPoints
 import com.snoop.ui.SnoopScreen
+import com.snoop.web.SnoopBind
 import com.snoop.web.SnoopWebServer
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
@@ -164,7 +165,10 @@ private fun analytics() {
 private fun webServer() {
     val started: String = SnoopWebServer.start()
     val onPort: String = SnoopWebServer.start(port = 1234)
-    val onLan: String = SnoopWebServer.start(port = 1234, host = "0.0.0.0", token = "t")
+    val onLan: String = SnoopWebServer.start(SnoopBind.Lan, port = 1234, token = "t")
+    val onHost: String = SnoopWebServer.start(SnoopBind.Host("192.168.1.5"))
+    val local: SnoopBind = SnoopBind.Local
+    val hostAddress: String = SnoopBind.Host("x").address
     val running: Boolean = SnoopWebServer.isRunning
     val url: String = SnoopWebServer.url
     val token: String? = SnoopWebServer.token
