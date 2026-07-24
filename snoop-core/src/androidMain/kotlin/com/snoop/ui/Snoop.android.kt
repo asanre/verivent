@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -73,13 +72,5 @@ object Snoop {
                 )
             }
         }
-    }
-}
-
-/** Backs the notification's "Clear" action. */
-class SnoopClearReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        SnoopCore.store.clear()
-        Snoop.showNotification(context)
     }
 }
