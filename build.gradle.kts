@@ -6,4 +6,17 @@ plugins {
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.compose.compiler) apply false
+    alias(libs.plugins.dokka)
+}
+
+// Aggregated API reference: `./gradlew dokkaGenerate` renders the public modules into
+// build/dokka/html, which the docs site links to under /api.
+dependencies {
+    dokka(projects.snoopCore)
+    dokka(projects.snoopKtor)
+    dokka(projects.snoopAnalytics)
+}
+
+dokka {
+    moduleName.set("Snoop API")
 }

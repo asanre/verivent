@@ -9,6 +9,7 @@ ktor = "3.3.3"
 activityCompose = "1.12.4"
 coreKtx = "1.18.0"
 mavenPublish = "0.34.0"
+dokka = "2.0.0"
 
 android-compileSdk = "36"
 android-minSdk = "24"
@@ -43,3 +44,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

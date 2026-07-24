@@ -1,0 +1,58 @@
+site_name: Snoop
+site_description: On-device network + analytics inspector for Compose Multiplatform
+site_url: https://asanre.github.io/snoop/
+site_author: Antoni Sanchez
+
+repo_url: https://github.com/asanre/snoop
+repo_name: asanre/snoop
+
+docs_dir: docs
+site_dir: build/mkdocs
+
+# Maintainer-only notes are not part of the site.
+exclude_docs: |
+  releasing.md
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting_started.md
+  - Integration: integration.md
+  - Guides:
+      - Filters, redaction & annotations: filters-redaction-annotations.md
+      - Analytics facade: integration-analytics-facade.md
+      - Web viewer: web-viewer.md
+  - Contributing: contributing.md
+  - API reference: https://asanre.github.io/snoop/api/

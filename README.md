@@ -1,11 +1,17 @@
 # Snoop
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop-core)](https://central.sonatype.com/namespace/io.github.asanre)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
+
 On-device inspector for **network calls** and **analytics events** in Compose Multiplatform apps.
 One unified timeline, a Ktor plugin, a vendor-agnostic analytics sink, and a Material 3 UI you can
 open while you navigate the host app. Inspired by [Chucker](https://github.com/ChuckerTeam/chucker)
 and [KtorMonitor](https://github.com/cosminmihu/KtorMonitor).
 
-> Status: v1 in development. Network capture is **Ktor-only**; analytics capture is vendor-agnostic.
+📖 **Full documentation: <https://asanre.github.io/snoop/>**
+
+> Network capture is **Ktor-only**; analytics capture is vendor-agnostic.
 
 ## Why
 
@@ -15,16 +21,17 @@ SDK. Snoop does both, on one timeline.
 
 ## Modules
 
-You add one artifact per capture source; everything else arrives transitively.
+You add one artifact per capture source; `snoop-core` (models, ring-buffer store, redaction, Compose
+UI and the embedded web viewer) arrives transitively — you never declare it yourself.
 
-| Artifact | What it does | Brings along |
-|---|---|---|
-| `snoop-ktor` | Ktor client plugin that captures traffic | inspector UI, web viewer |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink | inspector UI, web viewer |
-| `snoop-*-no-op` | Empty mirrors with the identical API for release builds | matching no-op stubs |
-
-Internally those share `snoop-core` (models, ring buffer store, redaction, Compose UI and the
-embedded web-viewer server) — you never declare it yourself.
+| Artifact | What it does |
+|---|---|
+| `snoop-core` | Models, store, redaction, Compose UI and web viewer (transitive) |
+| `snoop-ktor` | Ktor client plugin that captures traffic |
+| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink |
+| `snoop-core-no-op` | Release mirror of core — identical API, captures nothing |
+| `snoop-ktor-no-op` | Release mirror of the Ktor plugin |
+| `snoop-analytics-no-op` | Release mirror of the analytics sink |
 
 ## Install
 
@@ -32,12 +39,12 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("dev.snoop:snoop-ktor:<version>")
-releaseImplementation("dev.snoop:snoop-ktor-no-op:<version>")
+debugImplementation("io.github.asanre:snoop-ktor:0.1.0")
+releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.1.0")
 
 // optional, only if you also want analytics inspection:
-debugImplementation("dev.snoop:snoop-analytics:<version>")
-releaseImplementation("dev.snoop:snoop-analytics-no-op:<version>")
+debugImplementation("io.github.asanre:snoop-analytics:0.1.0")
+releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.1.0")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.
@@ -79,10 +86,15 @@ See [docs/integration-analytics-facade.md](docs/integration-analytics-facade.md)
 // Anywhere in your Compose tree:
 SnoopScreen()
 
-// Or, on Android, as its own screen / a persistent notification:
+// Android — as its own screen, or a live notification that lists the latest captures:
 Snoop.open(context)
-Snoop.showNotification(context)   // ongoing notification that opens the inspector; needs POST_NOTIFICATIONS on API 33+
+Snoop.showNotification(context)   // ongoing; needs POST_NOTIFICATIONS on API 33+ (the host requests it)
+
+// iOS — a live notification (asks for alert permission inline, no Context):
+Snoop.showNotification()
 ```
+
+See [Integration](https://asanre.github.io/snoop/integration/) for the full inspector API.
 
 ## How capture works
 
@@ -133,8 +145,8 @@ and fake analytics events across channels, and opens the inspector embedded and 
 
 ## Publishing
 
-Not yet wired. The intended setup is `com.vanniktech.maven.publish` to Maven Central under
-`dev.snoop`. See the roadmap in the plan.
+Released to Maven Central under `io.github.asanre` via `com.vanniktech.maven.publish`; the `publish`
+workflow runs on each GitHub Release. See [docs/releasing.md](docs/releasing.md).
 
 ## License
 
