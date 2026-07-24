@@ -7,13 +7,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.snoop.ui.Snoop
+import com.snoop.web.SnoopWebServer
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.cio.CIO
 
 internal actual fun sampleEngine(): HttpClientEngineFactory<*> = CIO
 
+private val PORT = SnoopWebServer.DEFAULT_PORT
 internal actual val webViewerHint: String =
-    "From your Mac: adb forward tcp:9394 tcp:9394, then open http://localhost:9394"
+    "From your Mac: adb forward tcp:$PORT tcp:$PORT, then open http://localhost:$PORT"
 
 @Composable
 actual fun PlatformExtras() {

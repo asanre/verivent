@@ -64,22 +64,22 @@ object SnoopCore {
     fun correlateRecentAnalytics(callId: String, within: Duration = DEFAULT_CORRELATION_WINDOW) {
         if (!enabled) return
         val cutoff = now() - within
+        // Built inside mutate: MutableStateFlow.update retries the lambda on contention, so the set
+        // must come from this call's `list`, not a value hoisted outside. `toSet()` keeps timeline
+        // order (LinkedHashSet), which the "sent over" list and its test depend on.
         store.mutate { list ->
-            val linked = mutableListOf<String>()
-            val withEvents = list.map { entry ->
-                if (entry is AnalyticsEntry && entry.correlatedCallId == null && entry.timestamp >= cutoff) {
-                    linked += entry.id
-                    entry.copy(correlatedCallId = callId)
-                } else {
-                    entry
-                }
-            }
-            if (linked.isEmpty()) return@mutate list
-            withEvents.map { entry ->
-                if (entry is NetworkTransaction && entry.id == callId) {
-                    entry.copy(correlatedEventIds = entry.correlatedEventIds + linked)
-                } else {
-                    entry
+            val linkedIds = list
+                .filterIsInstance<AnalyticsEntry>()
+                .filter { it.correlatedCallId == null && it.timestamp >= cutoff }
+                .map { it.id }
+                .toSet()
+            if (linkedIds.isEmpty()) return@mutate list
+            list.map { entry ->
+                when {
+                    entry is AnalyticsEntry && entry.id in linkedIds -> entry.copy(correlatedCallId = callId)
+                    entry is NetworkTransaction && entry.id == callId ->
+                        entry.copy(correlatedEventIds = entry.correlatedEventIds + linkedIds)
+                    else -> entry
                 }
             }
         }

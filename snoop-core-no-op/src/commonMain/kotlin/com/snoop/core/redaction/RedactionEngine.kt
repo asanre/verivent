@@ -21,10 +21,10 @@ class RedactionEngine(
 
     companion object {
         const val DEFAULT_PLACEHOLDER = "██"
-        val DEFAULT_HEADERS = setOf("authorization", "cookie", "set-cookie")
-        val DEFAULT_QUERY_PARAMS = setOf(
-            "api_key", "apikey", "api_secret", "key", "token", "access_token", "id_token",
-            "refresh_token", "auth", "secret", "password", "client_secret", "signature", "sig",
-        )
+
+        // Empty in the no-op variant: nothing is captured, so nothing is redacted. Kept as symbols
+        // for API parity; the real module owns the actual sensitive-name lists.
+        val DEFAULT_HEADERS = emptySet<String>()
+        val DEFAULT_QUERY_PARAMS = emptySet<String>()
     }
 }
