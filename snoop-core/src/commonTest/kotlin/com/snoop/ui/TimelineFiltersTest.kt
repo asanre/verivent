@@ -3,6 +3,7 @@ package com.snoop.ui
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TypeFilter
+import com.snoop.ui.internal.matchesFilters
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

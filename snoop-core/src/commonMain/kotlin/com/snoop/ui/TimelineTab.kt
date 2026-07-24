@@ -51,6 +51,7 @@ import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.groupEntries
+import com.snoop.ui.internal.matchesFilters
 import com.snoop.ui.internal.stableKey
 
 @Composable
@@ -187,32 +188,6 @@ private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boo
         )
     }
     HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-}
-
-internal fun matchesFilters(
-    entry: SnoopEntry,
-    type: TypeFilter,
-    channel: String?,
-    query: String,
-): Boolean {
-    val typeOk = when (type) {
-        TypeFilter.All -> true
-        TypeFilter.Network -> entry is NetworkTransaction
-        TypeFilter.Analytics -> entry is AnalyticsEntry
-    }
-    if (!typeOk) return false
-    if (channel != null && !(entry is AnalyticsEntry && entry.channel == channel)) return false
-    if (query.isBlank()) return true
-    val q = query.trim().lowercase()
-    return when (entry) {
-        is NetworkTransaction ->
-            // The url carries the query string (already redacted), which path alone drops.
-            entry.url.lowercase().contains(q) ||
-                entry.host.lowercase().contains(q) ||
-                entry.method.lowercase().contains(q)
-        is AnalyticsEntry ->
-            entry.name.lowercase().contains(q) || entry.channel.lowercase().contains(q)
-    }
 }
 
 @Composable

@@ -29,8 +29,6 @@ import com.snoop.ui.internal.formatBytes
 import com.snoop.ui.internal.formatDuration
 import com.snoop.ui.theme.LocalSnoopColors
 
-internal enum class NetworkDetailTab { Overview, Request, Response }
-
 @Composable
 internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> Unit) {
     val clipboard = LocalClipboardManager.current

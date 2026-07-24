@@ -1,5 +1,9 @@
 package com.snoop.ui.internal
 
+import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.SnoopEntry
+
 internal enum class TypeFilter { All, Network, Analytics }
 
 /**
@@ -16,4 +20,31 @@ internal data class TimelineFilters(
 
     fun selectChannel(name: String): TimelineFilters =
         if (channel == name) copy(channel = null) else TimelineFilters(TypeFilter.Analytics, name)
+}
+
+/** Whether [entry] survives the current type/channel selection and free-text [query]. */
+internal fun matchesFilters(
+    entry: SnoopEntry,
+    type: TypeFilter,
+    channel: String?,
+    query: String,
+): Boolean {
+    val typeOk = when (type) {
+        TypeFilter.All -> true
+        TypeFilter.Network -> entry is NetworkTransaction
+        TypeFilter.Analytics -> entry is AnalyticsEntry
+    }
+    if (!typeOk) return false
+    if (channel != null && !(entry is AnalyticsEntry && entry.channel == channel)) return false
+    if (query.isBlank()) return true
+    val q = query.trim().lowercase()
+    return when (entry) {
+        is NetworkTransaction ->
+            // The url carries the query string (already redacted), which path alone drops.
+            entry.url.lowercase().contains(q) ||
+                entry.host.lowercase().contains(q) ||
+                entry.method.lowercase().contains(q)
+        is AnalyticsEntry ->
+            entry.name.lowercase().contains(q) || entry.channel.lowercase().contains(q)
+    }
 }

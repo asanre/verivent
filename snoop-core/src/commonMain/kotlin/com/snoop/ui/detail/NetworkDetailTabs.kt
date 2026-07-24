@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+internal enum class NetworkDetailTab { Overview, Request, Response }
+
 @Composable
 internal fun TextTabs(selected: NetworkDetailTab, onSelect: (NetworkDetailTab) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
