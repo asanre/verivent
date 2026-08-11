@@ -8,6 +8,9 @@ jobs:
   publish:
     # macOS so the Kotlin/Native iOS klibs are built and published alongside the JVM/Android ones.
     runs-on: macos-latest
+    # Attaching the XCFramework to this release needs write access to its own repo's contents.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
@@ -28,3 +31,54 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKey }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.ORG_GRADLE_PROJECT_signingInMemoryKeyPassword }}
+
+      - name: Assemble the iOS XCFramework
+        run: ./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework --no-configuration-cache
+
+      - name: Zip and checksum it
+        id: xcframework
+        # ditto rather than zip: it is the only archiver Apple guarantees round-trips a framework's
+        # symlinks and metadata, and a mangled archive only fails at the consumer's `swift build`.
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            snoop-native/build/XCFrameworks/release/SnoopKit.xcframework SnoopKit.xcframework.zip
+          echo "checksum=$(swift package compute-checksum SnoopKit.xcframework.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Attach it to this release
+        # Must land before the snoop-swift tag exists: that tag's manifest points at this URL, and
+        # SwiftPM resolves the manifest from the tag.
+        run: gh release upload "$TAG" SnoopKit.xcframework.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+
+      - name: Publish the Swift package
+        # asanre/snoop-swift is generated wholesale from swift/ on every release — never edited by
+        # hand. Apple has no package registry, so a git repo is the distribution channel.
+        env:
+          GH_TOKEN: ${{ secrets.SNOOP_SWIFT_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+          CHECKSUM: ${{ steps.xcframework.outputs.checksum }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/SnoopKit.xcframework.zip"
+
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/asanre/snoop-swift.git" spm
+          rm -rf spm/Sources
+          cp -R swift/Sources spm/Sources
+          cp LICENSE spm/LICENSE
+          sed -e "s|@SNOOP_XCFRAMEWORK_URL@|${URL}|" \
+              -e "s|@SNOOP_XCFRAMEWORK_CHECKSUM@|${CHECKSUM}|" \
+              swift/Package.swift.template > spm/Package.swift
+
+          cd spm
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          # --allow-empty so re-running a release whose sources did not change still reaches the tag.
+          git commit --allow-empty -m "release ${VERSION}"
+          git tag "$VERSION"
+          # HEAD:main, not HEAD: on a freshly created (empty) repo the local branch name comes from
+          # the runner's init.defaultBranch, which is not guaranteed to match.
+          git push origin HEAD:main "$VERSION"

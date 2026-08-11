@@ -6,6 +6,10 @@ Snoop publishes to Maven Central under `io.github.asanre` via
 repo secrets. Signing is key-driven, so `./gradlew publishToMavenLocal` runs unsigned for local
 checks.
 
+The same workflow also cuts the **Swift Package** for native iOS hosts: it assembles
+`SnoopKit.xcframework`, attaches the zip to the release, and regenerates `asanre/snoop-swift` from
+`swift/`. See [Native iOS](native-ios.md) for what that package contains.
+
 ## One-time setup (manual, outside the repo)
 
 1. **Central Portal account** — sign in at [central.sonatype.com](https://central.sonatype.com) with
@@ -32,6 +36,11 @@ checks.
    - `ORG_GRADLE_PROJECT_signingInMemoryKey` — the ASCII-armored secret key, piped straight in so it
      never touches disk: `gpg --armor --export-secret-keys <KEY_ID> | gh secret set ORG_GRADLE_PROJECT_signingInMemoryKey`
    - `ORG_GRADLE_PROJECT_signingInMemoryKeyPassword` — that key's passphrase.
+6. **Swift Package distribution** — Apple has no package registry, so the SPM channel is a second
+   repository. Create an empty `asanre/snoop-swift`, then add a fifth secret:
+   - `SNOOP_SWIFT_TOKEN` — a fine-grained PAT scoped to `asanre/snoop-swift` with
+     **Contents: read and write**. The `publish` workflow force-generates that repo from `swift/` on
+     every release; nothing there is ever edited by hand.
 
 ## Cutting a release
 
@@ -58,13 +67,23 @@ checks.
    ```bash
    gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signKotlinMultiplatformPublication"
    ```
-   Expect **24** — one per publication across the six modules. Zero means `signAllPublications` did
-   not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
+   Expect **32** — one per publication across the eight modules. Zero means `signAllPublications`
+   did not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
    ```bash
    curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop-core/0.1.0/snoop-core-0.1.0.pom.asc
    ```
+7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
+   compare the published manifest against the asset it points at:
+   ```bash
+   gh release download v0.1.0 -p SnoopKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/SnoopKit.xcframework.zip
+   ```
+   ```bash
+   curl -s https://raw.githubusercontent.com/asanre/snoop-swift/0.1.0/Package.swift | grep checksum
+   ```
+   The two must match. The tag on `snoop-swift` is the version **without** the `v` prefix, so
+   consumers write `.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.1.0")`.
 
 **Released versions are permanent.** A version released to Central cannot be deleted, replaced or
 re-uploaded. If a release fails after the artifacts are uploaded, the fix is to bump to the next
