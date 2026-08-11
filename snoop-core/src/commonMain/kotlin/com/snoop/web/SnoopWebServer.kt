@@ -4,6 +4,9 @@ import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import kotlin.concurrent.atomics.AtomicReference
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * A tiny embedded HTTP server that serves the Snoop timeline as a live web page, so you can inspect
@@ -43,8 +46,14 @@ object SnoopWebServer {
      */
     fun start(bind: SnoopBind = SnoopBind.Local, port: Int = DEFAULT_PORT, token: String? = null): String {
         val resolvedToken = resolveToken(bind, token)
-        val candidate = runCatching { createServer(port, bind.bindAddress, resolvedToken) }.getOrNull() ?: return url
+        // The engine's failure handler has to reach the [Running] it belongs to, which only exists
+        // once the engine is built — so it reads the slot instead of capturing the value.
+        val slot = AtomicReference<Running?>(null)
+        val candidate = runCatching {
+            createServer(port, bind.bindAddress, resolvedToken) { slot.load()?.let { running.compareAndSet(it, null) } }
+        }.getOrNull() ?: return url
         val started = Running(candidate, port, bind, resolvedToken)
+        slot.store(started)
         if (!running.compareAndSet(null, started)) return url
         // Bind failure (port in use, restricted env) must never crash the host app.
         runCatching { candidate.start(wait = false) }
@@ -57,8 +66,19 @@ object SnoopWebServer {
         started.server.stop(gracePeriodMillis = 300, timeoutMillis = 1000)
     }
 
-    internal fun createServer(port: Int, host: String = LOOPBACK, token: String? = null): EmbeddedServer<*, *> =
-        embeddedServer(CIO, host = host, port = port) { snoopModule(token) }
+    internal fun createServer(
+        port: Int,
+        host: String = LOOPBACK,
+        token: String? = null,
+        onEngineFailure: (Throwable) -> Unit = {},
+    ): EmbeddedServer<*, *> = CoroutineScope(SupervisorJob()).embeddedServer(
+        CIO,
+        host = host,
+        port = port,
+        // CIO binds inside a coroutine, so EADDRINUSE never surfaces from start(). Without a handler
+        // here it reaches the default one, which on Kotlin/Native takes the whole host process down.
+        parentCoroutineContext = CoroutineExceptionHandler { _, cause -> onEngineFailure(cause) },
+    ) { snoopModule(token) }
 
     const val DEFAULT_PORT: Int = 9394
     internal const val LOOPBACK: String = "127.0.0.1"

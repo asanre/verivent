@@ -150,6 +150,23 @@ class SnoopWebServerTest {
     }
 
     @Test
+    fun startOnATakenPortLeavesTheServerStopped() = runTest {
+        val port = 9377
+        val squatter = SnoopWebServer.createServer(port)
+        squatter.start(wait = false)
+        try {
+            // CIO binds on a coroutine, so the EADDRINUSE never reaches start()'s caller. Unhandled
+            // it reaches the default handler, which on Kotlin/Native takes the host process down.
+            withContext(Dispatchers.Default) { delay(300) }
+            SnoopWebServer.start(port = port)
+            withContext(Dispatchers.Default) { delay(500) }
+            assertFalse(SnoopWebServer.isRunning, "a failed bind must not leave the server marked running")
+        } finally {
+            squatter.stop(gracePeriodMillis = 0, timeoutMillis = 0)
+        }
+    }
+
+    @Test
     fun startReturnsAnOpenLocalUrlForLocalBinds() = runTest {
         val url = SnoopWebServer.start(SnoopBind.Local, port = 9379)
         assertEquals("http://localhost:9379", url)
