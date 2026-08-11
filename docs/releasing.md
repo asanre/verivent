@@ -92,3 +92,6 @@ snoop-core-iossimulatorarm64/
 
 Nobody depends on the per-target coordinates directly. Declaring `io.github.asanre:snoop-core` is
 enough — the root's `.module` metadata resolves the right variant for whichever target is compiling.
+
+`snoop-native` is deliberately absent: it carries no `maven-publish` plugin because it is only the
+input to the `SnoopKit.xcframework` consumed by the Swift package, never a Maven coordinate.
