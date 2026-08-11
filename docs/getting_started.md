@@ -7,16 +7,16 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:snoop-ktor:0.1.0")
-    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.1.0")
+    debugImplementation("io.github.asanre:snoop-ktor:0.2.0")
+    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.2.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:snoop-ui:0.1.0")
-    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.1.0")
+    debugImplementation("io.github.asanre:snoop-ui:0.2.0")
+    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.2.0")
 
     // optional, only if you also want analytics inspection:
-    debugImplementation("io.github.asanre:snoop-analytics:0.1.0")
-    releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.1.0")
+    debugImplementation("io.github.asanre:snoop-analytics:0.2.0")
+    releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.2.0")
 }
 ```
 
