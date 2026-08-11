@@ -16,13 +16,13 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v5
       - name: Publish to Maven Central
-        # Uploads and validates but leaves the deployment unreleased, so the first cut can be
-        # inspected on the portal before it becomes permanent. Switch back to
-        # publishAndReleaseToMavenCentral once 0.1.0 is confirmed good.
-        # signAllPublications is opt-in, not implied by the key being present, and Central rejects
-        # unsigned deployments. Set here rather than in gradle.properties so publishToMavenLocal
-        # still runs unsigned for local checks.
-        run: ./gradlew publishToMavenCentral -PsignAllPublications=true --no-configuration-cache
+        # signAllPublications is opt-in — having the signing key set does not enable it, and Central
+        # rejects unsigned deployments. Set here rather than in gradle.properties so
+        # publishToMavenLocal still runs unsigned for local checks.
+        #
+        # publishAndRelease (rather than plain publish) also turns on the deployment validation wait,
+        # so a deployment Central rejects fails this job instead of leaving it green.
+        run: ./gradlew publishAndReleaseToMavenCentral -PsignAllPublications=true --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}

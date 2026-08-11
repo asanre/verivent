@@ -50,17 +50,26 @@ checks.
    ```bash
    gh release create v0.1.0 --generate-notes
    ```
-   The workflow runs `./gradlew publishToMavenCentral` on a macOS runner, so the iOS klibs are built
-   and published alongside the Android ones.
-5. Release the deployment from [central.sonatype.com](https://central.sonatype.com) → Deployments,
-   once it reaches *VALIDATED*. The workflow deliberately stops short of releasing so the upload can
-   be inspected first; the job can go green before Central finishes validating, so the portal is the
-   source of truth. Once every release is routine, switching the workflow back to
-   `publishAndReleaseToMavenCentral` collapses this step into the previous one.
+   The workflow runs `./gradlew publishAndReleaseToMavenCentral` on a macOS runner, so the iOS klibs
+   are built and published alongside the Android ones, and the deployment is released without a
+   manual step. Because automatic release also enables the validation wait, a deployment Central
+   rejects fails the job rather than leaving it green.
+5. Confirm the artifacts actually signed, by counting the signing tasks in the run log:
+   ```bash
+   gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signKotlinMultiplatformPublication"
+   ```
+   Expect **24** — one per publication across the six modules. Zero means `signAllPublications` did
+   not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
+   Gradle reports success for an unsigned upload because the rejection happens on Central's side.
+6. Verify it landed, once propagation finishes (minutes to a couple of hours):
+   ```bash
+   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop-core/0.1.0/snoop-core-0.1.0.pom.asc
+   ```
 
 **Released versions are permanent.** A version released to Central cannot be deleted, replaced or
 re-uploaded. If a release fails after the artifacts are uploaded, the fix is to bump to the next
-patch — never to retry the same version.
+patch — never to retry the same version. A deployment that fails *validation* is the exception: it
+never publishes, so that version is still free.
 
 ## Verifying locally
 
