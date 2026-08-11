@@ -78,9 +78,10 @@ never publishes, so that version is still free.
 ls ~/.m2/repository/io/github/asanre/
 ```
 
-Six modules are published: `snoop-core`, `snoop-ktor`, `snoop-analytics` and their `-no-op` mirrors.
-Those are the six coordinates a consumer declares, but the `ls` lists **24** directories, because
-each Kotlin Multiplatform module publishes a root coordinate plus one per target:
+Eight modules are published: `snoop-core`, `snoop-ui`, `snoop-ktor`, `snoop-analytics` and their
+`-no-op` mirrors. Those are the eight coordinates a consumer declares, but the `ls` lists **32**
+directories, because each Kotlin Multiplatform module publishes a root coordinate plus one per
+target:
 
 ```
 snoop-core/                     root: POM, Gradle module metadata, common klib

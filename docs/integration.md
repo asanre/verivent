@@ -2,6 +2,11 @@
 
 Once you're capturing traffic and events, open the inspector.
 
+!!! note "Everything on this page needs `snoop-ui`"
+    `SnoopScreen` and the `Snoop` entry points live in `snoop-ui`, the only artifact that pulls in
+    Compose — declare it as shown in [Getting started](getting_started.md). The
+    [web viewer](web-viewer.md) needs none of it.
+
 ## Embed the inspector (common)
 
 `SnoopScreen` is a Compose Multiplatform composable — host it anywhere in your debug UI (a dev menu,

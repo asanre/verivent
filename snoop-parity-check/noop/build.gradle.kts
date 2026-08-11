@@ -24,6 +24,7 @@ kotlin {
             kotlin.srcDir("../src")
             dependencies {
                 implementation(projects.snoopCoreNoOp)
+                implementation(projects.snoopUiNoOp)
                 implementation(projects.snoopKtorNoOp)
                 implementation(projects.snoopAnalyticsNoOp)
                 implementation(libs.ktor.client.core)

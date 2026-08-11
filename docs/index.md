@@ -28,14 +28,19 @@ both.
 
 ## Modules
 
-You add one artifact per capture source; everything else arrives transitively.
+You add one artifact per capture source, plus `snoop-ui` for the on-device inspector; `snoop-core`
+arrives transitively.
 
 | Artifact | What it does |
 |---|---|
 | `snoop-ktor` | Ktor client plugin that captures traffic |
 | `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink |
-| `snoop-core` | Models, store, redaction, Compose UI and the web viewer (transitive) |
+| `snoop-ui` | Compose Multiplatform inspector UI and the live notifications |
+| `snoop-core` | Models, store, redaction and the web viewer (transitive) |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds |
+
+`snoop-ui` is the only artifact that depends on Compose — leave it out and you get the web viewer
+with no Compose in your graph.
 
 See [Getting started](getting_started.md) to install, then [Integration](integration.md) to open the
 inspector.

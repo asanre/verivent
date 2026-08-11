@@ -10,15 +10,24 @@ dependencies {
     debugImplementation("io.github.asanre:snoop-ktor:0.1.0")
     releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.1.0")
 
+    // the on-device inspector UI:
+    debugImplementation("io.github.asanre:snoop-ui:0.1.0")
+    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.1.0")
+
     // optional, only if you also want analytics inspection:
     debugImplementation("io.github.asanre:snoop-analytics:0.1.0")
     releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.1.0")
 }
 ```
 
-`snoop-core` (models, store, redaction, Compose UI and the web viewer) arrives transitively — you
-never declare it. The no-op mirrors declare the exact same classes and functions, so your call sites
-compile unchanged.
+`snoop-core` (models, store, redaction and the web viewer) arrives transitively — you never declare
+it. The no-op mirrors declare the exact same classes and functions, so your call sites compile
+unchanged.
+
+!!! tip "Skipping `snoop-ui`"
+    `snoop-ui` is the only artifact that pulls in Compose. Leave it out if you inspect from the
+    [web viewer](web-viewer.md) instead of on-device — everything else keeps working, and Compose
+    never enters your dependency graph.
 
 ## Capture network traffic
 

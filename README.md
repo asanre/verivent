@@ -20,17 +20,23 @@ SDK. Snoop does both, on one timeline.
 
 ## Modules
 
-You add one artifact per capture source; `snoop-core` (models, ring-buffer store, redaction, Compose
-UI and the embedded web viewer) arrives transitively — you never declare it yourself.
+You add one artifact per capture source, plus `snoop-ui` for the on-device inspector; `snoop-core`
+(models, ring-buffer store, redaction and the embedded web viewer) arrives transitively — you never
+declare it yourself.
 
 | Artifact | What it does |
 |---|---|
-| `snoop-core` | Models, store, redaction, Compose UI and web viewer (transitive) |
+| `snoop-core` | Models, store, redaction and web viewer (transitive) |
+| `snoop-ui` | Compose Multiplatform inspector UI and live notifications |
 | `snoop-ktor` | Ktor client plugin that captures traffic |
 | `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink |
 | `snoop-core-no-op` | Release mirror of core — identical API, captures nothing |
+| `snoop-ui-no-op` | Release mirror of the inspector UI — renders nothing |
 | `snoop-ktor-no-op` | Release mirror of the Ktor plugin |
 | `snoop-analytics-no-op` | Release mirror of the analytics sink |
+
+`snoop-ui` is the only artifact that depends on Compose. Leave it out if you inspect from the web
+viewer instead of on-device, and Compose never enters your dependency graph.
 
 ## Install
 
@@ -40,6 +46,10 @@ and drop the UI/body-retention overhead:
 ```kotlin
 debugImplementation("io.github.asanre:snoop-ktor:0.1.0")
 releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.1.0")
+
+// the on-device inspector UI:
+debugImplementation("io.github.asanre:snoop-ui:0.1.0")
+releaseImplementation("io.github.asanre:snoop-ui-no-op:0.1.0")
 
 // optional, only if you also want analytics inspection:
 debugImplementation("io.github.asanre:snoop-analytics:0.1.0")

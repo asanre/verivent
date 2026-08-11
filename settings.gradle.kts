@@ -30,9 +30,11 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 rootProject.name = "snoop"
 
 include(":snoop-core")
+include(":snoop-ui")
 include(":snoop-ktor")
 include(":snoop-analytics")
 include(":snoop-core-no-op")
+include(":snoop-ui-no-op")
 include(":snoop-ktor-no-op")
 include(":snoop-analytics-no-op")
 include(":snoop-parity-check:real")

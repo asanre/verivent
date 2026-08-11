@@ -27,6 +27,7 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(libs.compose.ui.backhandler)
+            implementation(projects.snoopUi)
             implementation(projects.snoopKtor)
             implementation(projects.snoopAnalytics)
             implementation(libs.ktor.client.core)
