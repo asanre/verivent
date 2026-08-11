@@ -85,6 +85,24 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    The two must match. The tag on `snoop-swift` is the version **without** the `v` prefix, so
    consumers write `.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.1.0")`.
 
+## If the Swift step fails after Central published
+
+Re-running the workflow is not an option: the Maven step would fail on an already-released version.
+Finish it by hand from a Mac, with `TAG` set to the release tag:
+
+```bash
+./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework && ditto -c -k --sequesterRsrc --keepParent snoop-native/build/XCFrameworks/release/SnoopKit.xcframework SnoopKit.xcframework.zip
+```
+
+```bash
+swift package compute-checksum SnoopKit.xcframework.zip && gh release upload "$TAG" SnoopKit.xcframework.zip
+```
+
+Then clone `asanre/snoop-swift`, copy `swift/Sources` over it, render `Package.swift.template` with
+that URL and checksum, and tag it with the version minus the `v`. Never move an existing
+`snoop-swift` tag: a rebuilt zip hashes differently, and consumers who already resolved would get a
+checksum mismatch. Cut a new patch version instead.
+
 **Released versions are permanent.** A version released to Central cannot be deleted, replaced or
 re-uploaded. If a release fails after the artifacts are uploaded, the fix is to bump to the next
 patch — never to retry the same version. A deployment that fails *validation* is the exception: it

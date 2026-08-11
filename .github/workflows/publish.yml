@@ -76,8 +76,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          # --allow-empty so re-running a release whose sources did not change still reaches the tag.
-          git commit --allow-empty -m "release ${VERSION}"
+          git commit -m "release ${VERSION}"
+          # Plain tag, never --force: a re-run rebuilds a byte-different zip, so a moved tag would
+          # hand a stale checksum to anyone who already resolved. Re-running a published release is
+          # unsupported once this tag exists — see docs/releasing.md for the manual recovery.
           git tag "$VERSION"
           # HEAD:main, not HEAD: on a freshly created (empty) repo the local branch name comes from
           # the runner's init.defaultBranch, which is not guaranteed to match.
