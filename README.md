@@ -38,6 +38,10 @@ declare it yourself.
 `snoop-ui` is the only artifact that depends on Compose. Leave it out if you inspect from the web
 viewer instead of on-device, and Compose never enters your dependency graph.
 
+Apps written entirely in Swift, with no shared KMP module, install a separate Swift Package that
+carries the analytics sink and the web viewer — no network capture. See
+[Native iOS](https://asanre.github.io/snoop/native-ios/).
+
 ## Install
 
 Use the real artifacts in debug and the no-op mirrors in release so release builds capture nothing

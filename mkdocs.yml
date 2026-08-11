@@ -50,6 +50,7 @@ nav:
   - Home: index.md
   - Getting started: getting_started.md
   - Integration: integration.md
+  - Native iOS: native-ios.md
   - Guides:
       - Filters, redaction & annotations: filters-redaction-annotations.md
       - Analytics facade: integration-analytics-facade.md
