@@ -6,8 +6,7 @@
 
 On-device inspector for **network calls** and **analytics events** in Compose Multiplatform apps.
 One unified timeline, a Ktor plugin, a vendor-agnostic analytics sink, and a Material 3 UI you can
-open while you navigate the host app. Inspired by [Chucker](https://github.com/ChuckerTeam/chucker)
-and [KtorMonitor](https://github.com/cosminmihu/KtorMonitor).
+open while you navigate the host app.
 
 📖 **Full documentation: <https://asanre.github.io/snoop/>**
 
@@ -151,3 +150,8 @@ workflow runs on each GitHub Release. See [docs/releasing.md](docs/releasing.md)
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+---
+
+Some ideas in this project come from [Chucker](https://github.com/ChuckerTeam/chucker) and
+[KtorMonitor](https://github.com/CosminMihuMDC/KtorMonitor). Thanks to both teams.
