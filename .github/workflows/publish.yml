@@ -19,7 +19,10 @@ jobs:
         # Uploads and validates but leaves the deployment unreleased, so the first cut can be
         # inspected on the portal before it becomes permanent. Switch back to
         # publishAndReleaseToMavenCentral once 0.1.0 is confirmed good.
-        run: ./gradlew publishToMavenCentral --no-configuration-cache
+        # signAllPublications is opt-in, not implied by the key being present, and Central rejects
+        # unsigned deployments. Set here rather than in gradle.properties so publishToMavenLocal
+        # still runs unsigned for local checks.
+        run: ./gradlew publishToMavenCentral -PsignAllPublications=true --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
