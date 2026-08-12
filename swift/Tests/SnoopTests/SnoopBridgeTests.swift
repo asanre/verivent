@@ -71,7 +71,11 @@ final class SnoopBridgeTests: XCTestCase {
         for _ in 1...5 {
             Snoop.stopWebViewer()
             let base = Snoop.startWebViewer(.local, port: Int.random(in: 20_000...60_000))
-            guard let url = URL(string: "\(base)/api/entries") else { continue }
+            // The URL carries the access token as `?t=`, so the path has to be swapped in rather
+            // than appended — every bind is gated, loopback included.
+            guard var components = URLComponents(string: base) else { continue }
+            components.path = "/api/entries"
+            guard let url = components.url else { continue }
 
             for _ in 1...10 {
                 if let (data, _) = try? await URLSession.shared.data(from: url),

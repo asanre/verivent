@@ -22,10 +22,18 @@ public enum Snoop {
         }
     }
 
-    /// Install filtering and redaction. Call once during startup, before the first `log`.
+    /// Install filtering, redaction and timeline grouping. Grouping parameters left out keep their
+    /// current values; a closure left out is cleared, so pass both when adjusting one.
+    ///
+    /// - Parameters:
+    ///   - groupByEvent: event that opens a new group in the viewer; `nil` turns grouping off.
+    ///   - groupLabelProperty: property of that event whose value labels the group. When `nil`, or
+    ///     absent from the event, the group is labelled with the event's own name.
     public static func configure(
         keepEvent: ((Event) -> Bool)? = nil,
-        redactProperty: ((String) -> Bool)? = nil
+        redactProperty: ((String) -> Bool)? = nil,
+        groupByEvent: String? = SnoopEvents.shared.groupByEvent,
+        groupLabelProperty: String? = SnoopEvents.shared.groupLabelProperty
     ) {
         SnoopEvents.shared.configure(
             keepEvent: keepEvent.map { predicate in
@@ -33,7 +41,9 @@ public enum Snoop {
             },
             redactProperty: redactProperty.map { predicate in
                 { key in KotlinBoolean(bool: predicate(key)) }
-            }
+            },
+            groupByEvent: groupByEvent,
+            groupLabelProperty: groupLabelProperty
         )
     }
 
@@ -44,7 +54,8 @@ public enum Snoop {
 
     // MARK: - Web viewer
 
-    /// Where the viewer listens. `.lan` and `.host` are reachable off-device and always token-gated.
+    /// Where the viewer listens. `.lan` and `.host` are reachable off-device; `.local` is loopback
+    /// only. All of them are token-gated — loopback is shared with every other app on the device.
     public enum Bind {
         case local
         case lan
@@ -59,7 +70,10 @@ public enum Snoop {
         }
     }
 
-    /// Start the viewer (idempotent). Returns the URL to open, token included when gated.
+    /// Start the viewer (idempotent). Returns the URL to open, token included.
+    ///
+    /// The bind happens asynchronously, so a failure (port taken) shows up in the device console
+    /// afterwards rather than here; `isWebViewerRunning` flips back to false when it does.
     @discardableResult
     public static func startWebViewer(
         _ bind: Bind = .local,
@@ -78,6 +92,10 @@ public enum Snoop {
     }
 
     public static var isWebViewerRunning: Bool { SnoopViewer.shared.isRunning }
+
+    /// The access token every request must carry as `?t=`, or nil when no viewer is running.
+    /// Already baked into the URL `startWebViewer` returns; exposed for hand-built requests.
+    public static var webViewerToken: String? { SnoopViewer.shared.token }
 
     /// The URL to reach this device from another machine, or nil on a `.local` bind.
     public static var lanURL: String? { SnoopViewer.shared.lanUrl() }
