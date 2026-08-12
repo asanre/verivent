@@ -6,8 +6,11 @@ import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 private val exportJson = Json { prettyPrint = true }
@@ -45,9 +48,9 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
         put("status", status)
         put("durationMillis", durationMillis)
         put("error", error)
-        putJsonObject("requestHeaders") { headers(requestHeaders) }
+        putHeaders("requestHeaders", requestHeaders)
         put("requestBody", requestBody?.text)
-        putJsonObject("responseHeaders") { headers(responseHeaders) }
+        putHeaders("responseHeaders", responseHeaders)
         put("responseBody", responseBody?.text)
     }
     is AnalyticsEntry -> buildJsonObject {
@@ -57,10 +60,18 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
         put("name", name)
         put("channel", channel)
         put("annotations", annotations.joinToString(",") { it.label })
-        putJsonObject("properties") { headers(properties) }
+        // Properties come from a Map, so a name can't repeat — an object stays the friendlier shape.
+        putJsonObject("properties") { properties.forEach { put(it.name, it.value) } }
     }
 }
 
-private fun kotlinx.serialization.json.JsonObjectBuilder.headers(items: List<KeyValue>) {
-    items.forEach { put(it.name, it.value) }
+/**
+ * Headers as an ordered array of `{name, value}`. An object would fold repeats into one entry, and
+ * three `Set-Cookie`s collapsing into a single line is exactly the thing you export a session to
+ * look at.
+ */
+private fun JsonObjectBuilder.putHeaders(key: String, items: List<KeyValue>) {
+    putJsonArray(key) {
+        items.forEach { addJsonObject { put("name", it.name); put("value", it.value) } }
+    }
 }
