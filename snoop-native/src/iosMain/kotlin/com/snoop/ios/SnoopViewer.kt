@@ -13,17 +13,18 @@ object SnoopViewer {
 
     val isRunning: Boolean get() = SnoopWebServer.isRunning
 
-    /** The token every request must carry as `?t=`, or null when the server is open ([SnoopViewerBind.Local]). */
+    /** The token every request must carry as `?t=`, or null when no viewer is running. */
     val token: String? get() = SnoopWebServer.token
 
     val defaultPort: Int get() = SnoopWebServer.DEFAULT_PORT
 
     /**
      * Start the viewer (idempotent). Returns the URL to open — the LAN one when reachable
-     * off-device, otherwise the local one, token included when gated.
+     * off-device, otherwise the local one, token always included. The bind is asynchronous, so a
+     * failure surfaces afterwards in the device console rather than from this call.
      *
-     * @param token forces this exact token instead of a generated one; ignored for
-     *   [SnoopViewerBind.Local], which is always open.
+     * @param token forces this exact token instead of a generated one. Every bind is gated,
+     *   [SnoopViewerBind.Local] included: loopback is shared with every other app on the device.
      */
     fun start(bind: SnoopViewerBind, port: Int, token: String?): String =
         SnoopWebServer.start(bind = bind.core, port = port, token = token)

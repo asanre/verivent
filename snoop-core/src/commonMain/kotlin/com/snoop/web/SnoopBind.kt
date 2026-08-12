@@ -1,20 +1,20 @@
 package com.snoop.web
 
 /**
- * Where [SnoopWebServer] listens, which decides whether it needs a token.
+ * Where [SnoopWebServer] listens.
  *
- * [Local] is the only open mode (loopback only — reach it with `adb forward` or the iOS simulator).
- * [Lan] and [Host] are reachable from other machines, so they are always token-gated: a generated
- * token when you don't pass your own to [SnoopWebServer.start].
+ * [Local] is loopback only — reach it with `adb forward` or the iOS simulator. [Lan] and [Host] are
+ * reachable from other machines. Every mode is token-gated (loopback is shared with every other app
+ * on the device): a generated token unless you pass your own to [SnoopWebServer.start].
  */
 sealed interface SnoopBind {
-    /** Loopback only (`127.0.0.1`); open. */
+    /** Loopback only (`127.0.0.1`). */
     data object Local : SnoopBind
 
     /** Every interface (`0.0.0.0`), reachable across the LAN. */
     data object Lan : SnoopBind
 
-    /** A specific bind address you choose (e.g. one interface's IP). Gated like [Lan]. */
+    /** A specific bind address you choose (e.g. one interface's IP). */
     data class Host(val address: String) : SnoopBind
 }
 
@@ -25,5 +25,5 @@ internal val SnoopBind.bindAddress: String
         is SnoopBind.Host -> address
     }
 
-/** Only loopback is served without a token; everything reachable off-device is gated. */
-internal val SnoopBind.isOpen: Boolean get() = this == SnoopBind.Local
+/** Loopback is unreachable from another machine, so it has no LAN URL to offer. */
+internal val SnoopBind.isLoopbackOnly: Boolean get() = this == SnoopBind.Local

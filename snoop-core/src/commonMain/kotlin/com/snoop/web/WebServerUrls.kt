@@ -8,7 +8,7 @@ internal fun urlOf(running: Running?): String {
 
 /** The off-device URL, or null on a [SnoopBind.Local] bind or when no LAN address is available. */
 internal fun lanUrlOf(running: Running?, address: String?): String? {
-    if (running == null || running.bind.isOpen || address == null) return null
+    if (running == null || running.bind.isLoopbackOnly || address == null) return null
     val base = "http://$address:${running.port}"
     return running.token?.let { "$base/?t=$it" } ?: base
 }
