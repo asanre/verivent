@@ -15,7 +15,7 @@ internal actual fun sampleEngine(): HttpClientEngineFactory<*> = CIO
 
 private val PORT = SnoopWebServer.DEFAULT_PORT
 internal actual val webViewerHint: String =
-    "From your Mac: adb forward tcp:$PORT tcp:$PORT, then open http://localhost:$PORT"
+    "From your Mac: adb forward tcp:$PORT tcp:$PORT, then open the URL above — its ?t= token is required."
 
 @Composable
 actual fun PlatformExtras() {

@@ -49,7 +49,7 @@ class Sampler {
     }
 
     fun logScreenView(screen: String) {
-        analytics.log("screen_view", channel = "firebase", properties = mapOf("screen" to screen))
+        analytics.log("screen_view", channel = "firebase", properties = mapOf("screen_name" to screen))
     }
 
     fun logPurchase() {

@@ -13,8 +13,8 @@ import io.ktor.client.engine.darwin.Darwin
 internal actual fun sampleEngine(): HttpClientEngineFactory<*> = Darwin
 
 internal actual val webViewerHint: String =
-    "Simulator: open http://localhost:${SnoopWebServer.DEFAULT_PORT} on this Mac. " +
-        "Physical device: use SnoopBind.Lan and open the shown lanUrl()."
+    "Open the URL above on this Mac — its ?t= token is required. " +
+        "The simulator shares the host loopback; a physical device needs SnoopBind.Lan."
 
 @Composable
 actual fun PlatformExtras() {
