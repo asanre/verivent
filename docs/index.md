@@ -15,11 +15,12 @@ both.
 ## Features
 
 - **Unified timeline** — network calls and analytics events interleaved, filterable by type and
-  channel, searchable.
+  channel, searchable, and collapsible into per-screen groups keyed by the analytics event of your
+  choice (`screen_view` by default).
 - **Rich detail** — headers, pretty-printed JSON bodies, timing, cURL export; event parameters with
   channel and annotations.
-- **Redaction at capture** — headers, query parameters and body fields are replaced with a visible
-  `██` before anything reaches the store; raw secrets never land in memory.
+- **Redaction at capture** — headers, query parameters and form-body fields are replaced with a
+  visible `██` before anything reaches the store; raw secrets never land in memory.
 - **Web viewer** — an embedded HTTP server streams the same timeline to a desktop browser over SSE.
 - **Live notification** — a persistent notification lists the latest captures and reopens the
   inspector (Android and iOS).

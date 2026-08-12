@@ -12,33 +12,41 @@ Nothing to add: the server (`SnoopWebServer`) ships inside `snoop-core`, so it a
 ## Start / stop
 
 ```kotlin
-val url = SnoopWebServer.start()   // SnoopBind.Local, port 9394, idempotent; returns "http://localhost:9394"
+val url = SnoopWebServer.start()   // SnoopBind.Local, port 9394, idempotent; "http://localhost:9394/?t=…"
 SnoopWebServer.stop()
 SnoopWebServer.isRunning
 ```
 
-`start` returns the URL you'd actually open — the LAN address with its token for a reachable bind,
-or the local URL otherwise. Start it from an internal-only entry point (a dev menu, the sample's
-"Start web viewer" button, or `Application.onCreate` in the internal variant).
+`start` returns the URL you'd actually open — the LAN address for a reachable bind, or the local URL
+otherwise, always with its access token. Start it from an internal-only entry point (a dev menu, the
+sample's "Start web viewer" button, or `Application.onCreate` in the internal variant).
+
+The bind itself is asynchronous: `start` returns before the port is actually listening, so a failure
+(port already taken, restricted environment) shows up afterwards as a `Snoop` warning in Logcat or
+the device console, with `isRunning` back to false. On success the same log line carries the full
+URL, token included — that is where you copy it from.
 
 Where it listens is a `SnoopBind`:
 
-- `SnoopBind.Local` (default) — loopback only (`127.0.0.1`), open.
-- `SnoopBind.Lan` — every interface (`0.0.0.0`), reachable across the LAN, token-gated.
-- `SnoopBind.Host("192.168.1.5")` — a specific interface, token-gated.
+- `SnoopBind.Local` (default) — loopback only (`127.0.0.1`).
+- `SnoopBind.Lan` — every interface (`0.0.0.0`), reachable across the LAN.
+- `SnoopBind.Host("192.168.1.5")` — a specific interface.
+
+All three are token-gated; see [Access token](#access-token).
 
 ## Open it from your Mac
 
-By default the server binds loopback only. How you reach it depends on the platform:
+By default the server binds loopback only. Every URL below needs its `?t=…` token — take the one
+`start` returned, or read it from the `Snoop` log line. How you reach it depends on the platform:
 
-- **Android (device or emulator)** — forward the port over adb, then open <http://localhost:9394>:
+- **Android (device or emulator)** — forward the port over adb, then open the URL `start` returned:
 
   ```bash
   adb forward tcp:9394 tcp:9394
   ```
 
-- **iOS simulator** — open <http://localhost:9394> directly, no forwarding. The simulator shares the
-  Mac's network stack, so the app's loopback listener is the Mac's loopback.
+- **iOS simulator** — open the URL directly, no forwarding. The simulator shares the Mac's network
+  stack, so the app's loopback listener is the Mac's loopback.
 
 - **Physical iOS device** — bind to the LAN and browse to the device's Wi-Fi IP:
 
@@ -51,8 +59,10 @@ By default the server binds loopback only. How you reach it depends on the platf
   `lanUrl()` is null while bound with `SnoopBind.Local` or when no LAN address is found.
 
 The page streams updates live over SSE — new network calls and analytics events appear as they
-happen. It mirrors the native inspector: unified timeline, type and channel filters, search, and a
-detail panel with headers (redaction preserved) and pretty-printed bodies.
+happen, as deltas rather than a full re-send of the store. It mirrors the native inspector: unified
+timeline, type and channel filters, search, per-screen grouping (whatever
+[`SnoopCore.configure`](integration.md#group-the-timeline-by-screen) set, which the page reads from
+`/api/config`), and a detail panel with headers (redaction preserved) and pretty-printed bodies.
 
 ## Several developers on one network
 
@@ -61,17 +71,21 @@ Each device runs its own server over its own network stack, serving only its own
 phones are `…10:9394`, `…11:9394`, `…12:9394` and never collide. Every developer opens their own
 device's `lanUrl()` and sees only that device's logs.
 
-`SnoopBind.Lan` and `SnoopBind.Host` are always token-gated: captured bodies routinely carry session
-tokens and personal data, so a LAN bind never serves them to the whole network unauthenticated. Pass
-your own token, or let `start` generate one and read it back:
+## Access token
+
+**Every bind is token-gated, loopback included.** Captured bodies routinely carry session tokens and
+personal data, and loopback is not private: on Android every installed app shares `127.0.0.1`, so an
+open `9394` would hand the whole capture buffer to any co-installed app. Pass your own token, or let
+`start` generate one and read it back:
 
 ```kotlin
-SnoopWebServer.start(SnoopBind.Lan)                          // token generated, in the return value / lanUrl()
+SnoopWebServer.start()                                       // token generated, in the return value
 SnoopWebServer.start(SnoopBind.Lan, token = "team-standup")  // or pick your own
+SnoopWebServer.token                                         // the token the running server expects
 ```
 
-The token gates every route, and `lanUrl()` carries it as `?t=…` so the link works as-is. Loopback
-binds stay open — nothing off-device can reach them.
+The token gates every route, and both `start` and `lanUrl()` carry it as `?t=…`, so the link works
+as-is. A URL without it gets a `401` — the page then shows "Can't reach Snoop" instead of data.
 
 ## Notes
 

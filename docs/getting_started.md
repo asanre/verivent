@@ -75,4 +75,7 @@ store; the `StateFlow` survives, so an already-open inspector keeps working):
 SnoopCore.configure(capacity = 1_000, maxTotalBytes = 40_000_000)
 ```
 
+The same call sets how the viewers group the timeline — see
+[Group the timeline by screen](integration.md#group-the-timeline-by-screen).
+
 Next: [open the inspector](integration.md).

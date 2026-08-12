@@ -30,7 +30,9 @@ import Snoop
 
 Snoop.configure(
     keepEvent: { !$0.name.hasPrefix("debug_") },
-    redactProperty: { $0 == "user_email" }
+    redactProperty: { $0 == "user_email" },
+    groupByEvent: "screen_view",        // groups the viewer's timeline; nil turns grouping off
+    groupLabelProperty: "screen_name"   // the property that labels each group
 )
 
 Snoop.log("purchase", channel: "firebase", properties: [
@@ -40,19 +42,23 @@ Snoop.log("purchase", channel: "firebase", properties: [
 ])
 ```
 
-Property values cross into Kotlin as strings, so `String`, `Int`, `Double` and `Bool` all work.
+Grouping parameters left out of `configure` keep their current values; a closure left out is
+cleared, so pass both when adjusting one. Property values cross into Kotlin as strings, so `String`,
+`Int`, `Double` and `Bool` all work.
 Redaction runs on the same engine as the Compose Multiplatform build — a matching key is replaced
 with a visible `██` rather than dropped.
 
 ## Inspect
 
 ```swift
-let url = Snoop.startWebViewer()          // http://localhost:9394
+let url = Snoop.startWebViewer()          // http://localhost:9394/?t=…
 Snoop.stopWebViewer()
 ```
 
-Open that URL from your Mac's browser — the simulator shares the host loopback. For a physical
-device, bind to the LAN and open the returned URL, which carries a token:
+Open that URL from your Mac's browser — the simulator shares the host loopback. It carries the
+access token every bind requires, loopback included, so open it as returned rather than typing the
+bare host and port (`Snoop.webViewerToken` exposes the token on its own). For a physical device,
+bind to the LAN and open the returned URL:
 
 ```swift
 let url = Snoop.startWebViewer(.lan)      // http://192.168.1.10:9394/?t=…
@@ -63,7 +69,8 @@ the same ones the KMP build serves.
 
 !!! note "`startWebViewer` reports bind failures asynchronously"
     The engine binds on a background coroutine, so the returned URL is not proof that the port was
-    free. Check `Snoop.isWebViewerRunning` a moment later, or just try the URL.
+    free. A failure logs a `Snoop` warning to the device console and flips `Snoop.isWebViewerRunning`
+    back to false; a success logs the same URL. Check it a moment later, or just try the URL.
 
 ## Release builds
 

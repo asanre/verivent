@@ -107,6 +107,14 @@ Snoop.showNotification(context)   // ongoing; needs POST_NOTIFICATIONS on API 33
 Snoop.showNotification()
 ```
 
+The timeline collapses into per-screen groups keyed by an analytics event — Firebase's `screen_view`
+with its `screen_name` parameter by default. One call retunes every viewer (inspector, Activity, web
+page, native iOS):
+
+```kotlin
+SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
+```
+
 See [Integration](https://asanre.github.io/snoop/integration/) for the full inspector API.
 
 ## How capture works
@@ -123,16 +131,17 @@ visible `██` placeholder — you see that a field exists, not its value.
 Inspect from a desktop browser while debugging:
 
 ```kotlin
-SnoopWebServer.start()   // http://localhost:9394
+SnoopWebServer.start()   // http://localhost:9394/?t=…
 ```
 
-By default it binds loopback only. Reach it from your Mac by platform:
+Open the URL it returns (also logged under the `Snoop` tag). By default it binds loopback only.
+Reach it from your Mac by platform:
 
 ```bash
-adb forward tcp:9394 tcp:9394   # Android: then open http://localhost:9394
+adb forward tcp:9394 tcp:9394   # Android: then open the URL start() returned
 ```
 
-- **iOS simulator** — open <http://localhost:9394> directly (the simulator shares the Mac's loopback).
+- **iOS simulator** — open that URL directly (the simulator shares the Mac's loopback).
 - **Physical device** — bind to the LAN and open the device's IP from your Mac (same Wi-Fi):
 
   ```kotlin
@@ -140,9 +149,9 @@ adb forward tcp:9394 tcp:9394   # Android: then open http://localhost:9394
   ```
 
   Each device serves only its own logs, so three developers on three phones don't collide — each
-  opens their own device's IP. `SnoopBind.Lan` (and `SnoopBind.Host`) are always token-gated: `start`
-  generates one unless you pass `token = "…"`, and both `start`'s return value and `lanUrl()` carry it.
-  `SnoopBind.Local` (the default) is loopback-only and open.
+  opens their own device's IP. Every bind is token-gated, `SnoopBind.Local` included: loopback is
+  shared with every other app on the device. `start` generates a token unless you pass `token = "…"`,
+  and both its return value and `lanUrl()` carry it as `?t=…`.
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 

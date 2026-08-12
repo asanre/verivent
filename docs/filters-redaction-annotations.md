@@ -8,6 +8,8 @@ All configuration is plain Kotlin predicates — no annotations, no codegen.
 |---|---|---|
 | `maxContentLength` | `Long` (default 250_000) | Bodies larger than this are captured truncated, flagged in the UI. |
 | `sanitizeHeader { name -> Bool }` | additive | Redact matching request/response headers. `Authorization`, `Cookie`, `Set-Cookie` are always redacted. |
+| `sanitizeQueryParameter { name -> Bool }` | additive | Redact matching query parameters **and form-body fields**. A default list of secret-ish names is always redacted. |
+| `sanitizeBody { text -> String }` | additive | Rewrite a captured body preview. Applied after the form-field redaction below. |
 | `filter { request -> Bool }` | additive | Keep a request only if **every** filter returns true. A `false` skips capture entirely. |
 
 ```kotlin
@@ -45,7 +47,20 @@ val snoop = SnoopAnalytics {
 
 Redacted values are replaced with a visible `██` placeholder, so a reviewer can confirm the field
 was sent without exposing its value. Redaction happens at capture time — raw secrets never enter
-the in-memory store.
+the in-memory store, and the request that actually goes out is never touched.
+
+Three things are redacted:
+
+- **Headers** — the defaults (`authorization`, `cookie`, `set-cookie`) plus your `sanitizeHeader`
+  rules, matched against the name as sent and its lowercase form.
+- **Query parameters** — a built-in list of secret-ish names (`token`, `access_token`, `api_key`,
+  `password`, `client_secret`, `signature`, …) plus your `sanitizeQueryParameter` rules.
+- **Form bodies** — a request body sent as `application/x-www-form-urlencoded` is split on
+  `name=value&…` and run through the *same* rules as query parameters, so `POST /oauth/token` with
+  `password=…&client_secret=…` is stored as `password=██&client_secret=██`. Names are matched as
+  sent: a percent-encoded name (`client%5Fsecret`) doesn't match. Requests only.
+
+A predicate that throws counts as a match, so a broken rule fails closed and redacts.
 
 ## Buffer size
 

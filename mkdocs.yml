@@ -12,6 +12,7 @@ site_dir: build/mkdocs
 # Maintainer-only notes are not part of the site.
 exclude_docs: |
   releasing.md
+  decisions/
 
 theme:
   name: material
