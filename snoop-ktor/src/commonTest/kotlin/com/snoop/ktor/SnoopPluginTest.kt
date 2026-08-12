@@ -14,10 +14,13 @@ import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.writeStringUtf8
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentType
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -107,6 +110,41 @@ class SnoopPluginTest {
     }
 
     @Test
+    fun redactsSecretsInFormBodies() = runTest {
+        lateinit var wireBody: String
+        val client = HttpClient(MockEngine) {
+            engine {
+                addHandler { request ->
+                    wireBody = (request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()
+                    respond(
+                        "access_token=abc&scope=basic",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, ContentType.Application.FormUrlEncoded.toString()),
+                    )
+                }
+            }
+            install(Snoop)
+        }
+        client.post("https://api.test/oauth/token") {
+            contentType(ContentType.Application.FormUrlEncoded)
+            setBody("password=hunter2&user=a")
+        }
+        val txn = transactions().single()
+        assertEquals("password=██&user=a", txn.requestBody?.text)
+        assertEquals("password=hunter2&user=a", wireBody)
+        assertEquals("access_token=██&scope=basic", txn.responseBody?.text)
+    }
+
+    @Test
+    fun aJsonBodyThatLooksLikeAFormIsLeftAlone() = runTest {
+        client().post("https://api.test/orders") {
+            contentType(ContentType.Application.Json)
+            setBody("password=hunter2")
+        }
+        assertEquals("password=hunter2", transactions().single().requestBody?.text)
+    }
+
+    @Test
     fun truncatesLargeBodies() = runTest {
         client { maxContentLength = 5 }.post("https://api.test/orders") {
             setBody("0123456789")
@@ -168,6 +206,43 @@ class SnoopPluginTest {
         val received = client.prepareGet("https://api.test/stream").execute { it.bodyAsText() }
         assertEquals("chunk-1chunk-2", received)
         assertEquals("(streaming body — not captured)", transactions().single().responseBody?.text)
+    }
+
+    @Test
+    fun responseIsDecodedWithTheDeclaredCharset() = runTest {
+        // 0xE9 is 'é' in ISO-8859-1 and an invalid byte in UTF-8.
+        val client = charsetClient("text/plain; charset=ISO-8859-1", byteArrayOf(0xE9.toByte()))
+        client.get("https://api.test/latin").bodyAsText()
+        assertEquals("é", transactions().single().responseBody?.text)
+    }
+
+    @Test
+    fun anUnsupportedCharsetFallsBackInsteadOfLosingTheBody() = runTest {
+        val client = charsetClient("text/plain; charset=x-made-up", "hello".encodeToByteArray())
+        client.get("https://api.test/unknown").bodyAsText()
+        assertEquals("hello", transactions().single().responseBody?.text)
+    }
+
+    @Test
+    fun aBodyItsCharsetCannotDecodeIsStillCaptured() = runTest {
+        // 0xFF is invalid in US-ASCII: the JVM decoder substitutes, Darwin's throws and falls back.
+        val client = charsetClient("text/plain; charset=us-ascii", byteArrayOf(0x68, 0x69, 0xFF.toByte()))
+        client.get("https://api.test/ascii")
+        val text = assertNotNull(transactions().single().responseBody?.text)
+        assertTrue(text.startsWith("hi"))
+    }
+
+    private fun charsetClient(contentType: String, body: ByteArray) = HttpClient(MockEngine) {
+        engine {
+            addHandler {
+                respond(
+                    content = ByteReadChannel(body),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, contentType),
+                )
+            }
+        }
+        install(Snoop)
     }
 
     @Test

@@ -36,7 +36,7 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
     val startKey = AttributeKey<TimeSource.Monotonic.ValueTimeMark>("SnoopStart")
 
     on(SendingRequest) { request, content ->
-        runSafely {
+        runSafely("ktor.request") {
             if (!SnoopCore.enabled) return@runSafely
             if (config.requestFilters.any { !it(request) }) return@runSafely
 
@@ -55,19 +55,23 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
                     path = url.encodedPath,
                     requestContentType = content.contentType?.toString(),
                     requestHeaders = captureRequestHeaders(request, content, redaction),
-                    requestBody = captureOutgoing(content, maxLen)?.redactedBy(redaction),
+                    requestBody = captureOutgoing(content, maxLen)
+                        ?.formRedactedBy(redaction, content.contentType)
+                        ?.redactedBy(redaction),
                 ),
             )
         }
     }
 
     onResponse { response ->
-        runSafely {
+        runSafely("ktor.response") {
             if (!SnoopCore.enabled) return@runSafely
             val callId = response.call.attributes.getOrNull(callIdKey) ?: return@runSafely
             // Stop the clock before Snoop reads the body, or the host's call looks slower than it was.
             val duration = response.call.attributes.getOrNull(startKey)?.elapsedNow()?.inWholeMilliseconds
-            val body = readResponseBody(response, maxLen)?.redactedBy(redaction)
+            val body = readResponseBody(response, maxLen)
+                ?.formRedactedBy(redaction, response.contentType())
+                ?.redactedBy(redaction)
             SnoopCore.updateNetwork(callId) {
                 it.copy(
                     status = response.status.value,
@@ -90,7 +94,8 @@ val Snoop = createClientPlugin("Snoop", ::SnoopConfig) {
         } catch (cause: Throwable) {
             val callId = request.attributes.getOrNull(callIdKey)
             if (callId != null) {
-                runSafely {
+                // Only Snoop's own recording can be logged here — `cause` belongs to the host.
+                runSafely("ktor.record-failure") {
                     // Ktor's timeout message embeds the full URL, query string and all, so it has
                     // to go through redaction like any other captured URL would.
                     val message = redaction.redactUrl(cause.message ?: cause::class.simpleName ?: "error")

@@ -17,6 +17,8 @@ class RedactionEngine(
 
     fun redactUrl(url: String): String = url
 
+    fun redactFormBody(body: String): String = body
+
     fun redactBody(text: String): String = text
 
     companion object {

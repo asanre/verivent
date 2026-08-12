@@ -1,5 +1,6 @@
 package com.snoop.core.redaction
 
+import com.snoop.core.internal.SnoopLog
 import com.snoop.core.model.KeyValue
 
 /**
@@ -39,14 +40,22 @@ class RedactionEngine(
         val fragmentStart = afterQuery.indexOf('#')
         val query = if (fragmentStart >= 0) afterQuery.substring(0, fragmentStart) else afterQuery
         val fragment = if (fragmentStart >= 0) afterQuery.substring(fragmentStart) else ""
-        val redacted = query.split('&').joinToString("&") { param ->
-            val eq = param.indexOf('=')
-            if (eq < 0) return@joinToString param
-            val name = param.substring(0, eq)
-            val hit = DEFAULT_QUERY_PARAMS.contains(name.lowercase()) || queryParamPredicates.anyFailClosed(name)
-            if (hit) "$name=$placeholder" else param
-        }
-        return url.substring(0, queryStart) + "?" + redacted + fragment
+        return url.substring(0, queryStart) + "?" + redactParams(query) + fragment
+    }
+
+    /**
+     * Redact a `name=value&…` form body with the same rules [redactUrl] applies to a query string —
+     * a `POST` of `password=…&client_secret=…` is exactly as sensitive as the same pair in a URL.
+     * Pure string transform, so names are matched as sent: a percent-encoded name doesn't match.
+     */
+    fun redactFormBody(body: String): String = redactParams(body)
+
+    private fun redactParams(params: String): String = params.split('&').joinToString("&") { param ->
+        val eq = param.indexOf('=')
+        if (eq < 0) return@joinToString param
+        val name = param.substring(0, eq)
+        val hit = DEFAULT_QUERY_PARAMS.contains(name.lowercase()) || queryParamPredicates.anyFailClosed(name)
+        if (hit) "$name=$placeholder" else param
     }
 
     /**
@@ -54,17 +63,22 @@ class RedactionEngine(
      * throwing transform replaces the whole text instead of leaking the unsanitized original.
      */
     fun redactBody(text: String): String = bodyTransforms.fold(text) { acc, transform ->
-        runCatching { transform(acc) }.getOrDefault(BODY_FAILURE_PLACEHOLDER)
+        runCatching { transform(acc) }
+            .onFailure { SnoopLog.warn(TAG, "body sanitizer threw; dropping the body", it) }
+            .getOrDefault(BODY_FAILURE_PLACEHOLDER)
     }
 
     private fun List<(String) -> Boolean>.anyFailClosed(name: String): Boolean {
         val folded = name.lowercase()
         return any { predicate ->
-            runCatching { predicate(name) || (folded != name && predicate(folded)) }.getOrDefault(true)
+            runCatching { predicate(name) || (folded != name && predicate(folded)) }
+                .onFailure { SnoopLog.warn(TAG, "redaction predicate threw on '$name'; redacting", it) }
+                .getOrDefault(true)
         }
     }
 
     companion object {
+        private const val TAG = "redaction"
         private const val BODY_FAILURE_PLACEHOLDER = "(body sanitizer failed)"
 
         const val DEFAULT_PLACEHOLDER = "██"
