@@ -11,6 +11,7 @@ import kotlin.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class EntryDtoTest {
 
@@ -36,6 +37,31 @@ class EntryDtoTest {
         assertTrue(json.contains("\"redacted\":true"))
         assertTrue(json.contains("\"type\":\"analytics\""))
         assertTrue(json.contains("\"channel\":\"firebase\""))
+    }
+
+    @Test
+    fun aFrameCarriesEveryIdButOnlyTheChangedEntries() {
+        val second = AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "two", "firebase")
+        val frame = Json.parseToJsonElement(encodeFrame(listOf("1", "2"), listOf(second))).jsonObject
+
+        assertEquals(listOf("1", "2"), frame.getValue("ids").jsonArray.map { it.jsonPrimitive.content })
+        val entries = frame.getValue("entries").jsonArray.map { it.jsonObject }
+        assertEquals(1, entries.size, "an unchanged entry must not be re-sent")
+        assertEquals("2", entries.single().getValue("id").jsonPrimitive.content)
+        assertEquals("two", entries.single().getValue("name").jsonPrimitive.content)
+    }
+
+    @Test
+    fun configSerializesNullsExplicitly() {
+        // Explicit nulls, not missing keys: the page has to tell "no grouping" from "not configured".
+        assertEquals("""{"groupByEvent":null,"groupLabelProperty":null}""", encodeConfig(null, null))
+    }
+
+    @Test
+    fun anEmptyFrameStillCarriesBothKeys() {
+        val frame = Json.parseToJsonElement(encodeFrame(emptyList(), emptyList())).jsonObject
+        assertTrue(frame.getValue("ids").jsonArray.isEmpty())
+        assertTrue(frame.getValue("entries").jsonArray.isEmpty())
     }
 
     @Test

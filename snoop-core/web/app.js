@@ -2,12 +2,40 @@ var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all
 
 // Detail rendering looks entries up by id on every SSE frame; index once per frame instead of
 // scanning the list per lookup. Null-prototype map so a captured id can't reach Object.prototype.
-function setEntries(list){
+function setEntries(list,index){
   entries=list||[];
+  if(index){byId=index;return;}
   byId=Object.create(null);
   for(var i=0;i<entries.length;i++)byId[entries[i].id]=entries[i];
 }
 function entryById(id){return (id==null)?null:(byId[id]||null);}
+
+// The stream sends deltas: every frame carries the full id order but only the entries that changed.
+// This map is the client's copy of the store, rebuilt from `ids` each frame so evictions and clears
+// prune themselves. `latest` stays a fully materialized list, which is what pause/resume replays.
+var streamById=Object.create(null);
+function seedStream(list){
+  streamById=Object.create(null);
+  (list||[]).forEach(function(e){streamById[e.id]=e;});
+  latest=list||[];
+  return latest;
+}
+function applyFrame(frame){
+  // Never mutate the previous map: `byId` may still point at it while the view is paused.
+  var fresh=Object.create(null);
+  (frame.entries||[]).forEach(function(e){fresh[e.id]=e;});
+  var next=[],kept=Object.create(null);
+  (frame.ids||[]).forEach(function(id){
+    var e=fresh[id]||streamById[id];
+    if(e){next.push(e);kept[id]=e;}
+  });
+  streamById=kept;
+  latest=next;
+  return next;
+}
+
+// Grouping mirrors SnoopCore.configure; these are the same defaults, replaced once /api/config lands.
+var GROUP_EVENT='screen_view',GROUP_PROP='screen_name';
 
 var TOKEN=new URLSearchParams(location.search).get('t')||'';
 function apiUrl(p){return TOKEN?p+(p.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(TOKEN):p;}
@@ -83,6 +111,10 @@ function rowHtml(e){
     "</div>";
 }
 
+function unreachableHtml(){
+  return "<div class='empty'><div class='emptyicon'>"+icon('search',28)+"</div><div class='emptytitle'>Can't reach Snoop</div>"+
+    "<div class='emptysub'>The app may have stopped, or this URL is missing its access token. The page reconnects on its own.</div></div>";
+}
 function emptyHtml(){
   var nothing=entries.length===0;
   var title=nothing?'Nothing captured yet':'No matches';
@@ -93,9 +125,9 @@ function emptyHtml(){
 function listHtml(){
   var groups=[],screen=null,bucket=[],gkey=null;
   entries.forEach(function(e){
-    if(e.type==='analytics'&&e.name==='screen_view'){
+    if(GROUP_EVENT&&e.type==='analytics'&&e.name===GROUP_EVENT){
       if(bucket.length)groups.push({screen:screen,key:gkey,entries:bucket});
-      var sp=(e.properties||[]).filter(function(k){return k.name==='screen';});
+      var sp=GROUP_PROP?(e.properties||[]).filter(function(k){return k.name===GROUP_PROP;}):[];
       screen=sp.length?sp[0].value:e.name;gkey=e.id;bucket=[e];
     }else{bucket.push(e);}
   });
@@ -116,7 +148,7 @@ function listHtml(){
         if(calls>0)parts.push(calls+(calls===1?' call':' calls'));
         label=parts.join(' · ');
       }else{
-        label='screen_view';
+        label=GROUP_EVENT;
       }
       html+="<div class='hgroup' data-group='"+esc(k)+"'>"+
         "<span class='chev"+(col?'':' open')+"'>"+icon('chevron',14)+"</span>"+
@@ -178,16 +210,23 @@ function curlCmd(e){
   if(e.requestBody)parts.push("--data '"+shq(e.requestBody)+"'");
   return parts.join(' \\\n  ');
 }
-function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(err){}document.body.removeChild(ta);}
+function fallbackCopy(t){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(err){}document.body.removeChild(ta);return ok;}
 function copyText(text,message){
-  var done=function(){toast(message);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){fallbackCopy(text);done();});}
-  else{fallbackCopy(text);done();}
+  var done=function(ok){toast(ok?message:'Copy failed');};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(function(){done(true);},function(){done(fallbackCopy(text));});}
+  else{done(fallbackCopy(text));}
 }
 function copyCurl(id){
   var e=entryById(id);
   if(!e)return;
   copyText(curlCmd(e),'Copied as cURL');
+}
+function copyBody(key){
+  var sep=key.lastIndexOf(':');
+  var e=entryById(key.slice(0,sep));
+  if(!e)return;
+  var body=key.slice(sep+1)==='req'?e.requestBody:e.responseBody;
+  if(body)copyText(body,'Copied body');
 }
 function copyPayload(id){
   var e=entryById(id);
@@ -204,11 +243,10 @@ function toast(msg){
   toastTimer=setTimeout(function(){t.className='toast';},1800);
 }
 function clearAll(){
+  // No local reseed: the post-clear stream frame prunes everything, without racing new captures.
   fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Snoop':'1'}}).then(function(r){
     if(!r.ok)throw new Error('clear rejected: '+r.status);
-    return fetch(apiUrl('/api/entries'));
-  }).then(function(r){return r.json();}).then(function(j){
-    latest=j;setEntries(j);selectedId=null;toast('Cleared');render();
+    selectedId=null;toast('Cleared');render();
   }).catch(function(){toast('Clear failed');});
 }
 function exportJson(){
@@ -236,7 +274,9 @@ function requestResponseHtml(e,side){
   var byteCount=side==='req'?e.requestByteCount:e.responseByteCount;
   var h="<div class='card'>"+headersSection('Headers',headers,key)+"</div>";
   h+="<div class='card'>";
-  h+="<div class='shrow' style='margin-top:0'><div class='section'>"+esc(label)+"</div>"+(body?segHtml(rawBody,'setRaw'):'')+"</div>";
+  var tools=body?("<div class='shtools'>"+segHtml(rawBody,'setRaw')+
+    "<button class='copybtn' data-copybody='"+esc(key)+"'>"+icon('copy',14)+" Copy</button></div>"):'';
+  h+="<div class='shrow' style='margin-top:0'><div class='section'>"+esc(label)+"</div>"+tools+"</div>";
   if(!body){
     h+="<div class='sub'>Empty</div>";
   }else{
@@ -291,7 +331,7 @@ function analyticsDetailHtml(e){
     h+="<div class='sub'>None</div>";
   }else if(rawParams){
     var obj={};e.properties.forEach(function(k){obj[k.name]=k.redacted?'•••':k.value;});
-    h+="<div class='code mono' style='margin-top:8px'>"+esc(JSON.stringify(obj,null,2))+"</div>";
+    h+="<div class='code mono' style='margin-top:8px'>"+hl(JSON.stringify(obj,null,2))+"</div>";
   }else{
     h+="<div class='card' style='margin-top:8px'>"+kvHtml(e.properties,true)+"</div>";
   }
@@ -354,12 +394,25 @@ document.getElementById('detail').addEventListener('click',function(ev){
   if(c){copyCurl(c.getAttribute('data-curl'));return;}
   var p=ev.target.closest('[data-payload]');
   if(p){copyPayload(p.getAttribute('data-payload'));return;}
+  var cb=ev.target.closest('[data-copybody]');
+  if(cb){copyBody(cb.getAttribute('data-copybody'));return;}
   var hd=ev.target.closest('[data-headers]');
   if(hd){toggleHeaders(hd.getAttribute('data-headers'));return;}
   var r=ev.target.closest('[data-id]');
   if(r)sel(r.getAttribute('data-id'));
 });
+fetch(apiUrl('/api/config')).then(function(r){
+  if(!r.ok)throw new Error('config rejected: '+r.status);
+  return r.json();
+}).then(function(c){
+  GROUP_EVENT=c.groupByEvent;GROUP_PROP=c.groupLabelProperty;render();
+}).catch(function(){/* keep the built-in defaults; the entries fetch reports unreachability */});
 var es=new EventSource(apiUrl('/api/stream'));
-es.onmessage=function(ev){latest=JSON.parse(ev.data);if(!paused){setEntries(latest);render();}};
-fetch(apiUrl('/api/entries')).then(function(r){return r.json();}).then(function(j){if(!latest){latest=j;setEntries(j);render();}});
+es.onmessage=function(ev){applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};
+fetch(apiUrl('/api/entries')).then(function(r){
+  if(!r.ok)throw new Error('entries rejected: '+r.status);
+  return r.json();
+}).then(function(j){if(!latest){setEntries(seedStream(j));render();}}).catch(function(){
+  document.getElementById('list').innerHTML=unreachableHtml();
+});
 render();

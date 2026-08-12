@@ -62,6 +62,7 @@ main{flex:1;overflow:hidden;display:flex;padding:12px;gap:12px}
 .shead .chev.open{transform:rotate(90deg)}
 .shrow{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
 .shrow .section{margin:0}
+.shtools{display:flex;align-items:center;gap:8px}
 .kv{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--outline-var)}
 .kv:last-child{border-bottom:none}
 .kv .k{flex:.42;color:var(--on-surface-var)}

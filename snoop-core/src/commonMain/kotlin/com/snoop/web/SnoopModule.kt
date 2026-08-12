@@ -1,6 +1,7 @@
 package com.snoop.web
 
 import com.snoop.core.SnoopCore
+import com.snoop.core.model.SnoopEntry
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -38,6 +39,9 @@ internal fun Application.snoopModule(token: String? = null) {
         get("/api/entries") {
             call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
         }
+        get("/api/config") {
+            call.respondText(encodeConfig(SnoopCore.groupByEvent, SnoopCore.groupLabelProperty), ContentType.Application.Json)
+        }
         post("/api/clear") {
             // CSRF guard: the custom header forces a preflight this server never approves, and any
             // cross-origin caller (a hostile page open in the same browser) carries a foreign Origin.
@@ -52,11 +56,22 @@ internal fun Application.snoopModule(token: String? = null) {
             call.respondText("ok")
         }
         sse("/api/stream") {
+            // Deltas, tracked per connection: the store holds up to 20 MB and re-encoding all of it
+            // on every mutation is the host's bill to pay. `SnoopStore.update` replaces only the
+            // entry it touches, so reference identity is enough to tell what the client is missing.
+            val last = HashMap<String, SnoopEntry>()
             // StateFlow collection is conflated by design: during the delay intermediate bursts
             // collapse and the collector resumes on the latest state, so encoding is capped at
             // ~4 frames/s and the final state is always delivered.
             SnoopCore.store.entries.collect { entries ->
-                send(ServerSentEvent(data = encodeEntries(entries)))
+                val ids = ArrayList<String>(entries.size)
+                val changed = ArrayList<SnoopEntry>()
+                for (entry in entries) {
+                    ids += entry.id
+                    if (last.put(entry.id, entry) !== entry) changed += entry
+                }
+                if (last.size > ids.size) last.keys.retainAll(ids.toHashSet())
+                send(ServerSentEvent(data = encodeFrame(ids, changed)))
                 delay(250)
             }
         }

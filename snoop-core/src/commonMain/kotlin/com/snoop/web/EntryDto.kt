@@ -43,6 +43,17 @@ internal data class EntryDto(
     val properties: List<KvDto>? = null,
 )
 
+/**
+ * One SSE frame: [ids] is the full timeline in order, [entries] only the ones the client doesn't
+ * have yet. The client rebuilds its list from [ids], which also prunes whatever got evicted.
+ */
+@Serializable
+internal data class StreamFrameDto(val ids: List<String>, val entries: List<EntryDto>)
+
+/** How the page must group the timeline, so it matches whatever the on-device UI shows. */
+@Serializable
+internal data class ConfigDto(val groupByEvent: String?, val groupLabelProperty: String?)
+
 private fun KeyValue.toDto() = KvDto(name, value, redacted)
 
 internal fun SnoopEntry.toDto(): EntryDto = when (this) {
@@ -85,3 +96,13 @@ private val webJson = Json { encodeDefaults = false }
 
 internal fun encodeEntries(entries: List<SnoopEntry>): String =
     webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
+
+internal fun encodeFrame(ids: List<String>, changed: List<SnoopEntry>): String =
+    webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))
+
+// Its own Json: `webJson` drops defaults, and a null here has to reach the page as an explicit null
+// (grouping off) rather than as a missing key the page would have to guess about.
+private val configJson = Json { explicitNulls = true }
+
+internal fun encodeConfig(groupByEvent: String?, groupLabelProperty: String?): String =
+    configJson.encodeToString(ConfigDto.serializer(), ConfigDto(groupByEvent, groupLabelProperty))

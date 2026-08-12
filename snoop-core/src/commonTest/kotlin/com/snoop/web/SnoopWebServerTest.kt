@@ -7,11 +7,14 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -142,10 +145,63 @@ class SnoopWebServerTest {
     }
 
     @Test
+    fun sseSecondFrameCarriesOnlyTheDelta() = testApplication {
+        seedEntry()
+        application { snoopModule() }
+        val frames = mutableListOf<String>()
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            val reader = launch {
+                client.prepareGet("/api/stream").execute { response ->
+                    val channel = response.bodyAsChannel()
+                    while (true) {
+                        val line = channel.readUTF8Line() ?: break
+                        if (line.startsWith("data:")) frames += line
+                    }
+                }
+            }
+            withTimeout(10_000) { while (frames.isEmpty()) delay(20) }
+            SnoopCore.recordAnalytics(AnalyticsEntry("2", Instant.fromEpochMilliseconds(1), "second", "ch"))
+            withTimeout(10_000) { while (frames.size < 2) delay(20) }
+            reader.cancel()
+        }
+        assertTrue("\"event\"" in frames.first(), "the first frame carries everything: ${frames.first()}")
+        val delta = frames[1]
+        assertTrue("\"second\"" in delta, "the new entry belongs in the delta: $delta")
+        assertFalse("\"event\"" in delta, "an unchanged entry must not be re-sent: $delta")
+        assertTrue("[\"1\",\"2\"]" in delta, "every id stays in the frame so the client can prune: $delta")
+    }
+
+    @Test
+    fun sseResendsAnEntryWhenItChanges() = testApplication {
+        seedEntry()
+        application { snoopModule() }
+        val frames = mutableListOf<String>()
+        withContext(Dispatchers.Default.limitedParallelism(1)) {
+            val reader = launch {
+                client.prepareGet("/api/stream").execute { response ->
+                    val channel = response.bodyAsChannel()
+                    while (true) {
+                        val line = channel.readUTF8Line() ?: break
+                        if (line.startsWith("data:")) frames += line
+                    }
+                }
+            }
+            withTimeout(10_000) { while (frames.isEmpty()) delay(20) }
+            SnoopCore.store.update("1") { (it as AnalyticsEntry).copy(name = "renamed") }
+            withTimeout(10_000) { while (frames.size < 2) delay(20) }
+            reader.cancel()
+        }
+        val delta = frames[1]
+        assertTrue("\"renamed\"" in delta, "an updated entry must be re-sent: $delta")
+        assertTrue("[\"1\"]" in delta, "the id keeps its position: $delta")
+    }
+
+    @Test
     fun concurrentStartYieldsOneServer() = runTest {
         val port = 9378
         val urls = (1..8).map { async(Dispatchers.Default) { SnoopWebServer.start(port = port) } }.awaitAll()
-        assertTrue(urls.all { it == "http://localhost:$port" })
+        val token = assertNotNull(SnoopWebServer.token)
+        assertTrue(urls.all { it == "http://localhost:$port/?t=$token" }, "got $urls")
         assertTrue(SnoopWebServer.isRunning)
     }
 
@@ -167,10 +223,20 @@ class SnoopWebServerTest {
     }
 
     @Test
-    fun startReturnsAnOpenLocalUrlForLocalBinds() = runTest {
+    fun startGatesLocalBindsToo() = runTest {
         val url = SnoopWebServer.start(SnoopBind.Local, port = 9379)
-        assertEquals("http://localhost:9379", url)
-        assertNull(SnoopWebServer.token)
+        val token = assertNotNull(SnoopWebServer.token, "loopback must be gated as well")
+        assertEquals("http://localhost:9379/?t=$token", url)
+    }
+
+    @Test
+    fun stopThenStartOnSamePortWorks() = runTest {
+        val port = 9380
+        SnoopWebServer.start(port = port)
+        SnoopWebServer.stop()
+        assertFalse(SnoopWebServer.isRunning, "stop() must not return before the engine is down")
+        assertTrue(SnoopWebServer.start(port = port).endsWith("t=${SnoopWebServer.token}"))
+        assertTrue(SnoopWebServer.isRunning)
     }
 
     @Test
@@ -185,7 +251,23 @@ class SnoopWebServerTest {
         application { snoopModule(token = "secret") }
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/config").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
+    }
+
+    @Test
+    fun configEndpointServesGrouping() = testApplication {
+        application { snoopModule() }
+        assertEquals(
+            """{"groupByEvent":"screen_view","groupLabelProperty":"screen_name"}""",
+            client.get("/api/config").bodyAsText(),
+        )
+
+        SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
+        assertEquals(
+            """{"groupByEvent":"page_shown","groupLabelProperty":"page"}""",
+            client.get("/api/config").bodyAsText(),
+        )
     }
 
     @Test
@@ -208,17 +290,12 @@ class SnoopWebServerTest {
     }
 
     @Test
-    fun onlyLocalIsOpenEveryReachableBindGeneratesAToken() {
-        assertNull(resolveToken(SnoopBind.Local, null))
-        assertEquals("mine", resolveToken(SnoopBind.Local, "mine"))
-        assertEquals("mine", resolveToken(SnoopBind.Lan, "mine"))
+    fun everyBindGeneratesATokenUnlessOneIsForced() {
+        assertEquals("mine", resolveToken("mine"))
 
-        val lan = resolveToken(SnoopBind.Lan, null)
-        assertNotNull(lan)
-        assertTrue(lan.length >= 16, "expected a long token, got '$lan'")
-        assertNotEquals(lan, resolveToken(SnoopBind.Lan, null))
-        // A custom host is gated too, even one pointed at loopback.
-        assertNotNull(resolveToken(SnoopBind.Host("127.0.0.1"), null))
+        val generated = resolveToken(null)
+        assertTrue(generated.length >= 16, "expected a long token, got '$generated'")
+        assertNotEquals(generated, resolveToken(null))
     }
 
     @Test
@@ -253,10 +330,14 @@ class SnoopWebServerTest {
         assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Lan)))
     }
 
-    private fun running(bind: SnoopBind, token: String? = "abc") = Running(
-        server = SnoopWebServer.createServer(9394, bind.bindAddress, token),
-        port = 9394,
-        bind = bind,
-        token = token,
-    )
+    private fun running(bind: SnoopBind, token: String? = "abc"): Running {
+        val scope = CoroutineScope(SupervisorJob())
+        return Running(
+            server = SnoopWebServer.createServer(9394, bind.bindAddress, token, scope),
+            scope = scope,
+            port = 9394,
+            bind = bind,
+            token = token,
+        )
+    }
 }
