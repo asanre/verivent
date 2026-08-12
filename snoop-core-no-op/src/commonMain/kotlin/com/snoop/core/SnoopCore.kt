@@ -13,7 +13,18 @@ object SnoopCore {
 
     var enabled: Boolean = false
 
-    fun configure(capacity: Int = store.capacity, maxTotalBytes: Long = store.maxTotalBytes) = Unit
+    var groupByEvent: String? = "screen_view"
+        private set
+
+    var groupLabelProperty: String? = "screen_name"
+        private set
+
+    fun configure(
+        capacity: Int = store.capacity,
+        maxTotalBytes: Long = store.maxTotalBytes,
+        groupByEvent: String? = this.groupByEvent,
+        groupLabelProperty: String? = this.groupLabelProperty,
+    ) = Unit
 
     fun nextId(): String = "0"
 

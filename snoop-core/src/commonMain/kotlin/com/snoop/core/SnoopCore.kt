@@ -26,11 +26,38 @@ object SnoopCore {
     var enabled: Boolean = true
 
     /**
-     * Reconfigure the store limits. Call before traffic starts; clears existing entries. The store
-     * and its StateFlow survive, so already-attached collectors (Compose UI, SSE) keep working.
+     * Analytics event that opens a new collapsible group in the timeline, or null for no grouping.
+     * Read by every viewer: the Compose inspector, the Android Activity, the web page and the
+     * native iOS hosts. Set it through [configure].
      */
-    fun configure(capacity: Int = store.capacity, maxTotalBytes: Long = store.maxTotalBytes) {
-        store.reconfigure(capacity = capacity, maxTotalBytes = maxTotalBytes)
+    var groupByEvent: String? = DEFAULT_GROUP_BY_EVENT
+        private set
+
+    /**
+     * Property of the [groupByEvent] event whose value labels the group — Firebase's convention for
+     * a manual `screen_view` is `screen_name`. When it is null, or the event doesn't carry it, the
+     * group falls back to the event's own name.
+     */
+    var groupLabelProperty: String? = DEFAULT_GROUP_LABEL_PROPERTY
+        private set
+
+    /**
+     * Reconfigure the store limits and how the viewers group the timeline. Changing the limits
+     * clears existing entries — set them before traffic starts; grouping changes leave the store
+     * alone. The store and its StateFlow survive, so already-attached collectors (Compose UI, SSE)
+     * keep working. [reset] restores the defaults.
+     */
+    fun configure(
+        capacity: Int = store.capacity,
+        maxTotalBytes: Long = store.maxTotalBytes,
+        groupByEvent: String? = this.groupByEvent,
+        groupLabelProperty: String? = this.groupLabelProperty,
+    ) {
+        this.groupByEvent = groupByEvent
+        this.groupLabelProperty = groupLabelProperty
+        if (capacity != store.capacity || maxTotalBytes != store.maxTotalBytes) {
+            store.reconfigure(capacity = capacity, maxTotalBytes = maxTotalBytes)
+        }
     }
 
     fun nextId(): String = idCounter.incrementAndFetch().toString()
@@ -54,12 +81,17 @@ object SnoopCore {
         if (enabled) store.record(entry)
     }
 
-    /** Test/utility hook to reset all state. */
+    /** Test/utility hook to reset all state, grouping config included. */
     fun reset() {
         idCounter.store(0)
         store.clear()
         enabled = true
+        groupByEvent = DEFAULT_GROUP_BY_EVENT
+        groupLabelProperty = DEFAULT_GROUP_LABEL_PROPERTY
     }
+
+    private const val DEFAULT_GROUP_BY_EVENT = "screen_view"
+    private const val DEFAULT_GROUP_LABEL_PROPERTY = "screen_name"
 
     val entriesSnapshot: List<SnoopEntry> get() = store.entries.value
 }

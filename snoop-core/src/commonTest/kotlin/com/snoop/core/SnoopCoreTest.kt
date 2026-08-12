@@ -115,6 +115,27 @@ class SnoopCoreConfigureTest {
     }
 
     @Test
+    fun groupingDefaultsToFirebasesScreenViewConvention() {
+        assertEquals("screen_view", SnoopCore.groupByEvent)
+        assertEquals("screen_name", SnoopCore.groupLabelProperty)
+    }
+
+    @Test
+    fun configureRoundTripsGroupingAndResetRestoresTheDefaults() {
+        SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
+        assertEquals("page_shown", SnoopCore.groupByEvent)
+        assertEquals("page", SnoopCore.groupLabelProperty)
+
+        SnoopCore.configure(groupLabelProperty = null)
+        assertEquals("page_shown", SnoopCore.groupByEvent)
+        assertNull(SnoopCore.groupLabelProperty)
+
+        SnoopCore.reset()
+        assertEquals("screen_view", SnoopCore.groupByEvent)
+        assertEquals("screen_name", SnoopCore.groupLabelProperty)
+    }
+
+    @Test
     fun configureKeepsStoreAndFlowIdentityAndStillEmits() {
         val store = SnoopCore.store
         val flow = store.entries
@@ -175,6 +196,23 @@ class RedactionEngineTest {
             "https://api.test/x?token=██#section",
             RedactionEngine().redactUrl("https://api.test/x?token=abc#section"),
         )
+    }
+
+    @Test
+    fun formBodiesUseTheQueryParameterRules() {
+        val engine = RedactionEngine()
+        assertEquals(
+            "grant_type=password&username=a&password=██&client_secret=██",
+            engine.redactFormBody("grant_type=password&username=a&password=hunter2&client_secret=shh"),
+        )
+    }
+
+    @Test
+    fun formBodyPassesThroughWhatIsNotAParameter() {
+        val engine = RedactionEngine(queryParamPredicates = listOf { it == "session" })
+        // A valueless pair and a plain (non-form) payload survive untouched.
+        assertEquals("flag&session=██", engine.redactFormBody("flag&session=abc"))
+        assertEquals("""{"a":1}""", engine.redactFormBody("""{"a":1}"""))
     }
 
     @Test
