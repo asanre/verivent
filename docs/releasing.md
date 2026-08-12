@@ -39,8 +39,11 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
 6. **Swift Package distribution** — Apple has no package registry, so the SPM channel is a second
    repository. Create an empty `asanre/snoop-swift`, then add a fifth secret:
    - `SNOOP_SWIFT_TOKEN` — a fine-grained PAT scoped to `asanre/snoop-swift` with
-     **Contents: read and write**. The `publish` workflow force-generates that repo from `swift/` on
-     every release; nothing there is ever edited by hand.
+     **Contents: read and write**. Not `Administration`, which sorts first in the dropdown and is
+     the easy mis-pick: it grants deleting the repo but not pushing to it. The confirmation dialog
+     should list exactly `Contents: Read and write` plus the mandatory `Metadata: Read-only`. The
+     `publish` workflow force-generates that repo from `swift/` on every release; nothing there is
+     ever edited by hand.
 
 ## Cutting a release
 
