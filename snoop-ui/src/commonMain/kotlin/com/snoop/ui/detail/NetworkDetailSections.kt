@@ -1,12 +1,19 @@
 package com.snoop.ui.detail
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,6 +24,7 @@ import com.snoop.ui.component.KeyValueRow
 import com.snoop.ui.component.NetworkBodyView
 import com.snoop.ui.component.SectionCard
 import com.snoop.ui.component.SectionLabel
+import com.snoop.ui.component.SnoopIcons
 
 @Composable
 internal fun Overview(transaction: NetworkTransaction) {
@@ -44,7 +52,9 @@ internal fun HeadersAndBody(
     body: String?,
     truncated: Boolean,
     headersInitiallyExpanded: Boolean,
+    showMessage: (String) -> Unit,
 ) {
+    val clipboard = LocalClipboardManager.current
     SectionCard {
         Column(Modifier.padding(12.dp)) {
             CollapsibleSection("Headers (${headers.size})", initiallyExpanded = headersInitiallyExpanded) {
@@ -60,7 +70,21 @@ internal fun HeadersAndBody(
     }
     SectionCard(modifier = Modifier.padding(top = 12.dp)) {
         Column(Modifier.padding(12.dp)) {
-            SectionLabel("Body", fontSize = 10.sp, topPadding = 0.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionLabel("Body", fontSize = 10.sp, topPadding = 0.dp, bottomPadding = 0.dp)
+                if (!body.isNullOrEmpty()) {
+                    IconButton(onClick = {
+                        clipboard.setText(AnnotatedString(body))
+                        showMessage("Body copied")
+                    }) {
+                        Icon(SnoopIcons.Copy, contentDescription = "Copy body")
+                    }
+                }
+            }
             if (body.isNullOrEmpty()) {
                 Text("Empty", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {

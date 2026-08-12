@@ -44,7 +44,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                 Icon(SnoopIcons.Copy, contentDescription = "Copy as cURL")
             }
         },
-    ) { modifier, _ ->
+    ) { modifier, showMessage ->
         Column(modifier) {
             var tab by remember { mutableStateOf(NetworkDetailTab.Overview) }
             val colors = LocalSnoopColors.current
@@ -77,12 +77,14 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
                         body = transaction.requestBody?.text,
                         truncated = transaction.requestBody?.truncated == true,
                         headersInitiallyExpanded = true,
+                        showMessage = showMessage,
                     )
                     NetworkDetailTab.Response -> HeadersAndBody(
                         headers = transaction.responseHeaders,
                         body = transaction.responseBody?.text,
                         truncated = transaction.responseBody?.truncated == true,
                         headersInitiallyExpanded = false,
+                        showMessage = showMessage,
                     )
                 }
             }
