@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import com.snoop.analytics.AnalyticsEvent
 import com.snoop.analytics.SnoopAnalytics
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.SnoopLog
+import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
 import com.snoop.core.model.BodyPreview
@@ -43,6 +45,9 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.configure()
     SnoopCore.configure(capacity = 100)
     SnoopCore.configure(capacity = 100, maxTotalBytes = 1_000L)
+    SnoopCore.configure(groupByEvent = "e", groupLabelProperty = null)
+    val groupByEvent: String? = SnoopCore.groupByEvent
+    val groupLabelProperty: String? = SnoopCore.groupLabelProperty
     val id: String = SnoopCore.nextId()
     val now: Instant = SnoopCore.now()
     SnoopCore.recordNetwork(txn)
@@ -50,6 +55,14 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.recordAnalytics(event)
     SnoopCore.reset()
     val snapshot: List<SnoopEntry> = SnoopCore.entriesSnapshot
+}
+
+private fun internals() {
+    runSafely("tag") { }
+    SnoopLog.warn("tag", "message")
+    SnoopLog.warn("tag", "message", RuntimeException())
+    SnoopLog.warn(tag = "tag", message = "message", throwable = null)
+    SnoopLog.info("tag", "message")
 }
 
 private fun model() {
@@ -126,6 +139,7 @@ private fun redaction() {
     val header: KeyValue = custom.redactHeader("n", "v")
     val property: KeyValue = custom.redactProperty("k", "v")
     val url: String = custom.redactUrl("https://x?token=y")
+    val form: String = custom.redactFormBody("token=y&a=b")
     val body: String = custom.redactBody("b")
     val placeholder: String = RedactionEngine.DEFAULT_PLACEHOLDER
     val headers: Set<String> = RedactionEngine.DEFAULT_HEADERS
@@ -181,4 +195,5 @@ private fun androidEntryPoints(context: Context) {
 private fun screen() {
     SnoopScreen()
     SnoopScreen(modifier = Modifier, groupByEvent = null)
+    SnoopScreen(modifier = Modifier, groupByEvent = null, groupLabelProperty = null)
 }
