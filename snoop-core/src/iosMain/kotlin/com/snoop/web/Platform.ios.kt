@@ -2,6 +2,7 @@
 
 package com.snoop.web
 
+import com.snoop.core.internal.SnoopLog
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -28,7 +29,10 @@ private const val WIFI_INTERFACE = "en0"
 
 internal actual fun localHostAddress(): String? = memScoped {
     val list = alloc<CPointerVar<ifaddrs>>()
-    if (getifaddrs(list.ptr) != 0) return@memScoped null
+    if (getifaddrs(list.ptr) != 0) {
+        SnoopLog.warn("web", "getifaddrs failed; no LAN address")
+        return@memScoped null
+    }
     try {
         var cur = list.value
         while (cur != null) {

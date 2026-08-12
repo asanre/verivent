@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.snoop.ui.R
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.SnoopLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -97,8 +98,9 @@ object Snoop {
             .build()
         try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        } catch (_: SecurityException) {
+        } catch (cause: SecurityException) {
             // POST_NOTIFICATIONS not granted (API 33+); the host must request it.
+            SnoopLog.warn("notification", "POST_NOTIFICATIONS not granted; nothing posted", cause)
         }
     }
 

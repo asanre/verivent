@@ -3,6 +3,7 @@
 package com.snoop.ui
 
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.SnoopLog
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,8 @@ object Snoop {
 
     fun showNotification() {
         val center = UNUserNotificationCenter.currentNotificationCenter()
-        center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { granted, _: NSError? ->
+        center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { granted, error: NSError? ->
+            if (error != null) SnoopLog.warn(TAG, "notification authorization failed: ${error.localizedDescription}")
             if (granted) scope.launch { start(center) }
         }
     }
@@ -88,8 +90,12 @@ object Snoop {
         }
         // Fixed identifier: each request replaces the previously delivered notification.
         val request = UNNotificationRequest.requestWithIdentifier(IDENTIFIER, content, null)
-        UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request, null)
+        UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { error: NSError? ->
+            if (error != null) SnoopLog.warn(TAG, "could not post the notification: ${error.localizedDescription}")
+        }
     }
+
+    private const val TAG = "notification"
 }
 
 private class ForegroundBannerDelegate(

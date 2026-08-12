@@ -1,6 +1,7 @@
 package com.snoop.analytics
 
 import com.snoop.core.SnoopCore
+import com.snoop.core.internal.SnoopLog
 import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.redaction.RedactionEngine
@@ -14,11 +15,16 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
     private val redaction = RedactionEngine(propertyPredicates = config.propertyRedactors)
 
     fun log(name: String, channel: String, properties: Map<String, Any?> = emptyMap()) {
-        runSafely {
+        runSafely(TAG) {
             if (!SnoopCore.enabled) return@runSafely
             val event = AnalyticsEvent(name, channel, properties)
             // A throwing filter keeps the event visible (fail open): missing data is the worse bug.
-            if (!config.filters.all { runCatching { it(event) }.getOrDefault(true) }) return@runSafely
+            val visible = config.filters.all {
+                runCatching { it(event) }
+                    .onFailure { failure -> SnoopLog.warn(TAG, "filter threw; keeping the event", failure) }
+                    .getOrDefault(true)
+            }
+            if (!visible) return@runSafely
 
             SnoopCore.recordAnalytics(
                 AnalyticsEntry(
@@ -30,11 +36,19 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                         redaction.redactProperty(key, value?.toString() ?: "null")
                     },
                     annotations = config.annotators
-                        .flatMap { runCatching { it(event) }.getOrDefault(emptyList()) }
+                        .flatMap {
+                            runCatching { it(event) }
+                                .onFailure { failure -> SnoopLog.warn(TAG, "annotator threw", failure) }
+                                .getOrDefault(emptyList())
+                        }
                         .distinct(),
                 ),
             )
         }
+    }
+
+    private companion object {
+        const val TAG = "analytics"
     }
 }
 
