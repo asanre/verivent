@@ -17,10 +17,15 @@ internal fun TimelineGroup.stableKey(): String = entries.last().id
 
 /**
  * Split the (chronological) entries into collapsible groups keyed by [groupByEvent] (à la Tag
- * Assistant). Groups and their entries come back newest-first for display. When [groupByEvent] is
- * null, everything lands in a single unnamed group.
+ * Assistant), labelled with the event's [labelProperty] value. Groups and their entries come back
+ * newest-first for display. When [groupByEvent] is null, everything lands in a single unnamed group;
+ * when [labelProperty] is null or absent from the event, the group takes the event's own name.
  */
-internal fun groupEntries(entries: List<SnoopEntry>, groupByEvent: String?): List<TimelineGroup> {
+internal fun groupEntries(
+    entries: List<SnoopEntry>,
+    groupByEvent: String?,
+    labelProperty: String?,
+): List<TimelineGroup> {
     if (groupByEvent == null) {
         return listOf(TimelineGroup(screen = null, entries = entries.asReversed()))
     }
@@ -31,7 +36,8 @@ internal fun groupEntries(entries: List<SnoopEntry>, groupByEvent: String?): Lis
     for (entry in entries) {
         if (entry is AnalyticsEntry && entry.name == groupByEvent) {
             if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket)
-            screen = entry.properties.firstOrNull { it.name == "screen" }?.value ?: entry.name
+            screen = labelProperty?.let { name -> entry.properties.firstOrNull { it.name == name }?.value }
+                ?: entry.name
             bucket = mutableListOf(entry)
         } else {
             bucket += entry

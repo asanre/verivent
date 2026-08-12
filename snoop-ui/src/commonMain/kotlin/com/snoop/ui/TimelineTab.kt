@@ -55,7 +55,12 @@ import com.snoop.ui.internal.matchesFilters
 import com.snoop.ui.internal.stableKey
 
 @Composable
-internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpen: (String) -> Unit) {
+internal fun TimelineTab(
+    entries: List<SnoopEntry>,
+    groupByEvent: String?,
+    labelProperty: String?,
+    onOpen: (String) -> Unit,
+) {
     var query by rememberSaveable { mutableStateOf("") }
     var filters by remember { mutableStateOf(TimelineFilters()) }
     var grouped by rememberSaveable { mutableStateOf(groupByEvent != null) }
@@ -65,8 +70,8 @@ internal fun TimelineTab(entries: List<SnoopEntry>, groupByEvent: String?, onOpe
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
     // Group over all entries so screen headers survive filters that hide the grouping event.
-    val groups = remember(entries, grouped, groupByEvent, filters, query) {
-        groupEntries(entries, if (grouped) groupByEvent else null)
+    val groups = remember(entries, grouped, groupByEvent, labelProperty, filters, query) {
+        groupEntries(entries, if (grouped) groupByEvent else null, labelProperty)
             .mapNotNull { group ->
                 val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
                 if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
