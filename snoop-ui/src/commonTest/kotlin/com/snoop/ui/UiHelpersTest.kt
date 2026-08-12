@@ -126,6 +126,44 @@ class ExportJsonTest {
     }
 
     @Test
+    fun repeatedHeadersSurviveTheExportInOrder() {
+        val (json, _) = entriesToJsonCapped(
+            listOf(
+                NetworkTransaction(
+                    "1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a", status = 200,
+                    responseHeaders = listOf(
+                        KeyValue("Set-Cookie", "a=1"),
+                        KeyValue("Set-Cookie", "b=2"),
+                        KeyValue("Content-Type", "text/plain"),
+                    ),
+                ),
+            ),
+        )
+        val headers = Json.parseToJsonElement(json).jsonArray.single()
+            .jsonObject.getValue("responseHeaders").jsonArray
+            .map { it.jsonObject.getValue("name").jsonPrimitive.content to it.jsonObject.getValue("value").jsonPrimitive.content }
+
+        assertEquals(
+            listOf("Set-Cookie" to "a=1", "Set-Cookie" to "b=2", "Content-Type" to "text/plain"),
+            headers,
+        )
+    }
+
+    @Test
+    fun analyticsPropertiesStayAnObject() {
+        val (json, _) = entriesToJsonCapped(
+            listOf(
+                AnalyticsEntry(
+                    "1", Instant.fromEpochMilliseconds(0), "purchase", "firebase",
+                    properties = listOf(KeyValue("value", "42.5")),
+                ),
+            ),
+        )
+        val properties = Json.parseToJsonElement(json).jsonArray.single().jsonObject.getValue("properties")
+        assertEquals("42.5", properties.jsonObject.getValue("value").jsonPrimitive.content)
+    }
+
+    @Test
     fun cappedExportKeepsNewestValidJsonAndReportsCount() {
         val entries = (1..50).map {
             NetworkTransaction(
@@ -162,12 +200,17 @@ class ExportJsonTest {
 }
 
 class GroupingTest {
-    private fun event(id: String, name: String, screen: String? = null) = AnalyticsEntry(
+    private fun event(
+        id: String,
+        name: String,
+        screen: String? = null,
+        property: String = "screen_name",
+    ) = AnalyticsEntry(
         id = id,
         timestamp = Instant.fromEpochMilliseconds(id.toLong()),
         name = name,
         channel = "firebase",
-        properties = screen?.let { listOf(KeyValue("screen", it)) } ?: emptyList(),
+        properties = screen?.let { listOf(KeyValue(property, it)) } ?: emptyList(),
     )
 
     private fun call(id: String) = NetworkTransaction(
@@ -182,7 +225,7 @@ class GroupingTest {
             event("3", "screen_view", "cart"),
             call("4"),
         )
-        val groups = groupEntries(entries, "screen_view")
+        val groups = groupEntries(entries, "screen_view", "screen_name")
         assertEquals(listOf("cart", "home"), groups.map { it.screen })
         // within the newest group, entries are newest-first
         assertEquals(listOf("4", "3"), groups.first().entries.map { it.id })
@@ -190,16 +233,17 @@ class GroupingTest {
 
     @Test
     fun entriesBeforeFirstScreenViewLandInUnnamedGroup() {
-        val groups = groupEntries(listOf(call("1"), event("2", "screen_view", "home")), "screen_view")
+        val groups = groupEntries(listOf(call("1"), event("2", "screen_view", "home")), "screen_view", "screen_name")
         assertEquals(listOf("home", null), groups.map { it.screen })
     }
 
     @Test
     fun stableKeyUnchangedWhenNewestGroupGrows() {
-        val before = groupEntries(listOf(event("1", "screen_view", "home"), call("2")), "screen_view")
+        val before = groupEntries(listOf(event("1", "screen_view", "home"), call("2")), "screen_view", "screen_name")
         val after = groupEntries(
             listOf(event("1", "screen_view", "home"), call("2"), call("3")),
             "screen_view",
+            "screen_name",
         )
         assertEquals(before.first().stableKey(), after.first().stableKey())
         assertEquals("1", after.first().stableKey())
@@ -207,8 +251,21 @@ class GroupingTest {
 
     @Test
     fun nullGroupKeyKeepsSingleGroup() {
-        val groups = groupEntries(listOf(call("1"), call("2")), null)
+        val groups = groupEntries(listOf(call("1"), call("2")), null, "screen_name")
         assertEquals(1, groups.size)
         assertEquals(listOf("2", "1"), groups.single().entries.map { it.id })
+    }
+
+    @Test
+    fun aCustomLabelPropertyLabelsTheGroup() {
+        val entries = listOf(event("1", "page_shown", "checkout", property = "page"), call("2"))
+        assertEquals(listOf("checkout"), groupEntries(entries, "page_shown", "page").map { it.screen })
+    }
+
+    @Test
+    fun withoutALabelPropertyTheGroupTakesTheEventName() {
+        val entries = listOf(event("1", "screen_view", "home"), call("2"))
+        assertEquals(listOf("screen_view"), groupEntries(entries, "screen_view", null).map { it.screen })
+        assertEquals(listOf("screen_view"), groupEntries(entries, "screen_view", "absent").map { it.screen })
     }
 }
