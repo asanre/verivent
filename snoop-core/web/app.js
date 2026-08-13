@@ -1,4 +1,4 @@
-var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,toastTimer=null;
+var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,toastTimer=null,unreachable=false;
 
 // Detail rendering looks entries up by id on every SSE frame; index once per frame instead of
 // scanning the list per lookup. Null-prototype map so a captured id can't reach Object.prototype.
@@ -111,15 +111,20 @@ function rowHtml(e){
     "</div>";
 }
 
-function unreachableHtml(){
-  return "<div class='empty'><div class='emptyicon'>"+icon('search',28)+"</div><div class='emptytitle'>Can't reach Snoop</div>"+
-    "<div class='emptysub'>The app may have stopped, or this URL is missing its access token. The page reconnects on its own.</div></div>";
+function emptyStateHtml(title,sub){
+  return "<div class='empty'><div class='emptyicon'>"+icon('search',28)+"</div><div class='emptytitle'>"+esc(title)+"</div><div class='emptysub'>"+esc(sub)+"</div></div>";
 }
 function emptyHtml(){
-  var nothing=entries.length===0;
-  var title=nothing?'Nothing captured yet':'No matches';
-  var sub=nothing?'Network calls and analytics events will show up here as they happen.':'Try a different filter or search.';
-  return "<div class='empty'><div class='emptyicon'>"+icon('search',28)+"</div><div class='emptytitle'>"+esc(title)+"</div><div class='emptysub'>"+esc(sub)+"</div></div>";
+  if(unreachable)return emptyStateHtml("Can't reach Snoop",'The app may have stopped, or this URL is missing its access token. The page reconnects on its own.');
+  if(entries.length===0)return emptyStateHtml('Nothing captured yet','Network calls and analytics events will show up here as they happen.');
+  return emptyStateHtml('No matches','Try a different filter or search.');
+}
+// Goes through render() rather than writing to #list: a later render — the /api/config response,
+// a filter click — would otherwise paint over the message.
+function setUnreachable(v){
+  if(unreachable===v)return;
+  unreachable=v;
+  render();
 }
 
 function listHtml(){
@@ -137,7 +142,7 @@ function listHtml(){
     var vis=g.entries.filter(matches);
     if(!vis.length)return;
     var k=g.key||vis[0].id;
-    if(g.screen){
+    if(g.screen!=null){
       var col=!!collapsedGroups[k];
       var label;
       if(col){
@@ -204,7 +209,7 @@ function setRawParams(v){rawParams=v;renderDetail();}
 function shq(s){return (''+s).replace(/'/g,"'\\''");}
 function curlCmd(e){
   var parts=['curl'];
-  if((e.method||'GET').toUpperCase()!=='GET')parts.push('-X '+shq(e.method.toUpperCase()));
+  if((e.method||'GET').toUpperCase()!=='GET')parts.push("-X '"+shq(e.method.toUpperCase())+"'");
   parts.push("'"+shq(e.url)+"'");
   (e.requestHeaders||[]).forEach(function(k){parts.push("-H '"+shq(k.name)+": "+shq(k.value)+"'");});
   if(e.requestBody)parts.push("--data '"+shq(e.requestBody)+"'");
@@ -408,11 +413,12 @@ fetch(apiUrl('/api/config')).then(function(r){
   GROUP_EVENT=c.groupByEvent;GROUP_PROP=c.groupLabelProperty;render();
 }).catch(function(){/* keep the built-in defaults; the entries fetch reports unreachability */});
 var es=new EventSource(apiUrl('/api/stream'));
-es.onmessage=function(ev){applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};
+// A frame is proof the server is back, whatever the seeding fetch reported.
+es.onmessage=function(ev){setUnreachable(false);applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};
 fetch(apiUrl('/api/entries')).then(function(r){
   if(!r.ok)throw new Error('entries rejected: '+r.status);
   return r.json();
 }).then(function(j){if(!latest){setEntries(seedStream(j));render();}}).catch(function(){
-  document.getElementById('list').innerHTML=unreachableHtml();
+  setUnreachable(true);
 });
 render();
