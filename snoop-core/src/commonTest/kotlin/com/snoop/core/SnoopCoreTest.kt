@@ -191,11 +191,27 @@ class RedactionEngineTest {
     }
 
     @Test
-    fun fragmentIsPreserved() {
+    fun fragmentParametersAreRedactedToo() {
+        val engine = RedactionEngine()
+        // The OAuth implicit flow hands the token back in the fragment, with no query at all.
         assertEquals(
-            "https://api.test/x?token=██#section",
-            RedactionEngine().redactUrl("https://api.test/x?token=abc#section"),
+            "https://api.test/cb#access_token=██&state=xyz",
+            engine.redactUrl("https://api.test/cb#access_token=abc&state=xyz"),
         )
+        assertEquals(
+            "https://api.test/x?token=██#id_token=██",
+            engine.redactUrl("https://api.test/x?token=abc#id_token=def"),
+        )
+    }
+
+    @Test
+    fun aFragmentThatIsNotParametersSurvives() {
+        val engine = RedactionEngine()
+        assertEquals("https://api.test/x?token=██#section", engine.redactUrl("https://api.test/x?token=abc#section"))
+        assertEquals("https://api.test/x#/route", engine.redactUrl("https://api.test/x#/route"))
+        // Nothing to redact anywhere: the very same string comes back, not a rebuilt copy.
+        val untouched = "https://api.test/x?page=1#/route"
+        assertSame(untouched, engine.redactUrl(untouched))
     }
 
     @Test

@@ -54,7 +54,9 @@ Three things are redacted:
 - **Headers** — the defaults (`authorization`, `cookie`, `set-cookie`) plus your `sanitizeHeader`
   rules, matched against the name as sent and its lowercase form.
 - **Query parameters** — a built-in list of secret-ish names (`token`, `access_token`, `api_key`,
-  `password`, `client_secret`, `signature`, …) plus your `sanitizeQueryParameter` rules.
+  `password`, `client_secret`, `signature`, …) plus your `sanitizeQueryParameter` rules. The URL
+  fragment goes through the same rules, since an OAuth implicit-flow redirect hands the token back
+  as `#access_token=…`; a fragment that isn't a parameter list (`#section`) is left alone.
 - **Form bodies** — a request body sent as `application/x-www-form-urlencoded` is split on
   `name=value&…` and run through the *same* rules as query parameters, so `POST /oauth/token` with
   `password=…&client_secret=…` is stored as `password=██&client_secret=██`. Names are matched as

@@ -30,17 +30,24 @@ class RedactionEngine(
     }
 
     /**
-     * Redact sensitive query parameter values in [url]. Pure string transform — no URL parsing
-     * dependency — so malformed URLs pass through untouched. The fragment is preserved.
+     * Redact sensitive parameter values in [url] — in the query string and in the fragment alike.
+     * An OAuth implicit-flow redirect carries its token only in `#access_token=…`, often with no
+     * query string at all. A fragment that isn't a `name=value` list (`#section`, `#/route`) has
+     * nothing to match and passes through. Pure string transform — no URL parsing dependency — so
+     * malformed URLs pass through untouched.
      */
     fun redactUrl(url: String): String {
-        val queryStart = url.indexOf('?')
-        if (queryStart < 0) return url
-        val afterQuery = url.substring(queryStart + 1)
-        val fragmentStart = afterQuery.indexOf('#')
-        val query = if (fragmentStart >= 0) afterQuery.substring(0, fragmentStart) else afterQuery
-        val fragment = if (fragmentStart >= 0) afterQuery.substring(fragmentStart) else ""
-        return url.substring(0, queryStart) + "?" + redactParams(query) + fragment
+        val fragmentStart = url.indexOf('#')
+        val head = if (fragmentStart >= 0) url.substring(0, fragmentStart) else url
+        val fragment = if (fragmentStart >= 0) url.substring(fragmentStart + 1) else null
+        val queryStart = head.indexOf('?')
+        val query = if (queryStart >= 0) head.substring(queryStart + 1) else null
+
+        val safeQuery = query?.let(::redactParams)
+        val safeFragment = fragment?.let(::redactParams)
+        if (safeQuery === query && safeFragment === fragment) return url
+        val path = if (queryStart >= 0) head.substring(0, queryStart) else head
+        return path + safeQuery?.let { "?$it" }.orEmpty() + safeFragment?.let { "#$it" }.orEmpty()
     }
 
     /**
@@ -50,12 +57,20 @@ class RedactionEngine(
      */
     fun redactFormBody(body: String): String = redactParams(body)
 
-    private fun redactParams(params: String): String = params.split('&').joinToString("&") { param ->
-        val eq = param.indexOf('=')
-        if (eq < 0) return@joinToString param
-        val name = param.substring(0, eq)
-        val hit = DEFAULT_QUERY_PARAMS.contains(name.lowercase()) || queryParamPredicates.anyFailClosed(name)
-        if (hit) "$name=$placeholder" else param
+    private fun redactParams(params: String): String {
+        var redacted = false
+        val safe = params.split('&').map { param ->
+            val eq = param.indexOf('=')
+            if (eq < 0) return@map param
+            val name = param.substring(0, eq)
+            val hit = DEFAULT_QUERY_PARAMS.contains(name.lowercase()) || queryParamPredicates.anyFailClosed(name)
+            if (!hit) return@map param
+            redacted = true
+            "$name=$placeholder"
+        }
+        // Nothing matched is the common case — every request with a query runs through here, and
+        // failed ones run through it twice. Hand back the original instead of a copy of it.
+        return if (redacted) safe.joinToString("&") else params
     }
 
     /**
