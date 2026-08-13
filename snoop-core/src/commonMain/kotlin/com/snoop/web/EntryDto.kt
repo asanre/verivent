@@ -50,7 +50,11 @@ internal data class EntryDto(
 @Serializable
 internal data class StreamFrameDto(val ids: List<String>, val entries: List<EntryDto>)
 
-/** How the page must group the timeline, so it matches whatever the on-device UI shows. */
+/**
+ * How the page must group the timeline, so it matches whatever the on-device UI shows. No default
+ * values here on purpose: `webJson` omits defaults, and "grouping off" has to reach the page as an
+ * explicit null rather than as a key the page would have to guess about.
+ */
 @Serializable
 internal data class ConfigDto(val groupByEvent: String?, val groupLabelProperty: String?)
 
@@ -100,9 +104,5 @@ internal fun encodeEntries(entries: List<SnoopEntry>): String =
 internal fun encodeFrame(ids: List<String>, changed: List<SnoopEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))
 
-// Its own Json: `webJson` drops defaults, and a null here has to reach the page as an explicit null
-// (grouping off) rather than as a missing key the page would have to guess about.
-private val configJson = Json { explicitNulls = true }
-
 internal fun encodeConfig(groupByEvent: String?, groupLabelProperty: String?): String =
-    configJson.encodeToString(ConfigDto.serializer(), ConfigDto(groupByEvent, groupLabelProperty))
+    webJson.encodeToString(ConfigDto.serializer(), ConfigDto(groupByEvent, groupLabelProperty))
