@@ -32,6 +32,10 @@ object Snoop {
     private const val NOTIFICATION_ID = 0x50_00
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // Guarded by the two @Synchronized entry points below: the "Clear" action posts from a binder
+    // thread while the host shows or dismisses from its own, and a lost update leaks the collector
+    // that re-posts a notification the user just dismissed.
     private var job: Job? = null
 
     fun open(context: Context) {
@@ -44,6 +48,7 @@ object Snoop {
      * Post the ongoing notification and keep it in sync with the store — each new capture refreshes
      * the listed lines. Idempotent: calling it again restarts the collection.
      */
+    @Synchronized
     fun showNotification(context: Context) {
         ensureChannel(context)
         // The collection outlives the caller, so hold the application context, never an Activity.
@@ -62,6 +67,7 @@ object Snoop {
         }
     }
 
+    @Synchronized
     fun dismissNotification(context: Context) {
         job?.cancel()
         job = null
