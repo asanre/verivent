@@ -11,7 +11,6 @@ import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 
 private val exportJson = Json { prettyPrint = true }
 
@@ -60,8 +59,7 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
         put("name", name)
         put("channel", channel)
         put("annotations", annotations.joinToString(",") { it.label })
-        // Properties come from a Map, so a name can't repeat — an object stays the friendlier shape.
-        putJsonObject("properties") { properties.forEach { put(it.name, it.value) } }
+        put("properties", propertiesJsonObject(properties))
     }
 }
 
