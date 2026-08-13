@@ -5,26 +5,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.ui.component.CollapsibleSection
+import com.snoop.ui.component.CopyIconButton
 import com.snoop.ui.component.KeyValueRow
 import com.snoop.ui.component.NetworkBodyView
 import com.snoop.ui.component.SectionCard
 import com.snoop.ui.component.SectionLabel
-import com.snoop.ui.component.SnoopIcons
 
 @Composable
 internal fun Overview(transaction: NetworkTransaction) {
@@ -54,7 +50,6 @@ internal fun HeadersAndBody(
     headersInitiallyExpanded: Boolean,
     showMessage: (String) -> Unit,
 ) {
-    val clipboard = LocalClipboardManager.current
     SectionCard {
         Column(Modifier.padding(12.dp)) {
             CollapsibleSection("Headers (${headers.size})", initiallyExpanded = headersInitiallyExpanded) {
@@ -77,12 +72,7 @@ internal fun HeadersAndBody(
             ) {
                 SectionLabel("Body", fontSize = 10.sp, topPadding = 0.dp, bottomPadding = 0.dp)
                 if (!body.isNullOrEmpty()) {
-                    IconButton(onClick = {
-                        clipboard.setText(AnnotatedString(body))
-                        showMessage("Body copied")
-                    }) {
-                        Icon(SnoopIcons.Copy, contentDescription = "Copy body")
-                    }
+                    CopyIconButton("Copy body", "Body copied", showMessage) { body }
                 }
             }
             if (body.isNullOrEmpty()) {

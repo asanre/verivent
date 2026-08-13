@@ -8,22 +8,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
+import com.snoop.ui.component.CopyIconButton
 import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.Pill
 import com.snoop.ui.component.PropertiesView
 import com.snoop.ui.component.SectionLabel
-import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.propertiesToJson
 import com.snoop.ui.theme.LocalSnoopColors
@@ -33,18 +29,12 @@ internal fun AnalyticsDetailScreen(
     entry: AnalyticsEntry,
     onBack: () -> Unit,
 ) {
-    val clipboard = LocalClipboardManager.current
     DetailScaffold(
         title = entry.name,
         subtitle = "event · ${entry.channel}",
         onBack = onBack,
         actions = { showMessage ->
-            IconButton(onClick = {
-                clipboard.setText(AnnotatedString(propertiesToJson(entry.properties)))
-                showMessage("Copied payload")
-            }) {
-                Icon(SnoopIcons.Copy, contentDescription = "Copy payload")
-            }
+            CopyIconButton("Copy payload", "Copied payload", showMessage) { propertiesToJson(entry.properties) }
         },
     ) { modifier, _ ->
         Column(

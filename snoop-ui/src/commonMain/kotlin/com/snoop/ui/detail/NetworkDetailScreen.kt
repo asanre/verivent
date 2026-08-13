@@ -8,22 +8,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.NetworkState
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.ui.component.CopyIconButton
 import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.Pill
-import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.formatBytes
 import com.snoop.ui.internal.formatDuration
@@ -31,18 +27,12 @@ import com.snoop.ui.theme.LocalSnoopColors
 
 @Composable
 internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> Unit) {
-    val clipboard = LocalClipboardManager.current
     DetailScaffold(
         title = "${transaction.method} ${transaction.path.ifEmpty { "/" }}",
         subtitle = transaction.host,
         onBack = onBack,
         actions = { showMessage ->
-            IconButton(onClick = {
-                clipboard.setText(AnnotatedString(buildCurl(transaction)))
-                showMessage("Copied as cURL")
-            }) {
-                Icon(SnoopIcons.Copy, contentDescription = "Copy as cURL")
-            }
+            CopyIconButton("Copy as cURL", "Copied as cURL", showMessage) { buildCurl(transaction) }
         },
     ) { modifier, showMessage ->
         Column(modifier) {
