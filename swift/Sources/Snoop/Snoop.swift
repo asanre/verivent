@@ -25,6 +25,9 @@ public enum Snoop {
     /// Install filtering, redaction and timeline grouping. Grouping parameters left out keep their
     /// current values; a closure left out is cleared, so pass both when adjusting one.
     ///
+    /// Both closures are retained until the next `configure` call — for the life of the process in
+    /// practice — so capture `[weak self]` if one reaches into an object you expect to go away.
+    ///
     /// - Parameters:
     ///   - groupByEvent: event that opens a new group in the viewer; `nil` turns grouping off.
     ///   - groupLabelProperty: property of that event whose value labels the group. When `nil`, or

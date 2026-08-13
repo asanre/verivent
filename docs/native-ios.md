@@ -43,8 +43,10 @@ Snoop.log("purchase", channel: "firebase", properties: [
 ```
 
 Grouping parameters left out of `configure` keep their current values; a closure left out is
-cleared, so pass both when adjusting one. Property values cross into Kotlin as strings, so `String`,
-`Int`, `Double` and `Bool` all work.
+cleared, so pass both when adjusting one. Both closures are held until the next `configure` call —
+in practice, for the life of the process — so capture `[weak self]` if one reaches into a view
+controller or any object you expect to be deallocated. Property values cross into Kotlin as strings,
+so `String`, `Int`, `Double` and `Bool` all work.
 Redaction runs on the same engine as the Compose Multiplatform build — a matching key is replaced
 with a visible `██` rather than dropped.
 
