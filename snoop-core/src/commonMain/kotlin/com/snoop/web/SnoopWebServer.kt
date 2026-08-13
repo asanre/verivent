@@ -95,11 +95,21 @@ object SnoopWebServer {
         running.compareAndSet(started, null)
     }
 
-    /** Retire a server that never became (or stopped being) the live one, slot and scope included. */
+    /**
+     * Retire a server that never became (or stopped being) the live one, slot and scope included.
+     * Idempotent through the CAS, which matters because a bind failure arrives twice: as a throw
+     * from `start()` and as an engine failure on the handler.
+     *
+     * The zero grace and timeout are load-bearing. One caller is the engine's own exception
+     * handler, and `stop()` there would join the job it is running inside; only a non-positive
+     * timeout takes the `withTimeoutOrNull` path that returns without joining. Anything above zero
+     * buys a stall inside the handler.
+     */
     private fun discard(started: Running) {
         if (running.compareAndSet(started, null)) started.shutdown(graceMillis = 0, timeoutMillis = 0)
     }
 
+    /** @param token null leaves the server ungated — only the gate's own tests do that. */
     internal fun createServer(
         port: Int,
         host: String = LOOPBACK,
@@ -110,8 +120,9 @@ object SnoopWebServer {
         CIO,
         host = host,
         port = port,
-        // CIO binds inside a coroutine, so EADDRINUSE never surfaces from start(). Without a handler
-        // here it reaches the default one, which on Kotlin/Native takes the whole host process down.
+        // The engine outlives start(): a bind failure throws there *and* lands here, and anything
+        // that fails afterwards only lands here. Without a handler it reaches the default one,
+        // which on Kotlin/Native takes the whole host process down.
         parentCoroutineContext = CoroutineExceptionHandler { _, cause -> onEngineFailure(cause) },
     ) { snoopModule(token) }
 
@@ -125,7 +136,8 @@ internal data class Running(
     val scope: CoroutineScope,
     val port: Int,
     val bind: SnoopBind,
-    val token: String?,
+    /** Never null: every bind is gated, so the URLs can always carry a token. */
+    val token: String,
 )
 
 /** Stop the engine and release the scope it runs on; both leak otherwise. */

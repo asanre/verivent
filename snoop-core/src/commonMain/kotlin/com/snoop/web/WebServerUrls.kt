@@ -1,14 +1,13 @@
 package com.snoop.web
 
-/** The URL for local access; carries the token as `?t=` when the server is gated. */
+/** The URL for local access, token included; the bare default port when nothing is running. */
 internal fun urlOf(running: Running?): String {
-    val base = "http://localhost:${running?.port ?: SnoopWebServer.DEFAULT_PORT}"
-    return running?.token?.let { "$base/?t=$it" } ?: base
+    running ?: return "http://localhost:${SnoopWebServer.DEFAULT_PORT}"
+    return "http://localhost:${running.port}/?t=${running.token}"
 }
 
 /** The off-device URL, or null on a [SnoopBind.Local] bind or when no LAN address is available. */
 internal fun lanUrlOf(running: Running?, address: String?): String? {
     if (running == null || running.bind.isLoopbackOnly || address == null) return null
-    val base = "http://$address:${running.port}"
-    return running.token?.let { "$base/?t=$it" } ?: base
+    return "http://$address:${running.port}/?t=${running.token}"
 }

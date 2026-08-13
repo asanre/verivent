@@ -325,12 +325,12 @@ class SnoopWebServerTest {
     }
 
     @Test
-    fun localUrlCarriesTheTokenWhenGated() {
-        assertEquals("http://localhost:9394", urlOf(running(SnoopBind.Local, token = null)))
+    fun localUrlCarriesTheToken() {
+        assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Local)))
         assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Lan)))
     }
 
-    private fun running(bind: SnoopBind, token: String? = "abc"): Running {
+    private fun running(bind: SnoopBind, token: String = "abc"): Running {
         val scope = CoroutineScope(SupervisorJob())
         return Running(
             server = SnoopWebServer.createServer(9394, bind.bindAddress, token, scope),
