@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Compiles ../src against the REAL modules; :snoop-parity-check:noop compiles the same source
-// against the no-op mirrors. Either compilation failing in `check` means the APIs drifted.
+// Compiles ../src (Android) and ../src-ios against the REAL modules; :snoop-parity-check:noop
+// compiles the same sources against the no-op mirrors. Either compilation failing in `check` means
+// the APIs drifted. One simulator target is enough for the iOS half — the source is arch-agnostic.
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
@@ -18,8 +19,15 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
+    iosSimulatorArm64()
 
     sourceSets {
+        iosMain {
+            kotlin.srcDir("../src-ios")
+            dependencies {
+                implementation(projects.snoopUi)
+            }
+        }
         androidMain {
             kotlin.srcDir("../src")
             dependencies {
@@ -48,4 +56,4 @@ android {
     }
 }
 
-tasks.named("check") { dependsOn("compileDebugKotlinAndroid") }
+tasks.named("check") { dependsOn("compileDebugKotlinAndroid", "compileKotlinIosSimulatorArm64") }
