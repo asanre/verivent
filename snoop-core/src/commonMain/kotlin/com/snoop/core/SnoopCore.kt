@@ -4,6 +4,7 @@ import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.store.SnoopStore
+import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
@@ -22,7 +23,12 @@ object SnoopCore {
 
     val store: SnoopStore = SnoopStore()
 
-    /** Master switch; when false, adapters drop everything (used by no-op / release gating). */
+    /**
+     * Master switch; when false, adapters drop everything (used by no-op / release gating).
+     * Volatile because it is flipped from wherever the host happens to be and read on every capture
+     * from the Ktor and analytics threads, which share no happens-before with the writer.
+     */
+    @Volatile
     var enabled: Boolean = true
 
     /**
