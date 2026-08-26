@@ -49,6 +49,7 @@ import com.snoop.ui.component.SnoopChip
 import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
+import com.snoop.ui.internal.TimelineUiState
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.groupEntries
 import com.snoop.ui.internal.matchesFilters
@@ -60,8 +61,8 @@ internal fun TimelineTab(
     onOpen: (String) -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    var filters by remember { mutableStateOf(TimelineFilters()) }
-    var grouped by rememberSaveable { mutableStateOf(true) }
+    var filters by TimelineUiState.filters
+    var grouped by TimelineUiState.grouped
     val collapsed = remember { mutableStateOf(setOf<String>()) }
 
     val channels = remember(entries) {
