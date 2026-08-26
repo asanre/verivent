@@ -4,6 +4,7 @@ import com.snoop.core.SnoopCore
 import com.snoop.core.internal.SnoopLog
 import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.KeyValue
 import com.snoop.core.redaction.RedactionEngine
 
 /**
@@ -26,15 +27,20 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             }
             if (!visible) return@runSafely
 
+            // Labelled off the redacted list on purpose: a group must never surface a value the
+            // host asked to hide, and the viewers already only ever read redacted properties.
+            val redacted = properties.map { (key, value) ->
+                redaction.redactProperty(key, value?.toString() ?: "null")
+            }
+
             SnoopCore.recordAnalytics(
                 AnalyticsEntry(
                     id = SnoopCore.nextId(),
                     timestamp = SnoopCore.now(),
                     name = name,
                     channel = channel,
-                    properties = properties.map { (key, value) ->
-                        redaction.redactProperty(key, value?.toString() ?: "null")
-                    },
+                    properties = redacted,
+                    groupLabel = groupLabel(name, redacted),
                     annotations = config.annotators
                         .flatMap {
                             runCatching { it(event) }
@@ -45,6 +51,12 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                 ),
             )
         }
+    }
+
+    private fun groupLabel(name: String, properties: List<KeyValue>): String? {
+        if (name != config.groupByEvent) return null
+        val property = config.groupLabelProperty ?: return name
+        return properties.firstOrNull { it.name == property }?.value ?: name
     }
 
     private companion object {

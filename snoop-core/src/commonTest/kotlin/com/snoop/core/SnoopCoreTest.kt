@@ -115,27 +115,6 @@ class SnoopCoreConfigureTest {
     }
 
     @Test
-    fun groupingDefaultsToFirebasesScreenViewConvention() {
-        assertEquals("screen_view", SnoopCore.groupByEvent)
-        assertEquals("screen_name", SnoopCore.groupLabelProperty)
-    }
-
-    @Test
-    fun configureRoundTripsGroupingAndResetRestoresTheDefaults() {
-        SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
-        assertEquals("page_shown", SnoopCore.groupByEvent)
-        assertEquals("page", SnoopCore.groupLabelProperty)
-
-        SnoopCore.configure(groupLabelProperty = null)
-        assertEquals("page_shown", SnoopCore.groupByEvent)
-        assertNull(SnoopCore.groupLabelProperty)
-
-        SnoopCore.reset()
-        assertEquals("screen_view", SnoopCore.groupByEvent)
-        assertEquals("screen_name", SnoopCore.groupLabelProperty)
-    }
-
-    @Test
     fun configureKeepsStoreAndFlowIdentityAndStillEmits() {
         val store = SnoopCore.store
         val flow = store.entries

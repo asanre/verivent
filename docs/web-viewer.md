@@ -60,9 +60,9 @@ By default the server binds loopback only. Every URL below needs its `?t=…` to
 
 The page streams updates live over SSE — new network calls and analytics events appear as they
 happen, as deltas rather than a full re-send of the store. It mirrors the native inspector: unified
-timeline, type and channel filters, search, per-screen grouping (whatever
-[`SnoopCore.configure`](integration.md#group-the-timeline-by-screen) set, which the page reads from
-`/api/config`), and a detail panel with headers (redaction preserved) and pretty-printed bodies.
+timeline, type and channel filters, search, per-screen
+[grouping](filters-redaction-annotations.md#grouping) (which rides along on the entries themselves,
+so the page needs no configuration of its own), and a detail panel with headers (redaction preserved) and pretty-printed bodies.
 
 ## Several developers on one network
 

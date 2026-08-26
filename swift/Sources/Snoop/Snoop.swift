@@ -30,6 +30,7 @@ public enum Snoop {
     ///
     /// - Parameters:
     ///   - groupByEvent: event that opens a new group in the viewer; `nil` turns grouping off.
+    ///     Applied as events are captured, so it does not regroup what was captured before.
     ///   - groupLabelProperty: property of that event whose value labels the group. When `nil`, or
     ///     absent from the event, the group is labelled with the event's own name.
     public static func configure(

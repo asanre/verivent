@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
@@ -251,23 +250,7 @@ class SnoopWebServerTest {
         application { snoopModule(token = "secret") }
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
-        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/config").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
-    }
-
-    @Test
-    fun configEndpointServesGrouping() = testApplication {
-        application { snoopModule() }
-        assertEquals(
-            """{"groupByEvent":"screen_view","groupLabelProperty":"screen_name"}""",
-            client.get("/api/config").bodyAsText(),
-        )
-
-        SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
-        assertEquals(
-            """{"groupByEvent":"page_shown","groupLabelProperty":"page"}""",
-            client.get("/api/config").bodyAsText(),
-        )
     }
 
     @Test

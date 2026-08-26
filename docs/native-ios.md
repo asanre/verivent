@@ -31,7 +31,7 @@ import Snoop
 Snoop.configure(
     keepEvent: { !$0.name.hasPrefix("debug_") },
     redactProperty: { $0 == "user_email" },
-    groupByEvent: "screen_view",        // groups the viewer's timeline; nil turns grouping off
+    groupByEvent: "screen_view",        // stamped on events as they're captured; nil turns grouping off
     groupLabelProperty: "screen_name"   // the property that labels each group
 )
 
@@ -43,7 +43,8 @@ Snoop.log("purchase", channel: "firebase", properties: [
 ```
 
 Grouping parameters left out of `configure` keep their current values; a closure left out is
-cleared, so pass both when adjusting one. Both closures are held until the next `configure` call —
+cleared, so pass both when adjusting one. Grouping is applied as events are captured, so changing it
+affects events logged from then on rather than regrouping what is already in the buffer. Both closures are held until the next `configure` call —
 in practice, for the life of the process — so capture `[weak self]` if one reaches into a view
 controller or any object you expect to be deallocated. Property values cross into Kotlin as strings,
 so `String`, `Int`, `Double` and `Bool` all work.

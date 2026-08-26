@@ -200,17 +200,12 @@ class ExportJsonTest {
 }
 
 class GroupingTest {
-    private fun event(
-        id: String,
-        name: String,
-        screen: String? = null,
-        property: String = "screen_name",
-    ) = AnalyticsEntry(
+    private fun event(id: String, name: String, groupLabel: String? = null) = AnalyticsEntry(
         id = id,
         timestamp = Instant.fromEpochMilliseconds(id.toLong()),
         name = name,
         channel = "firebase",
-        properties = screen?.let { listOf(KeyValue(property, it)) } ?: emptyList(),
+        groupLabel = groupLabel,
     )
 
     private fun call(id: String) = NetworkTransaction(
@@ -218,54 +213,66 @@ class GroupingTest {
     )
 
     @Test
-    fun groupsByScreenViewNewestFirst() {
+    fun groupsByStampedEventsNewestFirst() {
         val entries: List<SnoopEntry> = listOf(
             event("1", "screen_view", "home"),
             call("2"),
             event("3", "screen_view", "cart"),
             call("4"),
         )
-        val groups = groupEntries(entries, "screen_view", "screen_name")
+        val groups = groupEntries(entries, grouped = true)
         assertEquals(listOf("cart", "home"), groups.map { it.screen })
         // within the newest group, entries are newest-first
         assertEquals(listOf("4", "3"), groups.first().entries.map { it.id })
     }
 
     @Test
-    fun entriesBeforeFirstScreenViewLandInUnnamedGroup() {
-        val groups = groupEntries(listOf(call("1"), event("2", "screen_view", "home")), "screen_view", "screen_name")
+    fun entriesBeforeTheFirstStampLandInUnnamedGroup() {
+        val groups = groupEntries(listOf(call("1"), event("2", "screen_view", "home")), grouped = true)
         assertEquals(listOf("home", null), groups.map { it.screen })
     }
 
     @Test
+    fun revisitingTheSameScreenOpensASecondGroup() {
+        val entries: List<SnoopEntry> = listOf(
+            event("1", "screen_view", "home"),
+            call("2"),
+            event("3", "screen_view", "home"),
+            call("4"),
+        )
+        val groups = groupEntries(entries, grouped = true)
+        assertEquals(listOf("home", "home"), groups.map { it.screen })
+        assertEquals(listOf("3", "1"), groups.map { it.stableKey() })
+    }
+
+    @Test
     fun stableKeyUnchangedWhenNewestGroupGrows() {
-        val before = groupEntries(listOf(event("1", "screen_view", "home"), call("2")), "screen_view", "screen_name")
+        val before = groupEntries(listOf(event("1", "screen_view", "home"), call("2")), grouped = true)
         val after = groupEntries(
             listOf(event("1", "screen_view", "home"), call("2"), call("3")),
-            "screen_view",
-            "screen_name",
+            grouped = true,
         )
         assertEquals(before.first().stableKey(), after.first().stableKey())
         assertEquals("1", after.first().stableKey())
     }
 
     @Test
-    fun nullGroupKeyKeepsSingleGroup() {
-        val groups = groupEntries(listOf(call("1"), call("2")), null, "screen_name")
+    fun ungroupedKeepsSingleGroup() {
+        val groups = groupEntries(listOf(call("1"), call("2")), grouped = false)
         assertEquals(1, groups.size)
         assertEquals(listOf("2", "1"), groups.single().entries.map { it.id })
     }
 
     @Test
-    fun aCustomLabelPropertyLabelsTheGroup() {
-        val entries = listOf(event("1", "page_shown", "checkout", property = "page"), call("2"))
-        assertEquals(listOf("checkout"), groupEntries(entries, "page_shown", "page").map { it.screen })
+    fun anUnstampedAnalyticsEventNeverOpensAGroup() {
+        val groups = groupEntries(listOf(event("1", "screen_view"), call("2")), grouped = true)
+        assertEquals(listOf<String?>(null), groups.map { it.screen })
     }
 
     @Test
-    fun withoutALabelPropertyTheGroupTakesTheEventName() {
-        val entries = listOf(event("1", "screen_view", "home"), call("2"))
-        assertEquals(listOf("screen_view"), groupEntries(entries, "screen_view", null).map { it.screen })
-        assertEquals(listOf("screen_view"), groupEntries(entries, "screen_view", "absent").map { it.screen })
+    fun theHeaderRemembersWhichEventOpenedTheGroup() {
+        val groups = groupEntries(listOf(event("1", "page_shown", "checkout"), call("2")), grouped = true)
+        assertEquals(listOf("checkout"), groups.map { it.screen })
+        assertEquals(listOf("page_shown"), groups.map { it.openedBy })
     }
 }

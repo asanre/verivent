@@ -39,9 +39,6 @@ internal fun Application.snoopModule(token: String? = null) {
         get("/api/entries") {
             call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
         }
-        get("/api/config") {
-            call.respondText(encodeConfig(SnoopCore.groupByEvent, SnoopCore.groupLabelProperty), ContentType.Application.Json)
-        }
         post("/api/clear") {
             // CSRF guard: the custom header forces a preflight this server never approves, and any
             // cross-origin caller (a hostile page open in the same browser) carries a foreign Origin.

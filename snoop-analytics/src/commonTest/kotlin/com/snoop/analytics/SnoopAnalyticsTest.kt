@@ -7,6 +7,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SnoopAnalyticsTest {
@@ -69,5 +70,44 @@ class SnoopAnalyticsTest {
         val entry = entries().single()
         assertEquals(listOf(Annotation.Ecommerce), entry.annotations)
         assertEquals("9.99", entry.properties.single { it.name == "value" }.value)
+    }
+
+    @Test
+    fun stampsTheGroupLabelOnlyOnTheOpeningEvent() {
+        val snoop = SnoopAnalytics()
+        snoop.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        snoop.log("purchase", "firebase", mapOf("screen_name" to "Home"))
+        assertEquals(listOf("Home", null), entries().map { it.groupLabel })
+    }
+
+    @Test
+    fun theLabelFallsBackToTheEventNameWhenThePropertyIsMissing() {
+        val snoop = SnoopAnalytics()
+        snoop.log("screen_view", "firebase")
+        assertEquals("screen_view", entries().single().groupLabel)
+
+        SnoopCore.reset()
+        SnoopAnalytics { groupBy("screen_view") }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        assertEquals("screen_view", entries().single().groupLabel)
+    }
+
+    @Test
+    fun theLabelHonoursRedaction() {
+        val snoop = SnoopAnalytics { sanitizeProperty { it == "screen_name" } }
+        snoop.log("screen_view", "firebase", mapOf("screen_name" to "Checkout"))
+        val entry = entries().single()
+        assertEquals(entry.properties.single { it.name == "screen_name" }.value, entry.groupLabel)
+        assertTrue("Checkout" !in entry.groupLabel.orEmpty())
+    }
+
+    @Test
+    fun groupByRetargetsTheOpeningEventAndNullTurnsGroupingOff() {
+        SnoopAnalytics { groupBy("page_shown", "page") }
+            .log("page_shown", "gtm", mapOf("page" to "Checkout"))
+        assertEquals("Checkout", entries().single().groupLabel)
+
+        SnoopCore.reset()
+        SnoopAnalytics { groupBy(event = null) }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        assertNull(entries().single().groupLabel)
     }
 }

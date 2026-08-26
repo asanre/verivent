@@ -7,4 +7,5 @@ class SnoopAnalyticsConfig {
     fun filter(predicate: (AnalyticsEvent) -> Boolean) = Unit
     fun sanitizeProperty(predicate: (String) -> Boolean) = Unit
     fun annotate(block: (AnalyticsEvent) -> List<Annotation>) = Unit
+    fun groupBy(event: String?, labelProperty: String? = null) = Unit
 }

@@ -57,21 +57,24 @@ import com.snoop.ui.internal.stableKey
 @Composable
 internal fun TimelineTab(
     entries: List<SnoopEntry>,
-    groupByEvent: String?,
-    labelProperty: String?,
     onOpen: (String) -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var filters by remember { mutableStateOf(TimelineFilters()) }
-    var grouped by rememberSaveable { mutableStateOf(groupByEvent != null) }
+    var grouped by rememberSaveable { mutableStateOf(true) }
     val collapsed = remember { mutableStateOf(setOf<String>()) }
 
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
-    // Group over all entries so screen headers survive filters that hide the grouping event.
-    val groups = remember(entries, grouped, groupByEvent, labelProperty, filters, query) {
-        groupEntries(entries, if (grouped) groupByEvent else null, labelProperty)
+    // Only offer grouping when something in the timeline can actually open a group; without
+    // snoop-analytics wired up nothing ever carries the stamp and the chip would do nothing.
+    val groupable = remember(entries) {
+        entries.any { it is AnalyticsEntry && it.groupLabel != null }
+    }
+    // Group over all entries so screen headers survive filters that hide the opening event.
+    val groups = remember(entries, grouped, filters, query) {
+        groupEntries(entries, grouped)
             .mapNotNull { group ->
                 val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
                 if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
@@ -93,7 +96,7 @@ internal fun TimelineTab(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (groupByEvent != null) {
+            if (groupable) {
                 SnoopChip(
                     label = "Group",
                     selected = grouped,
@@ -121,9 +124,9 @@ internal fun TimelineTab(
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                     groups.forEach { (groupKey, group) ->
                         val isCollapsed = groupKey in collapsed.value
-                        if (grouped && groupByEvent != null && group.screen != null) {
+                        if (grouped && group.screen != null) {
                             item(key = "hdr:$groupKey") {
-                                GroupHeader(group, groupByEvent, isCollapsed) {
+                                GroupHeader(group, isCollapsed) {
                                     collapsed.value = if (isCollapsed) collapsed.value - groupKey else collapsed.value + groupKey
                                 }
                             }
@@ -148,7 +151,7 @@ internal fun TimelineTab(
 }
 
 @Composable
-private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boolean, onToggle: () -> Unit) {
+private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -> Unit) {
     val events = group.entries.count { it is AnalyticsEntry }
     val calls = group.entries.count { it is NetworkTransaction }
     val rotation by animateFloatAsState(if (collapsed) 0f else 90f)
@@ -182,7 +185,7 @@ private fun GroupHeader(group: TimelineGroup, groupLabel: String, collapsed: Boo
                     if (calls > 0) append("$calls call${if (calls == 1) "" else "s"}")
                 }
             } else {
-                groupLabel
+                group.openedBy.orEmpty()
             },
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,

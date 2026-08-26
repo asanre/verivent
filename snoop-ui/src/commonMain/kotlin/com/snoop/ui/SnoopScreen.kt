@@ -57,30 +57,19 @@ import kotlinx.coroutines.withContext
 /**
  * The whole Snoop inspector as one embeddable composable. Host it anywhere (a screen, a bottom
  * sheet, a dedicated Activity). Reads straight from the shared [SnoopCore] store.
- *
- * @param groupByEvent analytics event name that starts a new collapsible screen group in the
- *   timeline. Defaults to whatever `SnoopCore.configure` set (`"screen_view"` out of the box); pass
- *   `null` to disable grouping for this instance only.
- * @param groupLabelProperty property of that event whose value labels each group. Defaults to the
- *   configured one (`"screen_name"` out of the box); when the event doesn't carry it, the group
- *   takes the event's own name.
  */
 @Composable
-fun SnoopScreen(
-    modifier: Modifier = Modifier,
-    groupByEvent: String? = SnoopCore.groupByEvent,
-    groupLabelProperty: String? = SnoopCore.groupLabelProperty,
-) {
+fun SnoopScreen(modifier: Modifier = Modifier) {
     SnoopTheme {
         Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            SnoopContent(groupByEvent, groupLabelProperty)
+            SnoopContent()
         }
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun SnoopContent(groupByEvent: String?, groupLabelProperty: String?) {
+private fun SnoopContent() {
     val live by SnoopCore.store.entries.collectAsState()
     var paused by remember { mutableStateOf(false) }
     var frozen by remember { mutableStateOf<List<SnoopEntry>>(emptyList()) }
@@ -163,7 +152,7 @@ private fun SnoopContent(groupByEvent: String?, groupLabelProperty: String?) {
             // still walk the timeline underneath it.
             val hidden = if (selected != null) Modifier.clearAndSetSemantics {} else Modifier
             Box(Modifier.padding(padding).then(hidden)) {
-                TimelineTab(entries, groupByEvent, groupLabelProperty, onOpen = { selectedId = it })
+                TimelineTab(entries, onOpen = { selectedId = it })
             }
         }
         when (selected) {

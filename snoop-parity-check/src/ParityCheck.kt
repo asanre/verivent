@@ -45,9 +45,6 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.configure()
     SnoopCore.configure(capacity = 100)
     SnoopCore.configure(capacity = 100, maxTotalBytes = 1_000L)
-    SnoopCore.configure(groupByEvent = "e", groupLabelProperty = null)
-    val groupByEvent: String? = SnoopCore.groupByEvent
-    val groupLabelProperty: String? = SnoopCore.groupLabelProperty
     val id: String = SnoopCore.nextId()
     val now: Instant = SnoopCore.now()
     SnoopCore.recordNetwork(txn)
@@ -102,7 +99,9 @@ private fun model() {
             Annotation.ScreenView,
             Annotation("custom"),
         ),
+        groupLabel = "Home",
     )
+    val groupLabel: String? = event.groupLabel
     val label: String = Annotation.Ecommerce.label
     val entries: List<SnoopEntry> = listOf(txn, event)
     entries.forEach { entry ->
@@ -164,6 +163,8 @@ private fun analytics() {
         }
         sanitizeProperty { it == "x" }
         annotate { listOf(Annotation.Ecommerce) }
+        groupBy("screen_view")
+        groupBy(event = null, labelProperty = null)
     }
     configured.log("name", "channel")
     configured.log("name", "channel", mapOf("k" to 1))
@@ -194,6 +195,5 @@ private fun androidEntryPoints(context: Context) {
 @Composable
 private fun screen() {
     SnoopScreen()
-    SnoopScreen(modifier = Modifier, groupByEvent = null)
-    SnoopScreen(modifier = Modifier, groupByEvent = null, groupLabelProperty = null)
+    SnoopScreen(modifier = Modifier)
 }

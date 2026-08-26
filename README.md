@@ -107,12 +107,12 @@ Snoop.showNotification(context)   // ongoing; needs POST_NOTIFICATIONS on API 33
 Snoop.showNotification()
 ```
 
-The timeline collapses into per-screen groups keyed by an analytics event — Firebase's `screen_view`
-with its `screen_name` parameter by default. One call retunes every viewer (inspector, Activity, web
-page, native iOS):
+The timeline collapses into per-screen groups opened by an analytics event — Firebase's `screen_view`
+with its `screen_name` parameter by default. Set on the logger, where events are captured, so every
+viewer (inspector, Activity, web page, native iOS) groups the same way:
 
 ```kotlin
-SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
+val snoop = SnoopAnalytics { groupBy("page_shown", "page") }
 ```
 
 See [Integration](https://asanre.github.io/snoop/integration/) for the full inspector API.

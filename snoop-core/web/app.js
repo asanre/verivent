@@ -34,9 +34,6 @@ function applyFrame(frame){
   return next;
 }
 
-// Grouping mirrors SnoopCore.configure; these are the same defaults, replaced once /api/config lands.
-var GROUP_EVENT='screen_view',GROUP_PROP='screen_name';
-
 var TOKEN=new URLSearchParams(location.search).get('t')||'';
 function apiUrl(p){return TOKEN?p+(p.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(TOKEN):p;}
 
@@ -119,8 +116,8 @@ function emptyHtml(){
   if(entries.length===0)return emptyStateHtml('Nothing captured yet','Network calls and analytics events will show up here as they happen.');
   return emptyStateHtml('No matches','Try a different filter or search.');
 }
-// Goes through render() rather than writing to #list: a later render — the /api/config response,
-// a filter click — would otherwise paint over the message.
+// Goes through render() rather than writing to #list: a later render — a stream frame, a filter
+// click — would otherwise paint over the message.
 function setUnreachable(v){
   if(unreachable===v)return;
   unreachable=v;
@@ -128,15 +125,16 @@ function setUnreachable(v){
 }
 
 function listHtml(){
-  var groups=[],screen=null,bucket=[],gkey=null;
+  // The capturing side stamps groupLabel; loose != so an omitted key (encodeDefaults=false) counts
+  // as "no group" too.
+  var groups=[],screen=null,openedBy=null,bucket=[],gkey=null;
   entries.forEach(function(e){
-    if(GROUP_EVENT&&e.type==='analytics'&&e.name===GROUP_EVENT){
-      if(bucket.length)groups.push({screen:screen,key:gkey,entries:bucket});
-      var sp=GROUP_PROP?(e.properties||[]).filter(function(k){return k.name===GROUP_PROP;}):[];
-      screen=sp.length?sp[0].value:e.name;gkey=e.id;bucket=[e];
+    if(e.type==='analytics'&&e.groupLabel!=null){
+      if(bucket.length)groups.push({screen:screen,openedBy:openedBy,key:gkey,entries:bucket});
+      screen=e.groupLabel;openedBy=e.name;gkey=e.id;bucket=[e];
     }else{bucket.push(e);}
   });
-  if(bucket.length)groups.push({screen:screen,key:gkey,entries:bucket});
+  if(bucket.length)groups.push({screen:screen,openedBy:openedBy,key:gkey,entries:bucket});
   var html='';
   groups.slice().reverse().forEach(function(g){
     var vis=g.entries.filter(matches);
@@ -153,7 +151,7 @@ function listHtml(){
         if(calls>0)parts.push(calls+(calls===1?' call':' calls'));
         label=parts.join(' · ');
       }else{
-        label=GROUP_EVENT;
+        label=g.openedBy||'';
       }
       html+="<div class='hgroup' data-group='"+esc(k)+"'>"+
         "<span class='chev"+(col?'':' open')+"'>"+icon('chevron',14)+"</span>"+
@@ -406,12 +404,6 @@ document.getElementById('detail').addEventListener('click',function(ev){
   var r=ev.target.closest('[data-id]');
   if(r)sel(r.getAttribute('data-id'));
 });
-fetch(apiUrl('/api/config')).then(function(r){
-  if(!r.ok)throw new Error('config rejected: '+r.status);
-  return r.json();
-}).then(function(c){
-  GROUP_EVENT=c.groupByEvent;GROUP_PROP=c.groupLabelProperty;render();
-}).catch(function(){/* keep the built-in defaults; the entries fetch reports unreachability */});
 var es=new EventSource(apiUrl('/api/stream'));
 // A frame is proof the server is back, whatever the seeding fetch reported.
 es.onmessage=function(ev){setUnreachable(false);applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};

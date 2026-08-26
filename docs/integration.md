@@ -15,28 +15,26 @@ a dedicated tab, behind a gesture):
 ```kotlin
 SnoopScreen()
 
-// or sized by a modifier, with grouping turned off for this instance:
-SnoopScreen(modifier = Modifier.fillMaxSize(), groupByEvent = null)
+// or sized by a modifier:
+SnoopScreen(modifier = Modifier.fillMaxSize())
 ```
 
 ## Group the timeline by screen
 
-The timeline collapses into per-screen sections keyed by an analytics event. Out of the box that is
-Firebase's manual screen event — `screen_view`, labelled with its `screen_name` parameter. Change it
-once, globally, and every viewer picks it up as it opens: the embedded `SnoopScreen`, the Android
-Activity, the web page and the native iOS hosts. A viewer that is already open keeps the grouping it
-started with — the web page re-reads it on reload.
+The timeline collapses into per-screen sections opened by an analytics event — `screen_view`
+labelled with `screen_name` out of the box. It is set where events are captured, on the analytics
+logger, and every viewer groups by what capture stamped:
 
 ```kotlin
-SnoopCore.configure(groupByEvent = "page_shown", groupLabelProperty = "page")
-SnoopCore.configure(groupByEvent = null)   // no grouping anywhere
+val snoop = SnoopAnalytics {
+    groupBy("page_shown", "page")
+    // groupBy(null)  // no grouping at all
+}
 ```
 
-Configure it once at startup, before opening a viewer. Grouping changes leave the store alone;
-changing the retention limits it shares `configure` with still clears it.
-When the event doesn't carry the label property, the group falls back to the event's own name.
-`SnoopScreen(groupByEvent = …, groupLabelProperty = …)` still overrides the global pair for one
-instance.
+See [Grouping](filters-redaction-annotations.md#grouping) for the details — including that it
+applies to events captured from then on, and that the **Group** chip is hidden in a build that
+captures no analytics.
 
 ## Android
 

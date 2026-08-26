@@ -15,7 +15,7 @@ both.
 ## Features
 
 - **Unified timeline** — network calls and analytics events interleaved, filterable by type and
-  channel, searchable, and collapsible into per-screen groups keyed by the analytics event of your
+  channel, searchable, and collapsible into per-screen groups opened by the analytics event of your
   choice (`screen_view` by default).
 - **Rich detail** — headers, pretty-printed JSON bodies, timing, cURL export; event parameters with
   channel and annotations.

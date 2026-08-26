@@ -52,9 +52,17 @@ class EntryDtoTest {
     }
 
     @Test
-    fun configSerializesNullsExplicitly() {
-        // Explicit nulls, not missing keys: the page has to tell "no grouping" from "not configured".
-        assertEquals("""{"groupByEvent":null,"groupLabelProperty":null}""", encodeConfig(null, null))
+    fun aStampedEventCarriesItsGroupLabelAndAnUnstampedOneOmitsIt() {
+        val json = encodeEntries(
+            listOf(
+                AnalyticsEntry("1", Instant.fromEpochMilliseconds(1000), "screen_view", "firebase", groupLabel = "Home"),
+                AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "purchase", "firebase"),
+            ),
+        )
+        val (opener, plain) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertEquals("Home", opener.getValue("groupLabel").jsonPrimitive.content)
+        // Omitted, not null: webJson drops defaults, so the page has to treat absent as "no group".
+        assertTrue("groupLabel" !in plain)
     }
 
     @Test

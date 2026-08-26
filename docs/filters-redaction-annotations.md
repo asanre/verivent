@@ -27,6 +27,7 @@ install(Snoop) {
 | `filter { event -> Bool }` | additive | Keep an event only if every filter returns true. |
 | `sanitizeProperty { key -> Bool }` | additive | Redact matching property values. |
 | `annotate { event -> List<Annotation> }` | additive | Attach semantic badges. |
+| `groupBy(event, labelProperty)` | replaces | Which event opens a collapsible timeline group, and which property labels it. Defaults to `"screen_view"` / `"screen_name"`. |
 
 `Annotation` values: `Ecommerce`, `Conversion`, `Consent`, `ScreenView`.
 
@@ -40,8 +41,28 @@ val snoop = SnoopAnalytics {
             if (it.name == "purchase") add(Annotation.Conversion)
         }
     }
+    groupBy("page_shown", "page")   // or groupBy(null) for no grouping at all
 }
 ```
+
+### Grouping
+
+The timeline collapses into sections: the event named in `groupBy` opens one, labelled with its
+`labelProperty` value, and everything logged until the next one belongs to it. Out of the box that
+is Firebase's manual screen event — `screen_view`, labelled with `screen_name` — so grouping works
+without calling `groupBy` at all. When the event doesn't carry the property, the group takes the
+event's own name; when the property is redacted, the label is the `██` placeholder.
+
+The decision is made **once, as the event is captured**, and every viewer (embedded `SnoopScreen`,
+the Android Activity, the web page, the native iOS hosts) groups by that stamp. Two consequences
+worth knowing:
+
+- Reconfiguring later only affects events captured from then on — it does not regroup the buffer.
+- Each matching event opens a *new* group, so revisiting a screen shows up as a second section
+  rather than merging into the first.
+
+Grouping only exists where events are captured: a build without `snoop-analytics` has nothing to
+group, and the viewers hide the **Group** chip rather than offering an action that can do nothing.
 
 ## Redaction
 
