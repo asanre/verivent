@@ -1,5 +1,7 @@
 # Snoop
 
+![Snoop — network and analytics inspector for Compose Multiplatform](assets/banner.webp)
+
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop-core)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
