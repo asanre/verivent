@@ -48,16 +48,16 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("io.github.asanre:snoop-ktor:0.2.0")
-releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.2.0")
+debugImplementation("io.github.asanre:snoop-ktor:0.3.0")
+releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.3.0")
 
 // the on-device inspector UI:
-debugImplementation("io.github.asanre:snoop-ui:0.2.0")
-releaseImplementation("io.github.asanre:snoop-ui-no-op:0.2.0")
+debugImplementation("io.github.asanre:snoop-ui:0.3.0")
+releaseImplementation("io.github.asanre:snoop-ui-no-op:0.3.0")
 
 // optional, only if you also want analytics inspection:
-debugImplementation("io.github.asanre:snoop-analytics:0.2.0")
-releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.2.0")
+debugImplementation("io.github.asanre:snoop-analytics:0.3.0")
+releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.3.0")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.
