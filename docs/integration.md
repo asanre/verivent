@@ -19,6 +19,10 @@ SnoopScreen()
 SnoopScreen(modifier = Modifier.fillMaxSize())
 ```
 
+`SnoopScreen` insets its own content against the status bar, the navigation bar, display cutouts and
+the keyboard, while painting its background edge to edge behind them — so it looks right whether or
+not the host app is edge-to-edge.
+
 ## Group the timeline by screen
 
 The timeline collapses into per-screen sections opened by an analytics event — `screen_view`

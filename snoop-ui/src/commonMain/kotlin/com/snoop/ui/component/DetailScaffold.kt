@@ -3,6 +3,7 @@ package com.snoop.ui.component
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -58,6 +59,10 @@ internal fun DetailScaffold(
     val showMessage: (String) -> Unit = { message -> scope.launch { snackbar.showSnackbar(message) } }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        // SnoopScreen's root already applied safeDrawing; Material3's own contentWindowInsets is not
+        // reliably consumption-aware across versions, so it is zeroed deliberately rather than left
+        // to double up. Not dead code — don't "clean it up".
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 8.dp),

@@ -6,10 +6,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,7 +65,12 @@ import kotlinx.coroutines.withContext
 fun SnoopScreen(modifier: Modifier = Modifier) {
     SnoopTheme {
         Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            SnoopContent()
+            // The one place insets are applied: the Surface stays edge to edge so the background
+            // paints behind the bars, and only the content moves in. `windowInsetsPadding` is
+            // consumption-aware, so a host that already inset us adds nothing on top.
+            Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
+                SnoopContent()
+            }
         }
     }
 }
@@ -89,6 +97,10 @@ private fun SnoopContent() {
     Box {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            // The root already applied safeDrawing; Material3's own contentWindowInsets is not
+            // reliably consumption-aware across versions, so it is zeroed deliberately rather than
+            // left to double up. Not dead code — don't "clean it up".
+            contentWindowInsets = WindowInsets(0),
             topBar = {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
