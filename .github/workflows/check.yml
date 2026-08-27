@@ -17,3 +17,31 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew check
+
+  swift:
+    # The Swift package is XCTest against the real XCFramework, so it needs macOS and a simulator.
+    # A job of its own rather than a step on `check`: the two share nothing and run concurrently.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Assemble the XCFramework
+        # The local Package.swift links it by path, and SwiftPM resolves the graph before anything
+        # else runs — without this the package does not even resolve.
+        run: ./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework --no-configuration-cache
+      - name: Pick a simulator
+        id: sim
+        # Resolved rather than pinned: `-destination 'name=iPhone 16'` fails outright unless the OS
+        # is pinned too, and the runner image's device roster drifts with every Xcode bump.
+        run: |
+          set -euo pipefail
+          udid=$(xcrun simctl list devices available -j \
+            | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+      - name: Run the bridge tests
+        working-directory: swift
+        run: xcodebuild test -scheme Snoop -destination "id=${{ steps.sim.outputs.udid }}"
