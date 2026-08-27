@@ -75,6 +75,18 @@ store; the `StateFlow` survives, so an already-open inspector keeps working):
 SnoopCore.configure(capacity = 1_000, maxTotalBytes = 40_000_000)
 ```
 
+The same call renames the tool. `title` reaches every viewer — the inspector's header, the Android
+and iOS notifications, and the web page's tab and header — so a host that would rather ship its own
+name sets it once:
+
+```kotlin
+SnoopCore.configure(title = "Patata Inspector")
+```
+
+Unlike the limits, changing the title leaves the store alone. That covers every surface Snoop draws;
+the one name it cannot set is Android's task label, which is normally your app's anyway — see
+[Where the Activity lands](integration.md#where-the-activity-lands-and-its-label).
+
 How the viewers group the timeline is set on the analytics logger instead — see
 [Grouping](filters-redaction-annotations.md#grouping).
 

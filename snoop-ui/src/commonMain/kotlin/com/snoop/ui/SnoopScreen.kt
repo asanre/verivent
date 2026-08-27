@@ -114,7 +114,7 @@ private fun SnoopContent() {
                         modifier = Modifier.size(22.dp),
                     )
                     Text(
-                        "Snoop",
+                        SnoopCore.title,
                         style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
                         fontWeight = FontWeight.SemiBold,
                     )

@@ -45,6 +45,8 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.configure()
     SnoopCore.configure(capacity = 100)
     SnoopCore.configure(capacity = 100, maxTotalBytes = 1_000L)
+    SnoopCore.configure(title = "Patata Inspector")
+    val title: String = SnoopCore.title
     val id: String = SnoopCore.nextId()
     val now: Instant = SnoopCore.now()
     SnoopCore.recordNetwork(txn)

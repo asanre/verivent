@@ -13,9 +13,13 @@ object SnoopCore {
 
     var enabled: Boolean = false
 
+    var title: String = "Snoop"
+        private set
+
     fun configure(
         capacity: Int = store.capacity,
         maxTotalBytes: Long = store.maxTotalBytes,
+        title: String = this.title,
     ) = Unit
 
     fun nextId(): String = "0"

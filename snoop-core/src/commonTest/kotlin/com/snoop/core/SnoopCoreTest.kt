@@ -115,6 +115,21 @@ class SnoopCoreConfigureTest {
     }
 
     @Test
+    fun titleDefaultsToSnoopAndConfigureRoundTripsIt() {
+        assertEquals("Snoop", SnoopCore.title)
+
+        SnoopCore.configure(title = "Patata Inspector")
+        assertEquals("Patata Inspector", SnoopCore.title)
+
+        // Touching only the limits must not silently rename the viewers back.
+        SnoopCore.configure(capacity = 10)
+        assertEquals("Patata Inspector", SnoopCore.title)
+
+        SnoopCore.reset()
+        assertEquals("Snoop", SnoopCore.title)
+    }
+
+    @Test
     fun configureKeepsStoreAndFlowIdentityAndStillEmits() {
         val store = SnoopCore.store
         val flow = store.entries

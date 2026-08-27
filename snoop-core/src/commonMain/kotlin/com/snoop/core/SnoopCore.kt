@@ -32,14 +32,24 @@ object SnoopCore {
     var enabled: Boolean = true
 
     /**
-     * Reconfigure the store limits. Changing them clears existing entries — set them before traffic
-     * starts. The store and its StateFlow survive, so already-attached collectors (Compose UI, SSE)
-     * keep working.
+     * What every viewer calls itself — the inspector's header, the notification, the web page. Set
+     * it through [configure] when the host would rather the tool carried its own name.
+     */
+    var title: String = DEFAULT_TITLE
+        private set
+
+    /**
+     * Reconfigure the store limits and the name the viewers show. Changing the limits clears
+     * existing entries — set them before traffic starts; changing the title leaves the store alone.
+     * The store and its StateFlow survive, so already-attached collectors (Compose UI, SSE) keep
+     * working. [reset] restores the defaults.
      */
     fun configure(
         capacity: Int = store.capacity,
         maxTotalBytes: Long = store.maxTotalBytes,
+        title: String = this.title,
     ) {
+        this.title = title
         if (capacity != store.capacity || maxTotalBytes != store.maxTotalBytes) {
             store.reconfigure(capacity = capacity, maxTotalBytes = maxTotalBytes)
         }
@@ -71,7 +81,10 @@ object SnoopCore {
         idCounter.store(0)
         store.clear()
         enabled = true
+        title = DEFAULT_TITLE
     }
+
+    private const val DEFAULT_TITLE = "Snoop"
 
     val entriesSnapshot: List<SnoopEntry> get() = store.entries.value
 }

@@ -7,6 +7,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
@@ -251,6 +252,18 @@ class SnoopWebServerTest {
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
+    }
+
+    @Test
+    fun thePageCarriesTheConfiguredTitleEscaped() = testApplication {
+        application { snoopModule() }
+        assertTrue("<title>Snoop</title>" in client.get("/").bodyAsText())
+
+        SnoopCore.configure(title = "Patata <script>alert(1)</script>")
+        val page = client.get("/").bodyAsText()
+        assertTrue("Patata &lt;script&gt;alert(1)&lt;/script&gt;" in page)
+        assertTrue("<script>alert(1)</script>" !in page, "host title must not reach the page as markup")
+        assertTrue("@SNOOP_TITLE@" !in page, "every placeholder must be substituted")
     }
 
     @Test

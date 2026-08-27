@@ -79,7 +79,7 @@ object Snoop {
     private fun publish(lines: List<String>) {
         val count = SnoopCore.store.entries.value.size
         val content = UNMutableNotificationContent().apply {
-            setTitle("Snoop")
+            setTitle(SnoopCore.title)
             setBody(
                 if (lines.isEmpty()) {
                     "$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect"

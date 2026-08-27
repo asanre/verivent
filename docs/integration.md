@@ -50,13 +50,39 @@ Snoop.showNotification(context)     // post a live, ongoing notification
 Snoop.dismissNotification(context)  // remove it
 ```
 
-The notification lists the latest captures and refreshes as traffic arrives; tapping it opens the
-inspector, and it carries a **Clear** action. It is ongoing until dismissed.
+### Where the Activity lands, and its label
 
-!!! note "POST_NOTIFICATIONS"
-    On Android 13+ the host app owns the `POST_NOTIFICATIONS` runtime permission. Snoop never
-    requests it; if it isn't granted, `showNotification` is a silent no-op (the `SecurityException`
-    is swallowed).
+`Snoop.open(context)` and the notification both stack `SnoopActivity` **on top of your app's task**,
+not in one of its own: `launchMode="singleTask"` picks a task by `taskAffinity`, which defaults to
+the host's package. So Back returns to the screen you came from, and the multitasking view keeps
+showing a single card — your app's — labelled by *your* launcher activity.
+
+That means `android:label="Snoop"` on `SnoopActivity` is normally invisible. It only surfaces when
+Snoop starts a task of its own, which happens if you tap the ongoing notification after the host
+task is gone.
+
+If you would rather have the inspector as a **separate card** — handy for putting your app and the
+timeline side by side in split screen — give it its own affinity from
+**`src/debug/AndroidManifest.xml`**. Debug, because `SnoopActivity` only exists there; the release
+no-op ships no manifest and no such class:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity
+            android:name="com.snoop.ui.SnoopActivity"
+            android:taskAffinity="${applicationId}.snoop"
+            android:label="Patata Inspector"
+            tools:replace="android:label" />
+    </application>
+</manifest>
+```
+
+`tools:replace` is what settles the conflict on `android:label`: without it the merger sees two
+different values for the same attribute and fails the build. `taskAffinity` needs no `tools:replace`
+because the library never sets it. The rest — `exported`, `launchMode`, `theme` — is left out on
+purpose; it merges in from the library.
 
 ## iOS
 

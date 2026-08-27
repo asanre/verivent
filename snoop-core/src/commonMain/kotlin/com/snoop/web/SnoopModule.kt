@@ -19,6 +19,21 @@ import io.ktor.server.sse.sse
 import io.ktor.sse.ServerSentEvent
 import kotlinx.coroutines.delay
 
+private const val TITLE_PLACEHOLDER = "@SNOOP_TITLE@"
+
+private fun escapeHtml(text: String): String = buildString(text.length) {
+    for (char in text) {
+        when (char) {
+            '&' -> append("&amp;")
+            '<' -> append("&lt;")
+            '>' -> append("&gt;")
+            '"' -> append("&quot;")
+            '\'' -> append("&#39;")
+            else -> append(char)
+        }
+    }
+}
+
 internal fun Application.snoopModule(token: String? = null) {
     install(SSE)
     // One gate in front of routing, so a route added later can't ship unguarded.
@@ -34,7 +49,9 @@ internal fun Application.snoopModule(token: String? = null) {
     }
     routing {
         get("/") {
-            call.respondText(INDEX_HTML, ContentType.Text.Html)
+            // Substituted here rather than at build time: the title is runtime config, and it is
+            // host-supplied text landing in markup, so it is escaped rather than trusted.
+            call.respondText(INDEX_HTML.replace(TITLE_PLACEHOLDER, escapeHtml(SnoopCore.title)), ContentType.Text.Html)
         }
         get("/api/entries") {
             call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)

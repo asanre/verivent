@@ -94,7 +94,7 @@ object Snoop {
         lines.forEach(style::addLine)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.snoop_ic_logo)
-            .setContentTitle("Snoop")
+            .setContentTitle(SnoopCore.title)
             .setContentText("$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect")
             .setStyle(style)
             .setOnlyAlertOnce(true)
