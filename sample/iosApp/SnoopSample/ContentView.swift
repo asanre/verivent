@@ -46,8 +46,17 @@ struct ContentView: View {
                     } else {
                         Button("Start web viewer") {
                             let url = Snoop.startWebViewer(.local)
-                            viewerUrl = url
-                            note("viewer started")
+                            // The bind is asynchronous, so the returned URL is not proof the port
+                            // was free — a restart loses to the socket the last one left behind.
+                            // Read the flag back instead of offering a link that answers nothing.
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                guard Snoop.isWebViewerRunning else {
+                                    note("viewer failed to bind — check the device console")
+                                    return
+                                }
+                                viewerUrl = url
+                                note("viewer started")
+                            }
                         }
                     }
                 }
