@@ -157,7 +157,7 @@ adb forward tcp:9394 tcp:9394   # Android: then open the URL start() returned
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 
-## Sample
+## Samples
 
 `sample/composeApp` is a Compose Multiplatform app (Android + iOS) that generates real Ktor traffic
 and fake analytics events across channels, and opens the inspector embedded and via notification.
@@ -166,6 +166,11 @@ and fake analytics events across channels, and opens the inspector embedded and 
 ./gradlew :sample:composeApp:assembleDebug            # Android APK
 ./gradlew :sample:composeApp:linkDebugFrameworkIosSimulatorArm64   # iOS framework
 ```
+
+`sample/iosApp` is a SwiftUI app for the native-iOS Swift Package — analytics and the web viewer,
+no network capture. It links `swift/` by local path, so it exercises the sources in this repo
+rather than the last release. Assemble the XCFramework first, then open
+`sample/iosApp/SnoopSample.xcodeproj`; see [docs/contributing.md](docs/contributing.md).
 
 ## Publishing
 

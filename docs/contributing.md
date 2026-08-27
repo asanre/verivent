@@ -22,6 +22,31 @@ Useful targeted tasks:
 ./gradlew dokkaGenerate                                           # API reference into build/dokka/html
 ```
 
+## The Swift package
+
+`swift/` and `sample/iosApp` build outside Gradle, so nothing in `./gradlew check` covers them
+locally — the `swift` job in CI does. Assemble the XCFramework first: `swift/Package.swift` links it
+by path, and SwiftPM resolves the package graph before anything else runs, so a missing framework
+fails at resolution rather than at link time.
+
+```bash
+./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework
+SIM=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
+(cd swift && xcodebuild test -scheme Snoop -destination "id=$SIM")            # the bridge tests
+(cd sample/iosApp && xcodebuild build -scheme SnoopSample -destination "id=$SIM")
+```
+
+The simulator is looked up rather than named because `-destination 'name=iPhone 16'` fails unless
+the OS is pinned too, and the pair that exists differs from machine to machine.
+
+Two things that bite:
+
+- **A stale `snoop-native/build/`.** The tests link whatever XCFramework is sitting there, so an old
+  one passes while testing nothing current. Assemble before you trust a green run.
+- **`has been modified since the module file was built`.** Xcode's module cache still holds the
+  previous XCFramework. Delete the project's folder under `~/Library/Developer/Xcode/DerivedData`
+  and run again.
+
 ## Conventions
 
 - **No-op parity is mandatory.** Every public symbol in `snoop-core`/`snoop-ktor`/`snoop-analytics`

@@ -19,7 +19,8 @@ it directly:
 .package(url: "https://github.com/asanre/snoop-swift.git", from: "0.3.0")
 ```
 
-That repository is generated on every release; the sources live in `swift/` in the main repo.
+That repository is generated on every release; the sources live in `swift/` in the main repo,
+alongside a runnable example: `sample/iosApp` is a SwiftUI app wired to everything below.
 
 ## Capture analytics events
 
