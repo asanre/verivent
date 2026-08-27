@@ -2,6 +2,8 @@ package com.snoop.web
 
 import com.snoop.core.SnoopCore
 import com.snoop.core.model.AnalyticsEntry
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
@@ -12,11 +14,13 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.testApplication
 import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -237,6 +241,49 @@ class SnoopWebServerTest {
         assertFalse(SnoopWebServer.isRunning, "stop() must not return before the engine is down")
         assertTrue(SnoopWebServer.start(port = port).endsWith("t=${SnoopWebServer.token}"))
         assertTrue(SnoopWebServer.isRunning)
+    }
+
+    @Test
+    fun stopThenStartOnSamePortWorksWithAStreamOpen() = runTest {
+        val port = 9381
+        withContext(Dispatchers.Default) {
+            HttpClient(CIO).use { client ->
+                // Twice: the first round sets the trap, the second one walks into it.
+                repeat(2) { round ->
+                    // The URL carries the token, and survives a start that fails after returning.
+                    val url = SnoopWebServer.start(port = port)
+                    assertTrue(serves(client, url), "round $round: the viewer never served a response")
+                    // The viewer page holds an SSE stream open for as long as it is on screen, so
+                    // stop() closes a live connection rather than an idle one.
+                    val opened = CompletableDeferred<Unit>()
+                    val stream = launch { runCatching { readStream(client, url, opened) } }
+                    withTimeout(10_000) { opened.await() }
+                    SnoopWebServer.stop()
+                    stream.cancelAndJoin()
+                }
+            }
+        }
+    }
+
+    /** The bind is asynchronous, so a served response is the only trustworthy readiness signal. */
+    private suspend fun serves(client: HttpClient, url: String): Boolean {
+        repeat(50) {
+            val body = runCatching { client.get(url.replace("/?t=", "/api/entries?t=")).bodyAsText() }
+            if (body.getOrNull()?.startsWith("[") == true) return true
+            delay(100)
+        }
+        return false
+    }
+
+    /** Completes [opened] on the first frame and keeps reading, so the socket stays live. */
+    private suspend fun readStream(client: HttpClient, url: String, opened: CompletableDeferred<Unit>) {
+        client.prepareGet(url.replace("/?t=", "/api/stream?t=")).execute { response ->
+            val channel = response.bodyAsChannel()
+            while (true) {
+                val line = channel.readUTF8Line() ?: break
+                if (line.startsWith("data:")) opened.complete(Unit)
+            }
+        }
     }
 
     @Test

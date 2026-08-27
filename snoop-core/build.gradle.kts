@@ -59,6 +59,7 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.ktor.server.test.host)
+            implementation(libs.ktor.client.cio)
             implementation(libs.kotlinx.coroutines.test)
         }
     }

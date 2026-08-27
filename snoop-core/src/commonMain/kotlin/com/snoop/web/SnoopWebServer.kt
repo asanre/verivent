@@ -1,8 +1,10 @@
 package com.snoop.web
 
 import com.snoop.core.internal.SnoopLog
+import io.ktor.server.application.serverConfig
 import io.ktor.server.cio.CIO
 import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.EngineConnectorBuilder
 import io.ktor.server.engine.embeddedServer
 import kotlin.concurrent.atomics.AtomicReference
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -116,15 +118,26 @@ object SnoopWebServer {
         token: String? = null,
         scope: CoroutineScope = CoroutineScope(SupervisorJob()),
         onEngineFailure: (Throwable) -> Unit = {},
-    ): EmbeddedServer<*, *> = scope.embeddedServer(
+    ): EmbeddedServer<*, *> = embeddedServer(
         CIO,
-        host = host,
-        port = port,
-        // The engine outlives start(): a bind failure throws there *and* lands here, and anything
-        // that fails afterwards only lands here. Without a handler it reaches the default one,
-        // which on Kotlin/Native takes the whole host process down.
-        parentCoroutineContext = CoroutineExceptionHandler { _, cause -> onEngineFailure(cause) },
-    ) { snoopModule(token) }
+        serverConfig {
+            // The engine outlives start(): a bind failure throws there *and* lands here, and
+            // anything that fails afterwards only lands here. Without a handler it reaches the
+            // default one, which on Kotlin/Native takes the whole host process down.
+            parentCoroutineContext = scope.coroutineContext +
+                CoroutineExceptionHandler { _, cause -> onEngineFailure(cause) }
+            module { snoopModule(token) }
+        },
+    ) {
+        connectors += EngineConnectorBuilder().apply {
+            this.host = host
+            this.port = port
+        }
+        // SO_REUSEADDR. Whatever the viewer page had open — the SSE stream, above all — lands in
+        // TIME_WAIT on this port when stop() closes it, and lingers there for tens of seconds. The
+        // immediate restart would lose the re-bind to those ghosts; a live listener still wins.
+        reuseAddress = true
+    }
 
     const val DEFAULT_PORT: Int = 9394
     internal const val LOOPBACK: String = "127.0.0.1"

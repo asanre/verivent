@@ -65,25 +65,24 @@ final class SnoopBridgeTests: XCTestCase {
     /// Starts the viewer and reads the timeline back over HTTP, which exercises the embedded Ktor
     /// server on the simulator as well as the capture path.
     ///
-    /// A fresh port per attempt, because a stopped socket lingers in TIME_WAIT and `start` reports
-    /// bind failures asynchronously — the only trustworthy readiness signal is a served response.
+    /// The same port every time, restart included. Not the default one: the simulator shares the
+    /// host loopback, so a sample app left running would squat it. `start` still reports bind
+    /// failures asynchronously, so a served response stays the only trustworthy readiness signal.
     private func fetchEntries() async throws -> [[String: Any]] {
-        for _ in 1...5 {
-            Snoop.stopWebViewer()
-            let base = Snoop.startWebViewer(.local, port: Int.random(in: 20_000...60_000))
-            // The URL carries the access token as `?t=`, so the path has to be swapped in rather
-            // than appended — every bind is gated, loopback included.
-            guard var components = URLComponents(string: base) else { continue }
-            components.path = "/api/entries"
-            guard let url = components.url else { continue }
+        Snoop.stopWebViewer()
+        let base = Snoop.startWebViewer(.local, port: 9395)
+        // The URL carries the access token as `?t=`, so the path has to be swapped in rather
+        // than appended — every bind is gated, loopback included.
+        var components = try XCTUnwrap(URLComponents(string: base))
+        components.path = "/api/entries"
+        let url = try XCTUnwrap(components.url)
 
-            for _ in 1...10 {
-                if let (data, _) = try? await URLSession.shared.data(from: url),
-                   let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                    return entries
-                }
-                try await Task.sleep(nanoseconds: 100_000_000)
+        for _ in 1...50 {
+            if let (data, _) = try? await URLSession.shared.data(from: url),
+               let entries = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                return entries
             }
+            try await Task.sleep(nanoseconds: 100_000_000)
         }
         XCTFail("the viewer never served a response")
         return []
