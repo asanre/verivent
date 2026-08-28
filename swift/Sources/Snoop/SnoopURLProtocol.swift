@@ -25,6 +25,7 @@ public final class SnoopURLProtocol: URLProtocol {
     private var innerTask: URLSessionTask?
     private var startedAt: DispatchTime?
     private var httpResponse: HTTPURLResponse?
+    private var protocolName: String?
     private var buffered = Data()
     private var totalResponseBytes: Int64 = 0
     private var finished = false
@@ -130,6 +131,20 @@ public final class SnoopURLProtocol: URLProtocol {
         }
     }
 
+    /**
+     The ALPN name URLSession negotiated (`http/1.1`, `h2`, `h3`), which is the only place Foundation
+     exposes it — `HTTPURLResponse` has no HTTP-version property. Stored as reported rather than
+     reshaped into Ktor's `HTTP/2.0` spelling: those are the names the protocol registry uses.
+
+     Metrics only arrive as the task finishes, so a redirect hop — which is closed and cancelled
+     before then — keeps an empty protocol.
+     */
+    func negotiated(protocolName: String) {
+        lock.lock()
+        self.protocolName = protocolName
+        lock.unlock()
+    }
+
     func completed(error: Error?) {
         lock.lock()
         if finished {
@@ -143,6 +158,7 @@ public final class SnoopURLProtocol: URLProtocol {
         let body = buffered
         let total = totalResponseBytes
         let silent = stopped
+        let negotiated = protocolName
         lock.unlock()
 
         if let error = error {
@@ -160,7 +176,7 @@ public final class SnoopURLProtocol: URLProtocol {
             SnoopNetwork.shared.complete(
                 id: id,
                 status: Int32(response.statusCode),
-                protocol: nil,
+                protocol: negotiated,
                 contentType: response.value(forHTTPHeaderField: "Content-Type"),
                 headers: SnoopURLProtocol.headerFields(of: response),
                 body: body,

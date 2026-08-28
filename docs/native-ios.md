@@ -83,6 +83,10 @@ the interceptor keeps one set of options for the process, so the last install wi
 `Snoop.log` and the interceptor are independent: `redactProperty` in `configure` covers analytics
 properties, `redactHeader` here covers HTTP headers.
 
+One cosmetic difference from the Ktor side: the protocol column shows the ALPN name URLSession
+negotiated (`http/1.1`, `h2`, `h3`) rather than Ktor's `HTTP/1.1` spelling, because that is the only
+form Foundation reports.
+
 ### What it cannot see
 
 - **`URLSession.shared`** — its `protocolClasses` is not configurable. Build your own session.

@@ -36,6 +36,8 @@ final class SnoopNetworkTests: XCTestCase {
         XCTAssertEqual(entry["status"] as? Int, 404)
         XCTAssertEqual(entry["state"] as? String, "complete")
         XCTAssertNotNil(entry["durationMillis"], "a completed call should carry its duration")
+        // Foundation only exposes the negotiated protocol through URLSessionTaskMetrics.
+        XCTAssertEqual(entry["protocol"] as? String, "http/1.1")
     }
 
     func testHeaderAndQueryRedactionRunOnTheSharedEngine() async throws {

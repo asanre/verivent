@@ -91,6 +91,17 @@ extension SnoopInnerSession: URLSessionDataDelegate {
         handler?.completed(error: error)
     }
 
+    /// Fired before `didCompleteWithError`, which is what makes the negotiated protocol available
+    /// in time to be recorded with the response.
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didFinishCollecting metrics: URLSessionTaskMetrics
+    ) {
+        guard let name = metrics.transactionMetrics.last?.networkProtocolName else { return }
+        handler(for: task)?.negotiated(protocolName: name)
+    }
+
     func urlSession(
         _ session: URLSession,
         task: URLSessionTask,
