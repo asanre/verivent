@@ -3,12 +3,15 @@
 Snoop's inspector is a Compose Multiplatform surface, so a host with a shared KMP module gets
 everything described in [Integration](integration.md). An app written entirely in Swift has no Ktor
 client to hook and no Compose tree to embed — for those, Snoop ships a separate Swift Package with a
-deliberately narrower scope.
+deliberately narrower scope: the analytics sink, the web viewer, and network capture through
+`URLSession` rather than Ktor.
 
-!!! warning "What this package does *not* do"
-    **There is no network capture.** Snoop intercepts a Ktor `HttpClient`; a native app uses
-    `URLSession`, which the package never touches. What you get is the analytics timeline and the
-    web viewer.
+!!! warning "Network capture here is experimental, and partial by nature"
+    `URLProtocol` only sees the sessions you install it on. It cannot see `URLSession.shared`,
+    WebSockets, background sessions, or the sessions a third-party SDK builds for itself. And
+    because the request is replayed through Snoop's own session, **your `URLSessionDelegate` is not
+    consulted for intercepted requests** — see [Capture network traffic](#capture-network-traffic).
+    The API is a preview and may change in a minor release.
 
 ## Install
 
@@ -52,6 +55,53 @@ so `String`, `Int`, `Double` and `Bool` all work.
 Redaction runs on the same engine as the Compose Multiplatform build — a matching key is replaced
 with a visible `██` rather than dropped.
 
+## Capture network traffic
+
+Install the interceptor on the `URLSessionConfiguration` your app builds its session from, and every
+call through that session lands in the timeline next to your analytics events:
+
+```swift
+let configuration = URLSessionConfiguration.default
+Snoop.installNetworkInterceptor(
+    on: configuration,
+    maxContentLength: 250_000,
+    redactHeader: { $0.lowercased() == "x-api-key" },
+    redactQueryParameter: { $0 == "session" },
+    redactBody: { $0.replacingOccurrences(of: "secret", with: "██") },
+    keepRequest: { $0.path != "/health" }
+)
+let session = URLSession(configuration: configuration, delegate: self, delegateQueue: .main)
+```
+
+Redaction runs on the same engine as the Ktor plugin, so the defaults come along: `Authorization`,
+`Cookie` and `Set-Cookie` are always redacted, as are the usual secret-bearing query parameters
+(`api_key`, `token`, `access_token`, …) in the stored URL, and `password=`-style fields in a
+form-urlencoded body. A predicate that throws counts as a match, so a broken rule fails closed.
+Unlike the Ktor DSL, whose rules are additive, each call **replaces** the previous configuration —
+the interceptor keeps one set of options for the process, so the last install wins.
+
+`Snoop.log` and the interceptor are independent: `redactProperty` in `configure` covers analytics
+properties, `redactHeader` here covers HTTP headers.
+
+### What it cannot see
+
+- **`URLSession.shared`** — its `protocolClasses` is not configurable. Build your own session.
+- **WebSockets and background sessions** — outside what `URLProtocol` is handed.
+- **Third-party SDKs** that construct their own session, unless they let you pass a configuration.
+- **Streamed upload bodies without a `Content-Length`**, or larger than 1 MB: a body stream is
+  one-shot, so rather than risk corrupting the upload Snoop stores a placeholder and sends the
+  stream through untouched.
+
+### Authentication and certificate pinning
+
+The intercepted request is replayed through Snoop's own session, so **the host's
+`URLSessionDelegate` never sees it**. Certificate pinning implemented in
+`urlSession(_:didReceive:completionHandler:)` does not run, and a credential you would have supplied
+for a Basic/Digest challenge goes unanswered. The connection still gets the system's default trust
+evaluation — this is no weaker than not intercepting at all — but it does drop a check you added on
+top. If a session relies on one, simply don't install the interceptor on that configuration; that is
+what makes per-configuration installation the escape hatch rather than a global switch.
+
 ## Inspect
 
 ```swift
@@ -88,6 +138,6 @@ Snoop.log(event.name, channel: "firebase", properties: event.properties)
 #endif
 ```
 
-`#if DEBUG` keeps the calls out, but not the binary: the arm64 device slice is ~5.6 MB. If that is
+`#if DEBUG` keeps the calls out, but not the binary: the arm64 device slice is ~5.7 MB. If that is
 unacceptable, keep Snoop out of the release target entirely rather than relying on dead-stripping —
 Objective-C class metadata resists it.

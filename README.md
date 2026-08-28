@@ -12,7 +12,8 @@ open while you navigate the host app.
 
 📖 **Full documentation: <https://asanre.github.io/snoop/>**
 
-> Network capture is **Ktor-only**; analytics capture is vendor-agnostic.
+> Network capture is **Ktor**, plus experimental `URLSession` capture on native iOS; analytics
+> capture is vendor-agnostic.
 
 ## Why
 
@@ -41,7 +42,7 @@ declare it yourself.
 viewer instead of on-device, and Compose never enters your dependency graph.
 
 Apps written entirely in Swift, with no shared KMP module, install a separate Swift Package that
-carries the analytics sink and the web viewer — no network capture. See
+carries the analytics sink, the web viewer and experimental `URLSession` capture. See
 [Native iOS](https://asanre.github.io/snoop/native-ios/).
 
 ## Install
@@ -167,8 +168,8 @@ and fake analytics events across channels, and opens the inspector embedded and 
 ./gradlew :sample:composeApp:linkDebugFrameworkIosSimulatorArm64   # iOS framework
 ```
 
-`sample/iosApp` is a SwiftUI app for the native-iOS Swift Package — analytics and the web viewer,
-no network capture. It links `swift/` by local path, so it exercises the sources in this repo
+`sample/iosApp` is a SwiftUI app for the native-iOS Swift Package — analytics, `URLSession`
+capture and the web viewer. It links `swift/` by local path, so it exercises the sources in this repo
 rather than the last release. Assemble the XCFramework first, then open
 `sample/iosApp/SnoopSample.xcodeproj`; see [docs/contributing.md](docs/contributing.md).
 

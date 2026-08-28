@@ -20,6 +20,32 @@ install(Snoop) {
 }
 ```
 
+## Network — native iOS (`Snoop.installNetworkInterceptor`)
+
+The `URLSession` counterpart of the table above, for hosts on the Swift Package. Same engine, same
+defaults; the differences are that every rule is a single closure rather than an additive list, and
+that **each call replaces the previous configuration** instead of adding to it.
+
+| Option | Type | Ktor counterpart |
+|---|---|---|
+| `maxContentLength` | `Int64` (default 250_000) | `maxContentLength` |
+| `redactHeader` | `((String) -> Bool)?` | `sanitizeHeader` |
+| `redactQueryParameter` | `((String) -> Bool)?` | `sanitizeQueryParameter` |
+| `redactBody` | `((String) -> String)?` | `sanitizeBody` |
+| `keepRequest` | `((Snoop.Request) -> Bool)?` | `filter` |
+
+```swift
+let configuration = URLSessionConfiguration.default
+Snoop.installNetworkInterceptor(
+    on: configuration,
+    redactHeader: { $0.lowercased() == "x-api-key" },
+    keepRequest: { $0.path != "/health" }
+)
+```
+
+Experimental, and partial by nature — see [Native iOS](native-ios.md#capture-network-traffic) for
+what `URLProtocol` cannot reach.
+
 ## Analytics (`SnoopAnalytics { ... }`)
 
 | Option | Type | Effect |
