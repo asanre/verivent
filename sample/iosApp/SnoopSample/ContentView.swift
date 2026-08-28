@@ -1,8 +1,7 @@
 import Snoop
 import SwiftUI
 
-/// Analytics and the viewer, and nothing else: the package never touches `URLSession`, so unlike the
-/// Compose sample there is no network half to demonstrate.
+/// Analytics, network capture and the viewer — the same three halves the Compose sample shows.
 struct ContentView: View {
     @State private var viewerUrl: String?
     @State private var trail: [String] = []
@@ -28,6 +27,15 @@ struct ContentView: View {
                     Button("Log debug_ping") {
                         Snoop.log("debug_ping", channel: "internal")
                         note("debug_ping — dropped by the filter, never stored")
+                    }
+                }
+
+                Section(header: Text("Network")) {
+                    ForEach(SampleCall.allCases) { call in
+                        Button(call.title) {
+                            SampleNetwork.shared.perform(call) { note($0) }
+                            note("\(call.title) — \(call.hint)")
+                        }
                     }
                 }
 
