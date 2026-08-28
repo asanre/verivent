@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import com.snoop.analytics.AnalyticsEvent
 import com.snoop.analytics.SnoopAnalytics
 import com.snoop.core.SnoopCore
+import com.snoop.core.capture.BodyCapture
 import com.snoop.core.internal.SnoopLog
 import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
@@ -126,6 +127,14 @@ private fun store(entry: SnoopEntry) {
     store.clear()
     val defaultCapacity: Int = SnoopStore.DEFAULT_CAPACITY
     val defaultBytes: Long = SnoopStore.DEFAULT_MAX_TOTAL_BYTES
+}
+
+private fun bodyCapture() {
+    val text: Boolean = BodyCapture.isTextLike("application/json")
+    // Both call shapes on purpose: the second checks the mirror kept the default argument too.
+    val counted: BodyPreview = BodyCapture.textPreview(ByteArray(0), "text/plain", 10L, 3L)
+    val defaulted: BodyPreview = BodyCapture.textPreview(ByteArray(0), null, 10L)
+    val binary: BodyPreview = BodyCapture.binaryPlaceholder("image/png", 3L)
 }
 
 private fun redaction() {
