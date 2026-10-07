@@ -12,6 +12,7 @@ import com.snoop.ui.Snoop as SnoopEntryPoints
  */
 
 private fun iosEntryPoints() {
+    SnoopEntryPoints.open()
     SnoopEntryPoints.showNotification()
     SnoopEntryPoints.dismissNotification()
 }

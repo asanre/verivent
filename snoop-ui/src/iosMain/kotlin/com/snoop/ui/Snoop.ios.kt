@@ -33,13 +33,17 @@ private const val IDENTIFIER = "snoop_inspector"
 /**
  * iOS entry points mirroring the Android [Snoop] object, minus the `Context`. [showNotification]
  * asks for alert permission inline (idempotent; a denial is a silent no-op), then keeps one
- * notification in sync with the store — each capture replaces the previous banner.
+ * notification in sync with the store — each capture replaces the previous banner. Tapping it, or
+ * calling [open], presents the inspector as a page sheet.
  */
 object Snoop {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var job: Job? = null
     private var delegate: NSObject? = null
+
+    /** Present the inspector over the foreground window; a no-op if it is already on top. */
+    fun open() = presentInspector()
 
     fun showNotification() {
         val center = UNUserNotificationCenter.currentNotificationCenter()
@@ -83,7 +87,7 @@ object Snoop {
             setTitle(SnoopCore.title)
             setBody(
                 if (lines.isEmpty()) {
-                    "$count ${if (count == 1) "entry" else "entries"} captured"
+                    "$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect"
                 } else {
                     lines.joinToString("\n")
                 },
@@ -125,8 +129,8 @@ private class ForegroundBannerDelegate(
         didReceiveNotificationResponse: UNNotificationResponse,
         withCompletionHandler: () -> Unit,
     ) {
-        // Tapping Snoop's own notification opens nothing on iOS yet; just acknowledge it.
         if (didReceiveNotificationResponse.notification.request.identifier == IDENTIFIER) {
+            presentInspector()
             withCompletionHandler()
             return
         }
