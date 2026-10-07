@@ -24,8 +24,8 @@ both.
 - **Redaction at capture** — headers, query parameters and form-body fields are replaced with a
   visible `██` before anything reaches the store; raw secrets never land in memory.
 - **Web viewer** — an embedded HTTP server streams the same timeline to a desktop browser over SSE.
-- **Live notification** — a persistent notification lists the latest captures; on Android it also
-  reopens the inspector.
+- **Live notification** — a persistent notification lists the latest captures and reopens the
+  inspector (Android and iOS).
 - **No-op mirrors** — release builds swap in API-identical stubs that capture nothing and drop the
   UI/retention overhead.
 

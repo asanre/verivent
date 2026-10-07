@@ -125,6 +125,21 @@ let url = Snoop.startWebViewer(.lan)      // http://192.168.1.10:9394/?t=…
 See [Web viewer](web-viewer.md) for bind modes and tokens; the page, filters and detail views are
 the same ones the KMP build serves.
 
+### On the device itself
+
+There is no native inspector screen, but the viewer runs on the device's own loopback, so the app can
+show it in-app with `SFSafariViewController` — no Mac needed. Safari View Controller runs out of
+process, so your App Transport Security settings don't block the plain-HTTP URL:
+
+```swift
+import SafariServices
+
+let url = URL(string: Snoop.startWebViewer())!   // .local is enough: same device
+present(SFSafariViewController(url: url), animated: true)
+```
+
+`sample/iosApp` does the same from SwiftUI with a `UIViewControllerRepresentable`.
+
 !!! note "`startWebViewer` reports bind failures asynchronously"
     The engine binds on a background coroutine, so the returned URL is not proof that the port was
     free. A failure logs a `Snoop` warning to the device console and flips `Snoop.isWebViewerRunning`

@@ -92,6 +92,7 @@ the Swift Package instead — see [Native iOS](native-ios.md).
 `Snoop` mirrors the Android object without a `Context`:
 
 ```kotlin
+Snoop.open()                 // present the inspector as a page sheet over the foreground window
 Snoop.showNotification()     // request alert permission inline, then keep it in sync
 Snoop.dismissNotification()  // cancel and remove pending + delivered
 ```
@@ -102,13 +103,17 @@ notification as a foreground banner while forwarding everything else to whatever
 already set. Each capture republishes a single notification (fixed identifier), so it updates in
 place instead of stacking.
 
-Unlike Android, the notification is informational only: tapping it does not open the inspector, and
-there is no **Clear** action. Opening the inspector is up to the host.
+Tapping the notification calls `Snoop.open()`, which presents the inspector as a page sheet over
+whatever is on top — swipe it down to close. Calling it while the inspector is already on top does
+nothing. Unlike Android there is no **Clear** action, and a tap on a notification left over from a
+previous launch opens nothing: the store lives in memory, so that session's captures are gone, and
+the delegate is only installed once `showNotification()` runs again.
 
-### Present the inspector
+### Embed the inspector in your own screen
 
-In a Compose Multiplatform UI, `SnoopScreen` is just another composable — embed it as above. A
-SwiftUI or UIKit host wraps it in a `UIViewController` from `iosMain`:
+`Snoop.open()` covers the common case. To place the inspector yourself — a tab, a dev menu — a
+Compose Multiplatform UI embeds `SnoopScreen` as above, and a SwiftUI or UIKit host wraps it in a
+`UIViewController` from `iosMain`:
 
 ```kotlin
 // iosMain, e.g. SnoopViewController.kt
