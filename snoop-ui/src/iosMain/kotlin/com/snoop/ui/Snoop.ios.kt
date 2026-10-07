@@ -83,7 +83,7 @@ object Snoop {
             setTitle(SnoopCore.title)
             setBody(
                 if (lines.isEmpty()) {
-                    "$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect"
+                    "$count ${if (count == 1) "entry" else "entries"} captured"
                 } else {
                     lines.joinToString("\n")
                 },
