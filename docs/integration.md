@@ -138,7 +138,9 @@ struct SnoopInspector: UIViewControllerRepresentable {
 
 If this is the first Compose UI in the app, add `CADisableMinimumFrameDurationOnPhone` = `true` to
 its `Info.plist`: Compose Multiplatform crashes at runtime without it (or set
-`ComposeUIViewControllerConfiguration.enforceStrictPlistSanityCheck` to `false`).
+`ComposeUIViewControllerConfiguration.enforceStrictPlistSanityCheck` to `false`). `Snoop.open()`
+needs neither — it turns that check off for its own controller, at the cost of 120 Hz rendering in
+the inspector.
 
 ## Web viewer
 
