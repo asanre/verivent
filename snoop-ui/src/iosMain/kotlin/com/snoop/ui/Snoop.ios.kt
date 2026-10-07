@@ -23,6 +23,7 @@ import platform.UserNotifications.UNNotificationPresentationOptionBanner
 import platform.UserNotifications.UNNotificationPresentationOptionList
 import platform.UserNotifications.UNNotificationPresentationOptions
 import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNNotificationResponse
 import platform.UserNotifications.UNUserNotificationCenter
 import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
@@ -116,6 +117,34 @@ private class ForegroundBannerDelegate(
             next.userNotificationCenter(center, willPresentNotification, withCompletionHandler)
         } else {
             withCompletionHandler(0uL)
+        }
+    }
+
+    override fun userNotificationCenter(
+        center: UNUserNotificationCenter,
+        didReceiveNotificationResponse: UNNotificationResponse,
+        withCompletionHandler: () -> Unit,
+    ) {
+        // Tapping Snoop's own notification opens nothing on iOS yet; just acknowledge it.
+        if (didReceiveNotificationResponse.notification.request.identifier == IDENTIFIER) {
+            withCompletionHandler()
+            return
+        }
+        val forward = NSSelectorFromString("userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:")
+        if (next != null && next.respondsToSelector(forward)) {
+            next.userNotificationCenter(center, didReceiveNotificationResponse, withCompletionHandler)
+        } else {
+            withCompletionHandler()
+        }
+    }
+
+    override fun userNotificationCenter(
+        center: UNUserNotificationCenter,
+        openSettingsForNotification: UNNotification?,
+    ) {
+        val forward = NSSelectorFromString("userNotificationCenter:openSettingsForNotification:")
+        if (next != null && next.respondsToSelector(forward)) {
+            next.userNotificationCenter(center, openSettingsForNotification)
         }
     }
 }
