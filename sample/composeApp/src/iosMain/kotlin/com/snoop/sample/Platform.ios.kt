@@ -18,6 +18,9 @@ internal actual val webViewerHint: String =
 
 @Composable
 actual fun PlatformExtras() {
+    OutlinedButton(onClick = { Snoop.open() }, modifier = Modifier.fillMaxWidth()) {
+        Text("Open Snoop (modal)")
+    }
     OutlinedButton(onClick = { Snoop.showNotification() }, modifier = Modifier.fillMaxWidth()) {
         Text("Show Snoop notification")
     }

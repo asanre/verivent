@@ -34,6 +34,7 @@ fails at resolution rather than at link time.
 SIM=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
 (cd swift && xcodebuild test -scheme Snoop -destination "id=$SIM")            # the bridge tests
 (cd sample/iosApp && xcodebuild build -scheme SnoopSample -destination "id=$SIM")
+(cd sample/composeApp/iosApp && xcodebuild build -scheme ComposeSample -destination "id=$SIM")
 ```
 
 The simulator is looked up rather than named because `-destination 'name=iPhone 16'` fails unless

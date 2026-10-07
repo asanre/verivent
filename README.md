@@ -168,6 +168,9 @@ and fake analytics events across channels, and opens the inspector embedded and 
 ./gradlew :sample:composeApp:linkDebugFrameworkIosSimulatorArm64   # iOS framework
 ```
 
+On iOS, open `sample/composeApp/iosApp/ComposeSample.xcodeproj` and run it: a build phase compiles
+the Kotlin framework through Gradle.
+
 `sample/iosApp` is a SwiftUI app for the native-iOS Swift Package — analytics, `URLSession`
 capture and the web viewer. It links `swift/` by local path, so it exercises the sources in this repo
 rather than the last release. Assemble the XCFramework first, then open
