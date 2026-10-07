@@ -24,8 +24,8 @@ both.
 - **Redaction at capture** — headers, query parameters and form-body fields are replaced with a
   visible `██` before anything reaches the store; raw secrets never land in memory.
 - **Web viewer** — an embedded HTTP server streams the same timeline to a desktop browser over SSE.
-- **Live notification** — a persistent notification lists the latest captures and reopens the
-  inspector (Android and iOS).
+- **Live notification** — a persistent notification lists the latest captures; on Android it also
+  reopens the inspector.
 - **No-op mirrors** — release builds swap in API-identical stubs that capture nothing and drop the
   UI/retention overhead.
 
@@ -46,4 +46,4 @@ arrives transitively.
 with no Compose in your graph.
 
 See [Getting started](getting_started.md) to install, then [Integration](integration.md) to open the
-inspector.
+inspector. Apps written entirely in Swift start from [Native iOS](native-ios.md) instead.

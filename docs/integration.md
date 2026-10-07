@@ -86,6 +86,9 @@ purpose; it merges in from the library.
 
 ## iOS
 
+This section is for iOS hosts built on a shared KMP module. An app written entirely in Swift installs
+the Swift Package instead — see [Native iOS](native-ios.md).
+
 `Snoop` mirrors the Android object without a `Context`:
 
 ```kotlin

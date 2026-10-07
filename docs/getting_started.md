@@ -1,5 +1,8 @@
 # Getting started
 
+This page covers Gradle hosts — Android and Kotlin Multiplatform. An app written entirely in Swift
+installs the Swift Package instead: see [Native iOS](native-ios.md).
+
 ## Install
 
 Use the real artifacts in debug and the no-op mirrors in release, so release builds capture nothing
@@ -7,16 +10,16 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:snoop-ktor:0.3.0")
-    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.3.0")
+    debugImplementation("io.github.asanre:snoop-ktor:0.4.0")
+    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.4.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:snoop-ui:0.3.0")
-    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.3.0")
+    debugImplementation("io.github.asanre:snoop-ui:0.4.0")
+    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.4.0")
 
     // optional, only if you also want analytics inspection:
-    debugImplementation("io.github.asanre:snoop-analytics:0.3.0")
-    releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.3.0")
+    debugImplementation("io.github.asanre:snoop-analytics:0.4.0")
+    releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.4.0")
 }
 ```
 
