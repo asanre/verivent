@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		7F5C233B0EE70F01B888E605 /* ComposeSampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32B55FD4A5EF782B5C8D9694 /* ComposeSampleApp.swift */; };
+		A1C0FFEE0000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1C0FFEE0000000000000001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		32B55FD4A5EF782B5C8D9694 /* ComposeSampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeSampleApp.swift; sourceTree = "<group>"; };
 		565B5145BD53BB13F487F687 /* ComposeSample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ComposeSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		659A599D8EFDA814BACFE284 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A1C0FFEE0000000000000001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -29,6 +31,7 @@
 			isa = PBXGroup;
 			children = (
 				32B55FD4A5EF782B5C8D9694 /* ComposeSampleApp.swift */,
+				A1C0FFEE0000000000000001 /* Assets.xcassets */,
 				659A599D8EFDA814BACFE284 /* Info.plist */,
 			);
 			path = ComposeSample;
@@ -51,6 +54,7 @@
 			buildPhases = (
 				F0B655D1C6A22CCFBB4C9453 /* Compile Kotlin framework */,
 				FF5C33F75520D9D9525D011A /* Sources */,
+				A1C0FFEE0000000000000003 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -95,6 +99,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1C0FFEE0000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1C0FFEE0000000000000002 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		F0B655D1C6A22CCFBB4C9453 /* Compile Kotlin framework */ = {
