@@ -99,7 +99,38 @@ notification as a foreground banner while forwarding everything else to whatever
 already set. Each capture republishes a single notification (fixed identifier), so it updates in
 place instead of stacking.
 
-The inspector itself is the shared `SnoopScreen` — embed it in your SwiftUI/Compose host as above.
+Unlike Android, the notification is informational only: tapping it does not open the inspector, and
+there is no **Clear** action. Opening the inspector is up to the host.
+
+### Present the inspector
+
+In a Compose Multiplatform UI, `SnoopScreen` is just another composable — embed it as above. A
+SwiftUI or UIKit host wraps it in a `UIViewController` from `iosMain`:
+
+```kotlin
+// iosMain, e.g. SnoopViewController.kt
+fun SnoopViewController(): UIViewController = ComposeUIViewController { SnoopScreen() }
+```
+
+and presents it from Swift. Kotlin exposes top-level functions on a class named after the file
+(`SnoopViewController.kt` → `SnoopViewControllerKt`):
+
+```swift
+// UIKit
+present(SnoopViewControllerKt.SnoopViewController(), animated: true)
+
+// SwiftUI
+struct SnoopInspector: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> UIViewController {
+        SnoopViewControllerKt.SnoopViewController()
+    }
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+```
+
+If this is the first Compose UI in the app, add `CADisableMinimumFrameDurationOnPhone` = `true` to
+its `Info.plist`: Compose Multiplatform crashes at runtime without it (or set
+`ComposeUIViewControllerConfiguration.enforceStrictPlistSanityCheck` to `false`).
 
 ## Web viewer
 
