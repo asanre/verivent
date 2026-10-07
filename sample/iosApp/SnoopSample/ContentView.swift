@@ -1,3 +1,4 @@
+import SafariServices
 import Snoop
 import SwiftUI
 
@@ -5,6 +6,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var viewerUrl: String?
     @State private var trail: [String] = []
+    @State private var showingViewer = false
 
     var body: some View {
         NavigationView {
@@ -43,6 +45,7 @@ struct ContentView: View {
                     if let url = viewerUrl {
                         // Loopback is shared with the host Mac, so this opens from either Safari.
                         Text(url).font(.footnote).foregroundColor(.secondary)
+                        Button("Open in app") { showingViewer = true }
                         Button("Open in Safari") {
                             URL(string: url).map { UIApplication.shared.open($0) }
                         }
@@ -83,9 +86,26 @@ struct ContentView: View {
             .navigationTitle("Snoop sample")
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $showingViewer) {
+            if let url = viewerUrl.flatMap(URL.init(string:)) {
+                SafariView(url: url).ignoresSafeArea()
+            }
+        }
     }
 
     private func note(_ message: String) {
         trail = Array(([message] + trail).prefix(5))
     }
+}
+
+/// The web viewer inside the app, on the device's own loopback — no Mac needed. Safari View
+/// Controller runs out of process, so the app's App Transport Security never sees the plain-HTTP URL.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
