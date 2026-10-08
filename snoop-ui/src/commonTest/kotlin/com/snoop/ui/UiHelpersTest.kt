@@ -164,6 +164,22 @@ class ExportJsonTest {
     }
 
     @Test
+    fun exportCarriesUserPropertiesOnlyWhenPresent() {
+        val (json, _) = entriesToJsonCapped(
+            listOf(
+                AnalyticsEntry(
+                    "1", Instant.fromEpochMilliseconds(0), "search", "firebase",
+                    userProperties = listOf(KeyValue("user_logged", "false")),
+                ),
+                AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "view_item_list", "server-side"),
+            ),
+        )
+        val (withUser, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertEquals("false", withUser.getValue("userProperties").jsonObject.getValue("user_logged").jsonPrimitive.content)
+        assertTrue("userProperties" !in without)
+    }
+
+    @Test
     fun cappedExportKeepsNewestValidJsonAndReportsCount() {
         val entries = (1..50).map {
             NetworkTransaction(

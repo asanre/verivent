@@ -15,7 +15,12 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
 
     private val redaction = RedactionEngine(propertyPredicates = config.propertyRedactors)
 
-    fun log(name: String, channel: String, properties: Map<String, Any?> = emptyMap()) {
+    fun log(
+        name: String,
+        channel: String,
+        properties: Map<String, Any?> = emptyMap(),
+        userProperties: Map<String, Any?> = emptyMap(),
+    ) {
         runSafely(TAG) {
             if (!SnoopCore.enabled) return@runSafely
             val event = AnalyticsEvent(name, channel, properties)
@@ -29,9 +34,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
 
             // Labelled off the redacted list on purpose: a group must never surface a value the
             // host asked to hide, and the viewers already only ever read redacted properties.
-            val redacted = properties.map { (key, value) ->
-                redaction.redactProperty(key, value?.toString() ?: "null")
-            }
+            val redacted = redact(properties)
 
             SnoopCore.recordAnalytics(
                 AnalyticsEntry(
@@ -41,6 +44,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                     channel = channel,
                     properties = redacted,
                     groupLabel = groupLabel(name, redacted),
+                    userProperties = redact(userProperties),
                     annotations = config.annotators
                         .flatMap {
                             runCatching { it(event) }
@@ -52,6 +56,9 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             )
         }
     }
+
+    private fun redact(properties: Map<String, Any?>): List<KeyValue> =
+        properties.map { (key, value) -> redaction.redactProperty(key, value?.toString() ?: "null") }
 
     private fun groupLabel(name: String, properties: List<KeyValue>): String? {
         if (name != config.groupByEvent) return null

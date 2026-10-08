@@ -1,4 +1,4 @@
-var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,toastTimer=null,unreachable=false;
+var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,rawUserProps=false,toastTimer=null,unreachable=false;
 
 // Detail rendering looks entries up by id on every SSE frame; index once per frame instead of
 // scanning the list per lookup. Null-prototype map so a captured id can't reach Object.prototype.
@@ -203,6 +203,7 @@ function segHtml(active,fn){
 }
 function setRaw(v){rawBody=v;renderDetail();}
 function setRawParams(v){rawParams=v;renderDetail();}
+function setRawUserProps(v){rawUserProps=v;renderDetail();}
 
 function shq(s){return (''+s).replace(/'/g,"'\\''");}
 function curlCmd(e){
@@ -329,16 +330,21 @@ function analyticsDetailHtml(e){
   });
   h+=pill(clock(e.ts),tintStyle('neu'),true);
   h+="</div>";
-  h+="<div class='shrow'><div class='section'>Parameters</div>"+segHtml(rawParams,'setRawParams')+"</div>";
-  if(!(e.properties||[]).length){
+  h+=propertiesBlockHtml('Parameters',e.properties,rawParams,'setRawParams');
+  if((e.userProperties||[]).length)h+=propertiesBlockHtml('User properties',e.userProperties,rawUserProps,'setRawUserProps');
+  h+="</div>";
+  return h;
+}
+function propertiesBlockHtml(label,list,raw,setter){
+  var h="<div class='shrow'><div class='section'>"+esc(label)+"</div>"+segHtml(raw,setter)+"</div>";
+  if(!(list||[]).length){
     h+="<div class='sub'>None</div>";
-  }else if(rawParams){
-    var obj={};e.properties.forEach(function(k){obj[k.name]=k.redacted?'•••':k.value;});
+  }else if(raw){
+    var obj={};list.forEach(function(k){obj[k.name]=k.redacted?'•••':k.value;});
     h+="<div class='code mono' style='margin-top:8px'>"+hl(JSON.stringify(obj,null,2))+"</div>";
   }else{
-    h+="<div class='card' style='margin-top:8px'>"+kvHtml(e.properties,true)+"</div>";
+    h+="<div class='card' style='margin-top:8px'>"+kvHtml(list,true)+"</div>";
   }
-  h+="</div>";
   return h;
 }
 function renderDetail(){
@@ -349,7 +355,7 @@ function renderDetail(){
   d.innerHTML=e.type==='network'?networkDetailHtml(e):analyticsDetailHtml(e);
 }
 function sel(id){
-  if(id!==selectedId){detailTab='overview';rawBody=false;rawParams=false;}
+  if(id!==selectedId){detailTab='overview';rawBody=false;rawParams=false;rawUserProps=false;}
   selectedId=id;render();
 }
 function setType(t){typeFilter=t;if(t==='network')channelFilter=null;render();}

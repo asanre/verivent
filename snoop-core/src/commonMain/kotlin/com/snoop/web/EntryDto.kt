@@ -42,6 +42,7 @@ internal data class EntryDto(
     val annotations: List<String>? = null,
     val properties: List<KvDto>? = null,
     val groupLabel: String? = null,
+    val userProperties: List<KvDto>? = null,
 )
 
 /**
@@ -87,6 +88,7 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         annotations = annotations.map { it.label },
         properties = properties.map { it.toDto() },
         groupLabel = groupLabel,
+        userProperties = userProperties.takeIf { it.isNotEmpty() }?.map { it.toDto() },
     )
 }
 

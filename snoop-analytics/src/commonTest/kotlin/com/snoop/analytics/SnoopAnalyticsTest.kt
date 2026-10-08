@@ -45,6 +45,21 @@ class SnoopAnalyticsTest {
     }
 
     @Test
+    fun recordsUserPropertiesApartAndRedactsThemLikeParameters() {
+        val snoop = SnoopAnalytics { sanitizeProperty { it == "user_id" } }
+        snoop.log(
+            "search",
+            "firebase",
+            properties = mapOf("search_term" to "shoes"),
+            userProperties = mapOf("user_id" to "42", "user_logged" to true),
+        )
+        val entry = entries().single()
+        assertEquals(listOf("search_term"), entry.properties.map { it.name })
+        assertTrue(entry.userProperties.single { it.name == "user_id" }.redacted)
+        assertEquals("true", entry.userProperties.single { it.name == "user_logged" }.value)
+    }
+
+    @Test
     fun throwingLambdasNeverReachTheCaller() {
         val snoop = SnoopAnalytics {
             filter { error("broken filter") }

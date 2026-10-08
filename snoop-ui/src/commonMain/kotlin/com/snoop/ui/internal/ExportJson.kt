@@ -60,6 +60,7 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
         put("channel", channel)
         put("annotations", annotations.joinToString(",") { it.label })
         put("properties", propertiesJsonObject(properties))
+        if (userProperties.isNotEmpty()) put("userProperties", propertiesJsonObject(userProperties))
     }
 }
 

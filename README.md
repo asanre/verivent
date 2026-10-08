@@ -32,7 +32,7 @@ declare it yourself.
 | `snoop-core` | Models, store, redaction and web viewer (transitive) |
 | `snoop-ui` | Compose Multiplatform inspector UI and live notifications |
 | `snoop-ktor` | Ktor client plugin that captures traffic |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink |
+| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties, userProperties)` sink |
 | `snoop-core-no-op` | Release mirror of core — identical API, captures nothing |
 | `snoop-ui-no-op` | Release mirror of the inspector UI — renders nothing |
 | `snoop-ktor-no-op` | Release mirror of the Ktor plugin |

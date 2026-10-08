@@ -59,3 +59,21 @@ private fun AnalyticsEvent.channelLabel() = when (this) {
     is GtmEvent -> "gtm"
 }
 ```
+
+## User properties
+
+Providers such as Firebase attach the current user properties to every hit, and DebugView shows them
+next to each event. Pass the same snapshot as `userProperties` and the event detail shows it as a
+separate *User properties* block, hidden when empty. Snoop keeps no user state of its own, so take
+the snapshot where the event is sent:
+
+```kotlin
+snoop.log(
+    name = event.name,
+    channel = "firebase",
+    properties = event.properties,
+    userProperties = currentUserProperties.toMap(),
+)
+```
+
+`sanitizeProperty` redacts user properties too.

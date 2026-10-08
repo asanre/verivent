@@ -62,6 +62,12 @@ internal fun AnalyticsDetailScreen(
                     PropertiesView(entry.properties, label = "Parameters")
                 }
             }
+
+            if (entry.userProperties.isNotEmpty()) {
+                Column(Modifier.padding(top = 16.dp)) {
+                    PropertiesView(entry.userProperties, label = "User properties")
+                }
+            }
         }
     }
 }

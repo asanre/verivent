@@ -66,6 +66,27 @@ class EntryDtoTest {
     }
 
     @Test
+    fun userPropertiesAreSentOnlyWhenTheEventHasThem() {
+        val json = encodeEntries(
+            listOf(
+                AnalyticsEntry(
+                    "1",
+                    Instant.fromEpochMilliseconds(1000),
+                    "search",
+                    "firebase",
+                    userProperties = listOf(KeyValue("user_logged", "false")),
+                ),
+                AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "view_item_list", "server-side"),
+            ),
+        )
+        val (withUser, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        val userProperty = withUser.getValue("userProperties").jsonArray.single().jsonObject
+        assertEquals("user_logged", userProperty.getValue("name").jsonPrimitive.content)
+        assertEquals("false", userProperty.getValue("value").jsonPrimitive.content)
+        assertTrue("userProperties" !in without)
+    }
+
+    @Test
     fun anEmptyFrameStillCarriesBothKeys() {
         val frame = Json.parseToJsonElement(encodeFrame(emptyList(), emptyList())).jsonObject
         assertTrue(frame.getValue("ids").jsonArray.isEmpty())

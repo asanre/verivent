@@ -62,7 +62,8 @@ The page streams updates live over SSE — new network calls and analytics event
 happen, as deltas rather than a full re-send of the store. It mirrors the native inspector: unified
 timeline, type and channel filters, search, per-screen
 [grouping](filters-redaction-annotations.md#grouping) (which rides along on the entries themselves,
-so the page needs no configuration of its own), and a detail panel with headers (redaction preserved) and pretty-printed bodies.
+so the page needs no configuration of its own), and a detail panel with headers (redaction preserved), pretty-printed bodies,
+and an event's [user properties](integration-analytics-facade.md#user-properties) in their own block.
 
 ## Several developers on one network
 
