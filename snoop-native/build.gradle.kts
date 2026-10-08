@@ -21,11 +21,10 @@ kotlin {
 
     sourceSets {
         iosMain.dependencies {
-            // Deliberately `implementation`, never `api`/`export`: keeping snoop-core out of the
+            // Deliberately `implementation`, never `api`/`export`: keeping snoop out of the
             // exported ObjC surface is what leaves the Compose UI unreachable, so Kotlin/Native's
             // dead-code elimination can strip it from the release binary.
-            implementation(projects.snoopCore)
-            implementation(projects.snoopAnalytics)
+            implementation(projects.snoop)
         }
     }
 }

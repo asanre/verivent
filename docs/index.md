@@ -2,7 +2,7 @@
 
 ![Snoop — network and analytics inspector for Compose Multiplatform](assets/banner.webp)
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop-core)](https://central.sonatype.com/namespace/io.github.asanre)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
 
@@ -31,15 +31,14 @@ both.
 
 ## Modules
 
-You add one artifact per capture source, plus `snoop-ui` for the on-device inspector; `snoop-core`
-arrives transitively.
+`snoop` carries the core and the analytics sink; add `snoop-ui` for the on-device inspector and one
+adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `snoop-ktor` | Ktor client plugin that captures traffic |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties)` sink |
+| `snoop` | Models, store, redaction, the web viewer and the `log(name, channel, properties, userProperties)` analytics sink |
 | `snoop-ui` | Compose Multiplatform inspector UI and the live notifications |
-| `snoop-core` | Models, store, redaction and the web viewer (transitive) |
+| `snoop-ktor` | Ktor client plugin that captures traffic |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds |
 
 `snoop-ui` is the only artifact that depends on Compose — leave it out and you get the web viewer

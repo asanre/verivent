@@ -6,8 +6,8 @@ in-memory store as the on-device UI, and runs on Android and iOS.
 
 ## Add it
 
-Nothing to add: the server (`SnoopWebServer`) ships inside `snoop-core`, so it already arrives with
-`snoop-ktor` or `snoop-analytics` — and the no-op mirror keeps `SnoopWebServer` inert in release.
+Nothing to add: the server (`SnoopWebServer`) ships inside `snoop`, so it already arrives with
+`snoop-ui` or `snoop-ktor` — and the no-op mirror keeps `SnoopWebServer` inert in release.
 
 ## Start / stop
 

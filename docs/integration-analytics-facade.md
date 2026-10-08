@@ -44,7 +44,7 @@ class SnoopAnalyticsHelper(
 ```
 
 Bind `SnoopAnalyticsHelper` in place of `BaseAnalyticsHelper` only in the internal build variant; the
-production variant binds the plain helper and pulls the `snoop-analytics-no-op` artifact, so this
+production variant binds the plain helper and pulls the `snoop-no-op` artifact, so this
 decorator can stay in shared code and compile to nothing in release.
 
 ## Channels

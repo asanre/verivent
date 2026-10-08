@@ -70,12 +70,12 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    ```bash
    gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signKotlinMultiplatformPublication"
    ```
-   Expect **32** — one per publication across the eight modules. Zero means `signAllPublications`
+   Expect **24** — one per publication across the six modules. Zero means `signAllPublications`
    did not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
    ```bash
-   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop-core/0.1.0/snoop-core-0.1.0.pom.asc
+   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop/0.6.0/snoop-0.6.0.pom.asc
    ```
 7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
    compare the published manifest against the asset it points at:
@@ -118,19 +118,19 @@ never publishes, so that version is still free.
 ls ~/.m2/repository/io/github/asanre/
 ```
 
-Eight modules are published: `snoop-core`, `snoop-ui`, `snoop-ktor`, `snoop-analytics` and their
-`-no-op` mirrors. Those are the eight coordinates a consumer declares, but the `ls` lists **32**
+Six modules are published: `snoop`, `snoop-ui`, `snoop-ktor` and their
+`-no-op` mirrors. Those are the six coordinates a consumer declares, but the `ls` lists **24**
 directories, because each Kotlin Multiplatform module publishes a root coordinate plus one per
 target:
 
 ```
-snoop-core/                     root: POM, Gradle module metadata, common klib
-snoop-core-android/
-snoop-core-iosarm64/
-snoop-core-iossimulatorarm64/
+snoop/                          root: POM, Gradle module metadata, common klib
+snoop-android/
+snoop-iosarm64/
+snoop-iossimulatorarm64/
 ```
 
-Nobody depends on the per-target coordinates directly. Declaring `io.github.asanre:snoop-core` is
+Nobody depends on the per-target coordinates directly. Declaring `io.github.asanre:snoop` is
 enough — the root's `.module` metadata resolves the right variant for whichever target is compiling.
 
 `snoop-native` is deliberately absent: it carries no `maven-publish` plugin because it is only the

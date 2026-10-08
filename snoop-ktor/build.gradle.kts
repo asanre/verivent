@@ -21,7 +21,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.snoopCore)
+            api(projects.snoop)
             api(libs.ktor.client.core)
         }
         commonTest.dependencies {

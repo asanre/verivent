@@ -19,7 +19,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.snoopCoreNoOp)
+            api(projects.snoopNoOp)
             implementation(compose.runtime)
             implementation(compose.ui)
         }

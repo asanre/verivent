@@ -2,7 +2,7 @@
 
 ![Snoop — network and analytics inspector for Compose Multiplatform](docs/assets/banner.webp)
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop-core)](https://central.sonatype.com/namespace/io.github.asanre)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
 
@@ -23,20 +23,18 @@ SDK. Snoop does both, on one timeline.
 
 ## Modules
 
-You add one artifact per capture source, plus `snoop-ui` for the on-device inspector; `snoop-core`
-(models, ring-buffer store, redaction and the embedded web viewer) arrives transitively — you never
-declare it yourself.
+`snoop` carries everything that has no UI and no HTTP client: models, ring-buffer store, redaction,
+the vendor-agnostic analytics sink and the embedded web viewer. Add `snoop-ui` for the on-device
+inspector and one adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `snoop-core` | Models, store, redaction and web viewer (transitive) |
-| `snoop-ui` | Compose Multiplatform inspector UI and live notifications |
-| `snoop-ktor` | Ktor client plugin that captures traffic |
-| `snoop-analytics` | Vendor-agnostic `log(name, channel, properties, userProperties)` sink |
-| `snoop-core-no-op` | Release mirror of core — identical API, captures nothing |
+| `snoop` | Models, store, redaction, web viewer and the `log(name, channel, properties, userProperties)` analytics sink |
+| `snoop-ui` | Compose Multiplatform inspector UI and live notifications (brings `snoop`) |
+| `snoop-ktor` | Ktor client plugin that captures traffic (brings `snoop`) |
+| `snoop-no-op` | Release mirror of `snoop` — identical API, captures nothing |
 | `snoop-ui-no-op` | Release mirror of the inspector UI — renders nothing |
 | `snoop-ktor-no-op` | Release mirror of the Ktor plugin |
-| `snoop-analytics-no-op` | Release mirror of the analytics sink |
 
 `snoop-ui` is the only artifact that depends on Compose. Leave it out if you inspect from the web
 viewer instead of on-device, and Compose never enters your dependency graph.
@@ -51,16 +49,16 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("io.github.asanre:snoop-ktor:0.5.0")
-releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.5.0")
+debugImplementation("io.github.asanre:snoop:0.6.0")
+releaseImplementation("io.github.asanre:snoop-no-op:0.6.0")
 
 // the on-device inspector UI:
-debugImplementation("io.github.asanre:snoop-ui:0.5.0")
-releaseImplementation("io.github.asanre:snoop-ui-no-op:0.5.0")
+debugImplementation("io.github.asanre:snoop-ui:0.6.0")
+releaseImplementation("io.github.asanre:snoop-ui-no-op:0.6.0")
 
-// optional, only if you also want analytics inspection:
-debugImplementation("io.github.asanre:snoop-analytics:0.5.0")
-releaseImplementation("io.github.asanre:snoop-analytics-no-op:0.5.0")
+// network capture for Ktor clients:
+debugImplementation("io.github.asanre:snoop-ktor:0.6.0")
+releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.6.0")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.

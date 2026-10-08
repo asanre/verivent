@@ -87,7 +87,7 @@ worth knowing:
 - Each matching event opens a *new* group, so revisiting a screen shows up as a second section
   rather than merging into the first.
 
-Grouping only exists where events are captured: a build without `snoop-analytics` has nothing to
+Grouping only exists where events are captured: an app that logs no analytics has nothing to
 group, and the viewers hide the **Group** chip rather than offering an action that can do nothing.
 
 ## Redaction

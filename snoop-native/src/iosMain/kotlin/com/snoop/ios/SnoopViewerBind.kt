@@ -3,7 +3,7 @@ package com.snoop.ios
 import com.snoop.web.SnoopBind
 
 /**
- * Where the viewer listens. Mirrors `SnoopBind` so the bridge keeps snoop-core out of its exported
+ * Where the viewer listens. Mirrors `SnoopBind` so the bridge keeps snoop out of its exported
  * surface; [Lan] and [Host] are reachable off-device and are always token-gated.
  */
 sealed interface SnoopViewerBind {

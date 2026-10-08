@@ -20,7 +20,7 @@ import platform.posix.memcpy
  *
  * The three capture calls mirror the Ktor plugin exactly — [begin] records a pending transaction,
  * [complete] or [fail] patches it by id — so a call looks the same in the viewer whichever adapter
- * captured it. Redaction runs on snoop-core's own engine, so the defaults (`Authorization`,
+ * captured it. Redaction runs on snoop's own engine, so the defaults (`Authorization`,
  * `Cookie`, the secret-ish query parameters, the `██` placeholder, fail-closed predicates) are the
  * ones Android already gets.
  */

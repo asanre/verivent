@@ -50,7 +50,7 @@ Two things that bite:
 
 ## Conventions
 
-- **No-op parity is mandatory.** Every public symbol in `snoop-core`/`snoop-ktor`/`snoop-analytics`
+- **No-op parity is mandatory.** Every public symbol in `snoop`/`snoop-ktor`
   has a matching declaration in its `-no-op` module. When you change a public API, update the mirror
   and the references in `snoop-parity-check/src/ParityCheck.kt`.
 - **One concept per file**, named after its primary declaration.

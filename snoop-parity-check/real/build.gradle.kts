@@ -31,10 +31,9 @@ kotlin {
         androidMain {
             kotlin.srcDir("../src")
             dependencies {
-                implementation(projects.snoopCore)
+                implementation(projects.snoop)
                 implementation(projects.snoopUi)
                 implementation(projects.snoopKtor)
-                implementation(projects.snoopAnalytics)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(compose.runtime)

@@ -54,7 +54,7 @@ final class SnoopNetworkTests: XCTestCase {
         let entries = try await networkEntries(path: path)
         let entry = try XCTUnwrap(entries.first)
 
-        // The built-in query-parameter list is snoop-core's, not a Swift reimplementation.
+        // The built-in query-parameter list is snoop's, not a Swift reimplementation.
         let url = try XCTUnwrap(entry["url"] as? String)
         XCTAssertTrue(url.contains("api_key=██"), "expected a redacted api_key in \(url)")
         XCTAssertFalse(url.contains("supersecret"), "the secret must never reach the store")

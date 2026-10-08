@@ -17,7 +17,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(projects.snoopCoreNoOp)
+            api(projects.snoopNoOp)
             api(libs.ktor.client.core)
         }
     }

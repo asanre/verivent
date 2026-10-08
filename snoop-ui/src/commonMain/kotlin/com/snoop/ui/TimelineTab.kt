@@ -68,8 +68,8 @@ internal fun TimelineTab(
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
-    // Only offer grouping when something in the timeline can actually open a group; without
-    // snoop-analytics wired up nothing ever carries the stamp and the chip would do nothing.
+    // Only offer grouping when something in the timeline can actually open a group; a host that
+    // logs no analytics never stamps one, and the chip would do nothing.
     val groupable = remember(entries) {
         entries.any { it is AnalyticsEntry && it.groupLabel != null }
     }
