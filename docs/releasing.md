@@ -75,7 +75,7 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
    ```bash
-   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop/0.6.0/snoop-0.6.0.pom.asc
+   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop/0.7.0/snoop-0.7.0.pom.asc
    ```
 7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
    compare the published manifest against the asset it points at:

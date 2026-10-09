@@ -19,7 +19,7 @@ Add `https://github.com/asanre/snoop-swift` in Xcode (*File → Add Package Depe
 it directly:
 
 ```swift
-.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.6.0")
+.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.7.0")
 ```
 
 That repository is generated on every release; the sources live in `swift/` in the main repo,
