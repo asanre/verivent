@@ -52,7 +52,8 @@ var ICONS={
   phone:{d:'<rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M11 18h2"></path>',w:1.6},
   bars:{d:'<path d="M5 20V11"></path><path d="M12 20V4"></path><path d="M19 20v-6"></path>',w:1.6},
   pause:{d:'<rect x="6" y="5" width="4" height="14" rx="1.3"></rect><rect x="14" y="5" width="4" height="14" rx="1.3"></rect>',fill:true},
-  play:{d:'<path d="M7 5l12 7-12 7z"></path>',fill:true}
+  play:{d:'<path d="M7 5l12 7-12 7z"></path>',fill:true},
+  close:{d:'<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path>',w:1.6}
 };
 function icon(name,size){
   var ic=ICONS[name];
@@ -293,7 +294,7 @@ function requestResponseHtml(e,side){
 function networkDetailHtml(e){
   var h="<div class='dwrap'>";
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.method)+" "+esc(e.path||'/')+"</div><div class='dsub'>"+esc(e.host)+"</div></div>"+
-    "<button class='copybtn' data-curl='"+esc(e.id)+"'>"+icon('copy',14)+" Copy as cURL</button></div>";
+    detailActionsHtml("<button class='copybtn' data-curl='"+esc(e.id)+"'>"+icon('copy',14)+" Copy as cURL</button>")+"</div>";
   h+="<div class='pillrow'>"+pill(statusLabel(e),tintStyle(statusTint(e)),true);
   if(e.durationMillis!=null)h+=pill(dur(e.durationMillis),tintStyle('neu'),true);
   h+="</div>";
@@ -322,7 +323,7 @@ function analyticsDetailHtml(e){
   var pair=pal(e.channel);
   var h="<div class='dwrap'>";
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.name)+"</div><div class='dsub'>event · "+esc(e.channel)+"</div></div>"+
-    "<button class='copybtn' data-payload='"+esc(e.id)+"'>"+icon('copy',14)+" Copy payload</button></div>";
+    detailActionsHtml("<button class='copybtn' data-payload='"+esc(e.id)+"'>"+icon('copy',14)+" Copy payload</button>")+"</div>";
   h+="<div class='pillrow'>"+pill(e.channel,chanStyle(pair),false);
   (e.annotations||[]).forEach(function(a){
     var style=a==='ecommerce'?tintStyle('ecom'):tintStyle('neu');
@@ -337,8 +338,11 @@ function analyticsDetailHtml(e){
   h+="</div>";
   return h;
 }
+function detailActionsHtml(copyBtn){
+  return "<div class='dactions'>"+copyBtn+"<button class='iconbtn' onclick='sel(null)' aria-label='Close' title='Close'>"+icon('close',16)+"</button></div>";
+}
 function propertiesBlockHtml(label,list,raw,setter){
-  var h="<div class='shrow'><div class='section'>"+esc(label)+"</div>"+segHtml(raw,setter)+"</div>";
+  var h="<div class='pblock'><div class='shrow'><div class='section'>"+esc(label)+"</div>"+segHtml(raw,setter)+"</div>";
   if(!(list||[]).length){
     h+="<div class='sub'>None</div>";
   }else if(raw){
@@ -347,7 +351,7 @@ function propertiesBlockHtml(label,list,raw,setter){
   }else{
     h+="<div class='card' style='margin-top:8px'>"+kvHtml(list,true)+"</div>";
   }
-  return h;
+  return h+"</div>";
 }
 function renderDetail(){
   var d=document.getElementById('detail');

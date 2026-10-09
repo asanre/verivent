@@ -30,6 +30,7 @@ main{flex:1;overflow:hidden;display:flex;padding:12px;gap:12px}
 .list{flex:1;overflow:auto;background:var(--surface);border:1px solid var(--outline-var);border-radius:18px}
 .detail{width:0;overflow:auto;background:var(--surface);transition:width .15s ease;border-radius:18px}
 .detail.open{width:46%;min-width:360px;border:1px solid var(--outline-var)}
+@media (max-width:720px){.detail.open{position:fixed;inset:0;width:auto;min-width:0;border-radius:0;border:none;z-index:20}}
 .row{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--outline-var);cursor:pointer}
 .list .row:last-child{border-bottom:none}
 .row:hover{background:var(--surface-var)}
@@ -48,6 +49,7 @@ main{flex:1;overflow:hidden;display:flex;padding:12px;gap:12px}
 .jk{color:var(--jk)}.js{color:var(--js)}.jn{color:var(--jn)}.jb{color:var(--jb)}.jp{color:var(--jp)}
 .dwrap{padding:20px}
 .dheadrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dactions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .dtitle{font-weight:700;font-size:17px;word-break:break-all}
 .dsub{color:var(--on-surface-var);font-size:12px;margin-top:2px}
 .pillrow{display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:2px}
@@ -62,6 +64,7 @@ main{flex:1;overflow:hidden;display:flex;padding:12px;gap:12px}
 .shead .chev.open{transform:rotate(90deg)}
 .shrow{display:flex;align-items:center;justify-content:space-between;margin-top:16px}
 .shrow .section{margin:0}
+.pblock+.pblock{margin-top:32px}
 .shtools{display:flex;align-items:center;gap:8px}
 .kv{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--outline-var)}
 .kv:last-child{border-bottom:none}

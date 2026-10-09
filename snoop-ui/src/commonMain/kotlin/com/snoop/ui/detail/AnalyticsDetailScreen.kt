@@ -66,7 +66,7 @@ internal fun AnalyticsDetailScreen(
 
             entry.sections.forEach { (title, section) ->
                 key(title) {
-                    Column(Modifier.padding(top = 16.dp)) {
+                    Column(Modifier.padding(top = 32.dp)) {
                         PropertiesView(section, label = title)
                     }
                 }
