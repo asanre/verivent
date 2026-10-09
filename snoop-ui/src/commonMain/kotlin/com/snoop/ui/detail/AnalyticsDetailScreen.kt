@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
@@ -63,9 +64,11 @@ internal fun AnalyticsDetailScreen(
                 }
             }
 
-            if (entry.userProperties.isNotEmpty()) {
-                Column(Modifier.padding(top = 16.dp)) {
-                    PropertiesView(entry.userProperties, label = "User properties")
+            entry.sections.forEach { (title, section) ->
+                key(title) {
+                    Column(Modifier.padding(top = 16.dp)) {
+                        PropertiesView(section, label = title)
+                    }
                 }
             }
         }

@@ -9,7 +9,7 @@ class SnoopAnalytics internal constructor(@Suppress("UNUSED_PARAMETER") config: 
         name: String,
         channel: String,
         properties: Map<String, Any?> = emptyMap(),
-        userProperties: Map<String, Any?> = emptyMap(),
+        sections: Map<String, Map<String, Any?>> = emptyMap(),
     ) = Unit
 }
 

@@ -10,22 +10,27 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:snoop:0.6.0")
-    releaseImplementation("io.github.asanre:snoop-no-op:0.6.0")
+    debugImplementation("io.github.asanre:snoop:0.7.0")
+    releaseImplementation("io.github.asanre:snoop-no-op:0.7.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:snoop-ui:0.6.0")
-    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.6.0")
+    debugImplementation("io.github.asanre:snoop-ui:0.7.0")
+    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.7.0")
 
     // network capture for Ktor clients:
-    debugImplementation("io.github.asanre:snoop-ktor:0.6.0")
-    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.6.0")
+    debugImplementation("io.github.asanre:snoop-ktor:0.7.0")
+    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.7.0")
 }
 ```
 
 `snoop` holds the models, store, redaction, the analytics sink and the web viewer; `snoop-ui` and
 `snoop-ktor` bring it along, so declare it yourself only when you call its API directly. The no-op
 mirrors declare the exact same classes and functions, so your call sites compile unchanged.
+
+!!! note "Upgrading from 0.6"
+    `log(..., userProperties = …)` became `log(..., sections = mapOf("User properties" to …))`, and
+    `AnalyticsEntry.userProperties` became `AnalyticsEntry.sections`. See
+    [extra parameter blocks](integration-analytics-facade.md#extra-parameter-blocks).
 
 !!! note "Upgrading from 0.5"
     `snoop-core` and `snoop-analytics` merged into `snoop` (and their no-ops into `snoop-no-op`).

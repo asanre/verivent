@@ -45,18 +45,24 @@ class SnoopAnalyticsTest {
     }
 
     @Test
-    fun recordsUserPropertiesApartAndRedactsThemLikeParameters() {
+    fun recordsSectionsApartInOrderRedactedAndWithoutEmptyOnes() {
         val snoop = SnoopAnalytics { sanitizeProperty { it == "user_id" } }
         snoop.log(
             "search",
             "firebase",
             properties = mapOf("search_term" to "shoes"),
-            userProperties = mapOf("user_id" to "42", "user_logged" to true),
+            sections = mapOf(
+                "User properties" to mapOf("user_id" to "42", "user_logged" to true),
+                "Empty" to emptyMap(),
+                "Default parameters" to mapOf("environment" to "pre"),
+            ),
         )
         val entry = entries().single()
         assertEquals(listOf("search_term"), entry.properties.map { it.name })
-        assertTrue(entry.userProperties.single { it.name == "user_id" }.redacted)
-        assertEquals("true", entry.userProperties.single { it.name == "user_logged" }.value)
+        assertEquals(listOf("User properties", "Default parameters"), entry.sections.keys.toList())
+        val userProperties = entry.sections.getValue("User properties")
+        assertTrue(userProperties.single { it.name == "user_id" }.redacted)
+        assertEquals("true", userProperties.single { it.name == "user_logged" }.value)
     }
 
     @Test

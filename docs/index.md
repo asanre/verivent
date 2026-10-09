@@ -36,7 +36,7 @@ adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `snoop` | Models, store, redaction, the web viewer and the `log(name, channel, properties, userProperties)` analytics sink |
+| `snoop` | Models, store, redaction, the web viewer and the `log(name, channel, properties, sections)` analytics sink |
 | `snoop-ui` | Compose Multiplatform inspector UI and the live notifications |
 | `snoop-ktor` | Ktor client plugin that captures traffic |
 | `snoop-*-no-op` | Empty mirrors with the identical API for release builds |

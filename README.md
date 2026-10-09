@@ -29,7 +29,7 @@ inspector and one adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `snoop` | Models, store, redaction, web viewer and the `log(name, channel, properties, userProperties)` analytics sink |
+| `snoop` | Models, store, redaction, web viewer and the `log(name, channel, properties, sections)` analytics sink |
 | `snoop-ui` | Compose Multiplatform inspector UI and live notifications (brings `snoop`) |
 | `snoop-ktor` | Ktor client plugin that captures traffic (brings `snoop`) |
 | `snoop-no-op` | Release mirror of `snoop` — identical API, captures nothing |
@@ -49,16 +49,16 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("io.github.asanre:snoop:0.6.0")
-releaseImplementation("io.github.asanre:snoop-no-op:0.6.0")
+debugImplementation("io.github.asanre:snoop:0.7.0")
+releaseImplementation("io.github.asanre:snoop-no-op:0.7.0")
 
 // the on-device inspector UI:
-debugImplementation("io.github.asanre:snoop-ui:0.6.0")
-releaseImplementation("io.github.asanre:snoop-ui-no-op:0.6.0")
+debugImplementation("io.github.asanre:snoop-ui:0.7.0")
+releaseImplementation("io.github.asanre:snoop-ui-no-op:0.7.0")
 
 // network capture for Ktor clients:
-debugImplementation("io.github.asanre:snoop-ktor:0.6.0")
-releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.6.0")
+debugImplementation("io.github.asanre:snoop-ktor:0.7.0")
+releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.7.0")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.

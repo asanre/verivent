@@ -57,6 +57,10 @@ class Sampler {
             name = "purchase",
             channel = "firebase",
             properties = mapOf("value" to 42.5, "currency" to "EUR", "user_email" to "demo@snoop.dev"),
+            sections = mapOf(
+                "Default parameters" to mapOf("environment" to "demo", "language" to "en"),
+                "User properties" to mapOf("user_logged" to true, "newsletter_subscriber" to "no"),
+            ),
         )
     }
 

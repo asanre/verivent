@@ -17,10 +17,11 @@ data class AnalyticsEntry(
      */
     val groupLabel: String? = null,
     /**
-     * The user properties in effect when the event was sent, as the provider attaches them to every
-     * hit. Captured per event so the viewers need no user state of their own.
+     * Extra parameter blocks the host attaches to the event (default parameters, user properties…),
+     * by title in display order. Captured per event so the viewers need no state of their own; empty
+     * blocks are never stored.
      */
-    val userProperties: List<KeyValue> = emptyList(),
+    val sections: Map<String, List<KeyValue>> = emptyMap(),
 ) : SnoopEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
@@ -28,7 +29,9 @@ data class AnalyticsEntry(
         (
             ENTRY_OVERHEAD_BYTES + name.length + channel.length + (groupLabel?.length ?: 0) +
                 properties.sumOf { it.name.length + it.value.length } +
-                userProperties.sumOf { it.name.length + it.value.length }
+                sections.entries.sumOf { (title, section) ->
+                    title.length + section.sumOf { it.name.length + it.value.length }
+                }
             ).toLong()
     }
 }

@@ -66,7 +66,7 @@ class EntryDtoTest {
     }
 
     @Test
-    fun userPropertiesAreSentOnlyWhenTheEventHasThem() {
+    fun sectionsAreSentOnlyWhenTheEventHasThem() {
         val json = encodeEntries(
             listOf(
                 AnalyticsEntry(
@@ -74,16 +74,18 @@ class EntryDtoTest {
                     Instant.fromEpochMilliseconds(1000),
                     "search",
                     "firebase",
-                    userProperties = listOf(KeyValue("user_logged", "false")),
+                    sections = mapOf("User properties" to listOf(KeyValue("user_logged", "false"))),
                 ),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "view_item_list", "server-side"),
             ),
         )
-        val (withUser, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
-        val userProperty = withUser.getValue("userProperties").jsonArray.single().jsonObject
-        assertEquals("user_logged", userProperty.getValue("name").jsonPrimitive.content)
-        assertEquals("false", userProperty.getValue("value").jsonPrimitive.content)
-        assertTrue("userProperties" !in without)
+        val (withSection, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        val section = withSection.getValue("sections").jsonArray.single().jsonObject
+        assertEquals("User properties", section.getValue("title").jsonPrimitive.content)
+        val property = section.getValue("properties").jsonArray.single().jsonObject
+        assertEquals("user_logged", property.getValue("name").jsonPrimitive.content)
+        assertEquals("false", property.getValue("value").jsonPrimitive.content)
+        assertTrue("sections" !in without)
     }
 
     @Test

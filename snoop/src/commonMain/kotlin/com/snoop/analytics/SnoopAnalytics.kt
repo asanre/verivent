@@ -19,7 +19,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
         name: String,
         channel: String,
         properties: Map<String, Any?> = emptyMap(),
-        userProperties: Map<String, Any?> = emptyMap(),
+        sections: Map<String, Map<String, Any?>> = emptyMap(),
     ) {
         runSafely(TAG) {
             if (!SnoopCore.enabled) return@runSafely
@@ -44,7 +44,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                     channel = channel,
                     properties = redacted,
                     groupLabel = groupLabel(name, redacted),
-                    userProperties = redact(userProperties),
+                    sections = sections.filterValues { it.isNotEmpty() }.mapValues { (_, section) -> redact(section) },
                     annotations = config.annotators
                         .flatMap {
                             runCatching { it(event) }

@@ -103,10 +103,10 @@ private fun model() {
             Annotation("custom"),
         ),
         groupLabel = "Home",
-        userProperties = listOf(kv),
+        sections = mapOf("User properties" to listOf(kv)),
     )
     val groupLabel: String? = event.groupLabel
-    val userProperties: List<KeyValue> = event.userProperties
+    val sections: Map<String, List<KeyValue>> = event.sections
     val label: String = Annotation.Ecommerce.label
     val entries: List<SnoopEntry> = listOf(txn, event)
     entries.forEach { entry ->
@@ -181,7 +181,7 @@ private fun analytics() {
     }
     configured.log("name", "channel")
     configured.log("name", "channel", mapOf("k" to 1))
-    configured.log("name", "channel", userProperties = mapOf("k" to 1))
+    configured.log("name", "channel", sections = mapOf("User properties" to mapOf("k" to 1)))
     val event = AnalyticsEvent(name = "n", channel = "c", properties = mapOf("k" to null))
 }
 

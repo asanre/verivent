@@ -60,20 +60,25 @@ private fun AnalyticsEvent.channelLabel() = when (this) {
 }
 ```
 
-## User properties
+## Extra parameter blocks
 
-Providers such as Firebase attach the current user properties to every hit, and DebugView shows them
-next to each event. Pass the same snapshot as `userProperties` and the event detail shows it as a
-separate *User properties* block, hidden when empty. Snoop keeps no user state of its own, so take
-the snapshot where the event is sent:
+Providers attach more than the event's own parameters to every hit: Firebase adds the default event
+parameters and the current user properties, and DebugView shows them next to each event. Pass them
+as `sections`, a map from block title to parameters, and the event detail shows one block per entry
+below *Parameters*, in the order you give. Empty blocks are dropped. Snoop keeps no state of its
+own, so take the snapshot where the event is sent:
 
 ```kotlin
 snoop.log(
     name = event.name,
     channel = "firebase",
     properties = event.properties,
-    userProperties = currentUserProperties.toMap(),
+    sections = mapOf(
+        "Default parameters" to defaultEventParams.toMap(),
+        "User properties" to currentUserProperties.toMap(),
+    ),
 )
 ```
 
-`sanitizeProperty` redacts user properties too.
+`properties` stays the event itself: it is what `filter`, `annotate` and `groupBy` see, and what
+*Raw* and *Copy payload* show. `sanitizeProperty` redacts every block too.
