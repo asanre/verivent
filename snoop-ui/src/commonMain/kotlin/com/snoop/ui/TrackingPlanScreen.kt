@@ -33,9 +33,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
@@ -62,11 +65,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Where the tracking plan is loaded, replaced or cleared, and where the session is held against it. */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun TrackingPlanScreen(entries: List<SnoopEntry>, onBack: () -> Unit) {
     val plan by SnoopCore.trackingPlan.collectAsState()
-    var replacing by remember { mutableStateOf(false) }
-    DetailScaffold(title = "Tracking plan", subtitle = null, onBack = onBack) { modifier, _ ->
+    var replacing by rememberSaveable { mutableStateOf(false) }
+    // Replacing is a step inside this screen, so back returns to the loaded plan before leaving.
+    val backToLoaded = replacing && plan != null
+    BackHandler(enabled = backToLoaded) { replacing = false }
+    DetailScaffold(
+        title = "Tracking plan",
+        subtitle = null,
+        onBack = { if (backToLoaded) replacing = false else onBack() },
+    ) { modifier, _ ->
         val loaded = plan
         if (loaded == null || replacing) {
             PlanLoader(modifier, current = loaded, onLoaded = { replacing = false }, onCancel = { replacing = false })
