@@ -14,6 +14,9 @@ class SnoopAnalyticsConfig {
     internal var groupLabelProperty: String? = "screen_name"
         private set
 
+    internal var lineLogger: ((String) -> Unit)? = null
+        private set
+
     /** Keep only events for which every filter returns true. */
     fun filter(predicate: (AnalyticsEvent) -> Boolean) {
         filters += predicate
@@ -41,5 +44,19 @@ class SnoopAnalyticsConfig {
     fun groupBy(event: String?, labelProperty: String? = null) {
         groupByEvent = event
         groupLabelProperty = labelProperty
+    }
+
+    /**
+     * Also write every captured event as one JSON line, so whoever reads the console (a developer,
+     * an agent driving `adb logcat -s SnoopEvent`) sees what was sent. Off unless called; with no
+     * argument it writes to Logcat on Android and the unified log on iOS. Pass [logger] to route
+     * the lines through the host's own logging.
+     *
+     * The line is the captured entry, the same JSON the web viewer receives, so redacted values stay
+     * redacted. One longer than the platform's console limit is split into pieces prefixed with
+     * `[<id> <i>/<n>] `, to be joined in order.
+     */
+    fun logTo(logger: (String) -> Unit = ::platformConsole) {
+        lineLogger = logger
     }
 }

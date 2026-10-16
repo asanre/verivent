@@ -178,6 +178,8 @@ private fun analytics() {
         annotate { listOf(Annotation.Ecommerce) }
         groupBy("screen_view")
         groupBy(event = null, labelProperty = null)
+        logTo()
+        logTo { line: String -> }
     }
     configured.log("name", "channel")
     configured.log("name", "channel", mapOf("k" to 1))

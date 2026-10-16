@@ -6,6 +6,7 @@ import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.KeyValue
 import com.snoop.core.redaction.RedactionEngine
+import com.snoop.web.encodeEntry
 
 /**
  * Vendor-agnostic analytics sink. The host wires its own analytics facade to [log]; Snoop never
@@ -36,25 +37,30 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             // host asked to hide, and the viewers already only ever read redacted properties.
             val redacted = redact(properties)
 
-            SnoopCore.recordAnalytics(
-                AnalyticsEntry(
-                    id = SnoopCore.nextId(),
-                    timestamp = SnoopCore.now(),
-                    name = name,
-                    channel = channel,
-                    properties = redacted,
-                    groupLabel = groupLabel(name, redacted),
-                    sections = sections.filterValues { it.isNotEmpty() }.mapValues { (_, section) -> redact(section) },
-                    annotations = config.annotators
-                        .flatMap {
-                            runCatching { it(event) }
-                                .onFailure { failure -> SnoopLog.warn(TAG, "annotator threw", failure) }
-                                .getOrDefault(emptyList())
-                        }
-                        .distinct(),
-                ),
+            val entry = AnalyticsEntry(
+                id = SnoopCore.nextId(),
+                timestamp = SnoopCore.now(),
+                name = name,
+                channel = channel,
+                properties = redacted,
+                groupLabel = groupLabel(name, redacted),
+                sections = sections.filterValues { it.isNotEmpty() }.mapValues { (_, section) -> redact(section) },
+                annotations = config.annotators
+                    .flatMap {
+                        runCatching { it(event) }
+                            .onFailure { failure -> SnoopLog.warn(TAG, "annotator threw", failure) }
+                            .getOrDefault(emptyList())
+                    }
+                    .distinct(),
             )
+            SnoopCore.recordAnalytics(entry)
+            config.lineLogger?.let { logger -> writeLines(entry, logger) }
         }
+    }
+
+    private fun writeLines(entry: AnalyticsEntry, logger: (String) -> Unit) {
+        runCatching { consoleLines(entry.id, encodeEntry(entry), consoleMaxBytes).forEach(logger) }
+            .onFailure { failure -> SnoopLog.warn(TAG, "line logger threw", failure) }
     }
 
     private fun redact(properties: Map<String, Any?>): List<KeyValue> =

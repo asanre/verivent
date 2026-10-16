@@ -102,5 +102,7 @@ private val webJson = Json { encodeDefaults = false }
 internal fun encodeEntries(entries: List<SnoopEntry>): String =
     webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
 
+internal fun encodeEntry(entry: SnoopEntry): String = webJson.encodeToString(EntryDto.serializer(), entry.toDto())
+
 internal fun encodeFrame(ids: List<String>, changed: List<SnoopEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))

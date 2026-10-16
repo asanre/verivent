@@ -3,6 +3,9 @@ package com.snoop.analytics
 import com.snoop.core.SnoopCore
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -130,5 +133,36 @@ class SnoopAnalyticsTest {
         SnoopCore.reset()
         SnoopAnalytics { groupBy(event = null) }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
         assertNull(entries().single().groupLabel)
+    }
+
+    @Test
+    fun logToWritesTheCapturedEntryAsOneJsonLineWithRedactedValues() {
+        val lines = mutableListOf<String>()
+        val snoop = SnoopAnalytics {
+            sanitizeProperty { it == "user_id" }
+            logTo { lines += it }
+        }
+        snoop.log("search", "firebase", mapOf("search_term" to "shoes", "user_id" to "42"))
+
+        val line = Json.parseToJsonElement(lines.single()).jsonObject
+        assertEquals("search", line["name"]?.jsonPrimitive?.content)
+        assertEquals("firebase", line["channel"]?.jsonPrimitive?.content)
+        assertTrue("\"42\"" !in lines.single())
+        assertTrue("shoes" in lines.single())
+    }
+
+    @Test
+    fun withoutLogToNothingIsWrittenAndAThrowingLoggerKeepsTheEvent() {
+        SnoopAnalytics().log("search", "firebase")
+        SnoopAnalytics { logTo { error("boom") } }.log("purchase", "firebase")
+        assertEquals(listOf("search", "purchase"), entries().map { it.name })
+    }
+
+    @Test
+    fun aDisabledCoreWritesNoLine() {
+        val lines = mutableListOf<String>()
+        SnoopCore.enabled = false
+        SnoopAnalytics { logTo { lines += it } }.log("search", "firebase")
+        assertTrue(lines.isEmpty())
     }
 }
