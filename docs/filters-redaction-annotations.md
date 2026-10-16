@@ -87,8 +87,8 @@ worth knowing:
 - Each matching event opens a *new* group, so revisiting a screen shows up as a second section
   rather than merging into the first.
 
-Grouping only exists where events are captured: an app that logs no analytics has nothing to
-group, and the viewers hide the **Group** chip rather than offering an action that can do nothing.
+Grouping only exists where events are captured: the viewers group the timeline as soon as an event
+carries a group label, and show one flat list otherwise. There is no switch to turn it off.
 
 ## Redaction
 

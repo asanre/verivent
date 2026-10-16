@@ -13,5 +13,4 @@ import androidx.compose.runtime.mutableStateOf
  */
 internal object TimelineUiState {
     val filters = mutableStateOf(TimelineFilters())
-    val grouped = mutableStateOf(true)
 }

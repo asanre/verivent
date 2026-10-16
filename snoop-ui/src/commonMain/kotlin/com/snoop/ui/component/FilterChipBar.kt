@@ -96,8 +96,6 @@ internal fun FilterChipBar(
     breaking: Int?,
     breaksPlan: Boolean,
     onBreaksPlan: () -> Unit,
-    grouped: Boolean?,
-    onGrouped: () -> Unit,
 ) {
     val colors = LocalSnoopColors.current
     Row(
@@ -133,6 +131,5 @@ internal fun FilterChipBar(
                 leadingDot = tint.content,
             )
         }
-        grouped?.let { SnoopChip(label = "Group", selected = it, onClick = onGrouped) }
     }
 }

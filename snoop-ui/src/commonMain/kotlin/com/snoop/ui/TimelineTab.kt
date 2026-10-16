@@ -67,15 +67,13 @@ internal fun TimelineTab(
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var filters by TimelineUiState.filters
-    var grouped by TimelineUiState.grouped
     val collapsed = remember { mutableStateOf(setOf<String>()) }
 
     val channels = remember(entries) {
         entries.filterIsInstance<AnalyticsEntry>().map { it.channel }.distinct().sorted()
     }
-    // Only offer grouping when something in the timeline can actually open a group; a host that
-    // logs no analytics never stamps one, and the chip would do nothing.
-    val groupable = remember(entries) {
+    // Grouped whenever the host's groupBy stamped a group label; otherwise one flat list.
+    val grouped = remember(entries) {
         entries.any { it is AnalyticsEntry && it.groupLabel != null }
     }
     val events = remember(entries) { entries.filterIsInstance<AnalyticsEntry>() }
@@ -124,9 +122,6 @@ internal fun TimelineTab(
                 breaking = breaking.takeIf { it > 0 || filters.breaksPlan },
                 breaksPlan = filters.breaksPlan,
                 onBreaksPlan = { filters = filters.toggleBreaksPlan() },
-                // Last, so the filters lead; only offered when something can open a group.
-                grouped = grouped.takeIf { groupable },
-                onGrouped = { grouped = !grouped },
             )
         }
         // Hugs its rows, and scrolls them once they reach the bottom.

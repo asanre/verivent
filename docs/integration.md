@@ -42,8 +42,8 @@ val snoop = SnoopAnalytics {
 ```
 
 See [Grouping](filters-redaction-annotations.md#grouping) for the details — including that it
-applies to events captured from then on, and that the **Group** chip is hidden in a build that
-captures no analytics.
+applies to events captured from then on, and that a build that captures no analytics shows one flat
+list.
 
 ## Android
 
