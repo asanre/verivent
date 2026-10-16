@@ -42,7 +42,7 @@ internal class TrackingPlan private constructor(
         /** @throws IllegalArgumentException naming what is wrong with [json]. */
         fun parse(json: String): TrackingPlan {
             val root = runCatching { Json.parseToJsonElement(json) }
-                .getOrElse { throw IllegalArgumentException("tracking plan: not valid JSON", it) }
+                .getOrElse { throw IllegalArgumentException("not valid JSON", it) }
                 .asObject("the document")
             val version = root["version"].asString("version")
             val events = (root["events"] as? JsonArray) ?: invalid("events must be an array")
@@ -50,7 +50,7 @@ internal class TrackingPlan private constructor(
             events.forEachIndexed { index, element ->
                 val event = element.asObject("events[$index]")
                 val key = PlanEvent(event["name"].asString("events[$index].name"), event["channel"].asString("events[$index].channel"))
-                require(key !in schemas) { "tracking plan: ${key.name} on ${key.channel} is defined twice" }
+                require(key !in schemas) { "${key.name} on ${key.channel} is defined twice" }
                 schemas[key] = EventSchema.parse(event["schema"].asObject("${key.name}.schema"), key.name)
             }
             return TrackingPlan(version, schemas)
@@ -118,7 +118,7 @@ private class PropertySchema(
                 else -> listOf(type)
             }.map { element ->
                 element.asString("$path.type").also {
-                    require(it in JSON_TYPES) { "tracking plan: $path.type '$it' is not one of $JSON_TYPES" }
+                    require(it in JSON_TYPES) { "$path.type '$it' is not one of $JSON_TYPES" }
                 }
             },
             allowed = schema["enum"]?.let { values ->
@@ -171,4 +171,4 @@ private fun JsonElement?.asObject(what: String): JsonObject = this as? JsonObjec
 private fun JsonElement?.asString(what: String): String =
     (this as? JsonPrimitive)?.takeIf { it.isString }?.content ?: invalid("$what must be a string")
 
-private fun invalid(reason: String): Nothing = throw IllegalArgumentException("tracking plan: $reason")
+private fun invalid(reason: String): Nothing = throw IllegalArgumentException(reason)

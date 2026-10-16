@@ -1,7 +1,6 @@
 package com.snoop.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,11 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,15 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.PlanIssue
 import com.snoop.ui.internal.prettyPrintJson
 import com.snoop.ui.internal.propertiesToJson
 import com.snoop.ui.theme.LocalSnoopColors
+import com.snoop.ui.theme.codeTextStyle
 
 /**
  * Analytics parameters viewer. Pretty = one row per top-level property (nested values stay as
@@ -100,21 +96,14 @@ internal fun PropertiesView(
             val issueFor = issues.associate { it.property to it.message }
             val sent = properties.mapTo(HashSet()) { it.name }
             val missing = issues.filter { it.property !in sent }
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            ) {
-                Column {
-                    properties.forEachIndexed { index, property ->
-                        PropertyRow(property, issueFor[property.name])
-                        if (index < properties.lastIndex || missing.isNotEmpty()) {
-                            HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.surfaceVariant)
-                        }
+            SectionCard(Modifier.padding(horizontal = 16.dp), radius = 14.dp, contentPadding = 0.dp) {
+                properties.forEachIndexed { index, property ->
+                    PropertyRow(property, issueFor[property.name])
+                    if (index < properties.lastIndex || missing.isNotEmpty()) {
+                        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.surfaceVariant)
                     }
-                    missing.forEach { MissingPropertyRow(it.property) }
                 }
+                missing.forEach { MissingPropertyRow(it.property) }
             }
         }
     }
@@ -123,7 +112,6 @@ internal fun PropertiesView(
 @Composable
 private fun PropertyRow(property: KeyValue, issue: String?) {
     val breaks = LocalSnoopColors.current.planBreaks
-    val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp)
     Column(
         Modifier
             .fillMaxWidth()
@@ -136,7 +124,7 @@ private fun PropertyRow(property: KeyValue, issue: String?) {
                 if (issue != null) IssueDot()
                 Text(
                     property.name,
-                    style = mono,
+                    style = codeTextStyle,
                     color = if (issue != null) breaks.card.content else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -144,7 +132,7 @@ private fun PropertyRow(property: KeyValue, issue: String?) {
                 if (property.redacted) {
                     RedactedValue()
                 } else {
-                    Text(property.value, style = mono, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End)
+                    Text(property.value, style = codeTextStyle, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.End)
                 }
             }
         }
@@ -174,7 +162,7 @@ private fun MissingPropertyRow(name: String) {
         IssueDot()
         Text(
             name,
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+            style = codeTextStyle,
             color = breaks.card.content,
             modifier = Modifier.weight(1f),
         )

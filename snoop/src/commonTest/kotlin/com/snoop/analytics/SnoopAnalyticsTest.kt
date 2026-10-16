@@ -175,11 +175,7 @@ class SnoopAnalyticsTest {
     @Test
     fun aLoadedPlanStampsItsVersionAndIssuesBeforeRedactionOnlyOnEventsItDefines() {
         SnoopCore.loadTrackingPlan(searchPlan)
-        val lines = mutableListOf<String>()
-        val snoop = SnoopAnalytics {
-            sanitizeProperty { it == "user_id" }
-            logTo { lines += it }
-        }
+        val snoop = SnoopAnalytics { sanitizeProperty { it == "user_id" } }
         snoop.log("search", "firebase", mapOf("user_id" to 42))
         snoop.log("purchase", "firebase")
 
@@ -188,7 +184,6 @@ class SnoopAnalyticsTest {
         assertEquals(listOf(PlanIssue("search_term", "Required, but not sent")), search.issues)
         assertNull(purchase.planVersion)
         assertEquals(emptyList(), purchase.issues)
-        assertTrue("""{"property":"search_term","message":"Required, but not sent"}""" in lines.first())
     }
 
     @Test

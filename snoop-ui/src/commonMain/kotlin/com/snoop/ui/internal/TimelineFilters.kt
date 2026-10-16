@@ -26,22 +26,16 @@ internal data class TimelineFilters(
         if (breaksPlan) copy(breaksPlan = false) else copy(type = TypeFilter.Analytics, breaksPlan = true)
 }
 
-/** Whether [entry] survives the current type/channel/plan selection and free-text [query]. */
-internal fun matchesFilters(
-    entry: SnoopEntry,
-    type: TypeFilter,
-    channel: String?,
-    query: String,
-    breaksPlan: Boolean = false,
-): Boolean {
-    val typeOk = when (type) {
+/** Whether [entry] survives the [filters] selection and free-text [query]. */
+internal fun matchesFilters(entry: SnoopEntry, filters: TimelineFilters, query: String): Boolean {
+    val typeOk = when (filters.type) {
         TypeFilter.All -> true
         TypeFilter.Network -> entry is NetworkTransaction
         TypeFilter.Analytics -> entry is AnalyticsEntry
     }
     if (!typeOk) return false
-    if (channel != null && !(entry is AnalyticsEntry && entry.channel == channel)) return false
-    if (breaksPlan && !entry.breaksPlan) return false
+    if (filters.channel != null && !(entry is AnalyticsEntry && entry.channel == filters.channel)) return false
+    if (filters.breaksPlan && !entry.breaksPlan) return false
     if (query.isBlank()) return true
     val q = query.trim().lowercase()
     return when (entry) {

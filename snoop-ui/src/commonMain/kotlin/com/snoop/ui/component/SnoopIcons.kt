@@ -15,16 +15,6 @@ import androidx.compose.ui.unit.dp
  */
 internal object SnoopIcons {
 
-    val LogoMark: ImageVector by lazy {
-        outline(
-            name = "Snoop.LogoMark",
-            strokeWidth = 1.8f,
-            d = circle(10.5f, 10.5f, 6.6f) +
-                " M20.2 20.2l-4.3-4.3" +
-                " M6.9 11.1l1.9-2.4 1.9 3.2 1.9-4.1 1.6 3.3",
-        )
-    }
-
     val Search: ImageVector by lazy {
         outline(name = "Snoop.Search", d = circle(11f, 11f, 7f) + " M20 20l-3.2-3.2")
     }
@@ -122,13 +112,6 @@ internal object SnoopIcons {
 
     val MatchesCircle: ImageVector by lazy {
         outline(name = "Snoop.MatchesCircle", strokeWidth = 2f, d = circle(12f, 12f, 9f) + " M8 12.5l2.8 2.8L16.5 9.5")
-    }
-
-    val Phone: ImageVector by lazy {
-        outline(
-            name = "Snoop.Phone",
-            d = roundedRect(7f, 3f, 10f, 18f, 2f) + " M11 18h2",
-        )
     }
 }
 

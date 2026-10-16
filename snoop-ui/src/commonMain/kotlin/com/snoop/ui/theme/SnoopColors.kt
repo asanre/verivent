@@ -40,6 +40,7 @@ internal data class SnoopColors(
     val liveDot: Color,
     val planBreaks: VerdictColors,
     val planMatches: VerdictColors,
+    val planNotSeen: VerdictColors,
 ) {
     fun methodTint(method: String): TintPair = when (method.uppercase()) {
         "GET" -> info
@@ -101,6 +102,12 @@ internal val SnoopLightColors = SnoopColors(
         border = Color(0xFFBBF7D0),
         muted = Color(0xFF166534),
     ),
+    planNotSeen = VerdictColors(
+        pill = TintPair(Color(0xFFF3F4F6), Color(0xFF6B7280)),
+        card = TintPair(Color.White, Color(0xFF1B1B20)),
+        border = Color(0xFFE6E6EE),
+        muted = Color(0xFF6B7280),
+    ),
 )
 
 internal val SnoopDarkColors = SnoopColors(
@@ -137,6 +144,12 @@ internal val SnoopDarkColors = SnoopColors(
         card = TintPair(Color(0xFF0F2417), Color(0xFF86EFAC)),
         border = Color(0xFF1E4D2B),
         muted = Color(0xFF4ADE80),
+    ),
+    planNotSeen = VerdictColors(
+        pill = TintPair(Color(0xFF23232B), Color(0xFF9AA0AA)),
+        card = TintPair(Color(0xFF17171F), Color(0xFFE9E9EF)),
+        border = Color(0xFF26262F),
+        muted = Color(0xFF9AA0AA),
     ),
 )
 

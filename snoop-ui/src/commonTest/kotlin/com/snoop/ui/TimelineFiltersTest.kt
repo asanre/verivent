@@ -62,8 +62,9 @@ class TimelineFiltersTest {
         fun event(issues: List<PlanIssue>) =
             AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "search", "firebase", planVersion = "1", issues = issues)
         val breaking = event(listOf(PlanIssue("q", "Required, but not sent")))
-        assertTrue(matchesFilters(breaking, TypeFilter.Analytics, null, "", breaksPlan = true))
-        assertFalse(matchesFilters(event(emptyList()), TypeFilter.Analytics, null, "", breaksPlan = true))
+        val onlyBreaking = TimelineFilters().toggleBreaksPlan()
+        assertTrue(matchesFilters(breaking, onlyBreaking, ""))
+        assertFalse(matchesFilters(event(emptyList()), onlyBreaking, ""))
     }
 }
 
@@ -78,7 +79,7 @@ class SearchMatchingTest {
         path = "/users",
     )
 
-    private fun matches(query: String) = matchesFilters(call, TypeFilter.All, null, query)
+    private fun matches(query: String) = matchesFilters(call, TimelineFilters(), query)
 
     @Test
     fun searchReachesTheQueryString() {

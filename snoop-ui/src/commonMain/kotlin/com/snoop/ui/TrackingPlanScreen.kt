@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +47,7 @@ import com.snoop.core.SnoopCore
 import com.snoop.core.model.PlanSummary
 import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.component.DetailScaffold
+import com.snoop.ui.component.SectionCard
 import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.EventCoverage
@@ -55,8 +55,8 @@ import com.snoop.ui.internal.PlanVerdict
 import com.snoop.ui.internal.plainText
 import com.snoop.ui.internal.planCoverage
 import com.snoop.ui.theme.LocalSnoopColors
-import com.snoop.ui.theme.TintPair
 import com.snoop.ui.theme.VerdictColors
+import com.snoop.ui.theme.codeTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,7 +99,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                 }
                 is IllegalArgumentException -> {
                     json = text
-                    error = failure.message.orEmpty().removePrefix("tracking plan: ").replaceFirstChar { it.uppercase() } +
+                    error = failure.message.orEmpty().replaceFirstChar { it.uppercase() } +
                         (current?.let { ". Nothing changed: ${it.version} is still loaded." } ?: ".")
                 }
                 else -> throw failure
@@ -108,6 +108,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
     }
 
     val scheme = MaterialTheme.colorScheme
+    val inverted = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface)
     // The footer stays at the bottom, as on the design; only what is above it scrolls.
     Column(modifier) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
@@ -151,7 +152,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                         }
                     },
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
+                    colors = inverted,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
                     Icon(SnoopIcons.Clipboard, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -179,18 +180,13 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                             onClick = { load(json) },
                             enabled = json.isNotBlank(),
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
+                            colors = inverted,
                         ) { Text("Load plan", fontWeight = FontWeight.SemiBold) }
                     }
                 }
             }
 
-            Surface(
-                color = scheme.surface,
-                border = BorderStroke(1.dp, scheme.outlineVariant),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp),
-            ) {
+            SectionCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp), radius = 14.dp, contentPadding = 0.dp) {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Testing on BrowserStack?", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), fontWeight = FontWeight.SemiBold)
                     Text(
@@ -214,11 +210,10 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
 @Composable
 private fun PlanJsonField(json: String, isError: Boolean, onChange: (String) -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp)
     OutlinedTextField(
         value = json,
         onValueChange = onChange,
-        placeholder = { Text("{ \"version\": \"…\", \"events\": [ … ] }", style = mono) },
+        placeholder = { Text("{ \"version\": \"…\", \"events\": [ … ] }", style = codeTextStyle) },
         isError = isError,
         shape = RoundedCornerShape(14.dp),
         colors = OutlinedTextFieldDefaults.colors(
@@ -228,7 +223,7 @@ private fun PlanJsonField(json: String, isError: Boolean, onChange: (String) -> 
             unfocusedBorderColor = scheme.outline,
             focusedBorderColor = scheme.onSurface,
         ),
-        textStyle = mono,
+        textStyle = codeTextStyle,
         modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 240.dp),
     )
 }
@@ -239,20 +234,9 @@ private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: 
     val scheme = MaterialTheme.colorScheme
     val coverage = remember(plan, entries) { planCoverage(entries, plan) }
     val byVerdict = coverage.groupBy { it.verdict }
-    val notSeen = VerdictColors(
-        pill = TintPair(scheme.onSurfaceVariant, scheme.onSurfaceVariant),
-        card = TintPair(scheme.surface, scheme.onSurface),
-        border = scheme.outlineVariant,
-        muted = scheme.onSurfaceVariant,
-    )
     var showAllUnseen by remember { mutableStateOf(false) }
 
-    Surface(
-        color = scheme.surface,
-        border = BorderStroke(1.dp, scheme.outlineVariant),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
-    ) {
+    SectionCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp), radius = 16.dp, contentPadding = 0.dp) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -273,33 +257,26 @@ private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: 
     Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CoverageCount(byVerdict[PlanVerdict.Breaks].orEmpty().size, "break it", colors.planBreaks, Modifier.weight(1f))
         CoverageCount(byVerdict[PlanVerdict.Matches].orEmpty().size, "match it", colors.planMatches, Modifier.weight(1f))
-        CoverageCount(byVerdict[PlanVerdict.NotSeen].orEmpty().size, "not seen yet", notSeen, Modifier.weight(1f))
+        CoverageCount(byVerdict[PlanVerdict.NotSeen].orEmpty().size, "not seen yet", colors.planNotSeen, Modifier.weight(1f))
     }
 
-    Surface(
-        color = scheme.surface,
-        border = BorderStroke(1.dp, scheme.outlineVariant),
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp),
-    ) {
-        Column {
-            var first = true
-            fun divided(): Boolean = (!first).also { first = false }
-            byVerdict[PlanVerdict.Breaks]?.let { CoverageGroup("Breaks the plan", colors.planBreaks.card.content, colors.error.content, it, divided()) }
-            byVerdict[PlanVerdict.Matches]?.let { CoverageGroup("Matches the plan", colors.planMatches.muted, colors.success.content, it, divided()) }
-            byVerdict[PlanVerdict.NotSeen]?.let { unseen ->
-                val shown = if (showAllUnseen) unseen else unseen.take(UNSEEN_PREVIEW)
-                CoverageGroup("Not seen yet", scheme.onSurfaceVariant, null, shown, divided())
-                if (shown.size < unseen.size) {
-                    HorizontalDivider(thickness = 1.dp, color = scheme.surfaceVariant)
-                    Text(
-                        "Show ${unseen.size - shown.size} more",
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                        color = scheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().clickable { showAllUnseen = true }.padding(10.dp),
-                    )
-                }
+    SectionCard(Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp), radius = 14.dp, contentPadding = 0.dp) {
+        val breaks = byVerdict[PlanVerdict.Breaks]
+        val matches = byVerdict[PlanVerdict.Matches]
+        breaks?.let { CoverageGroup("Breaks the plan", colors.planBreaks.card.content, colors.error.content, it, divided = false) }
+        matches?.let { CoverageGroup("Matches the plan", colors.planMatches.muted, colors.success.content, it, divided = breaks != null) }
+        byVerdict[PlanVerdict.NotSeen]?.let { unseen ->
+            val shown = if (showAllUnseen) unseen else unseen.take(UNSEEN_PREVIEW)
+            CoverageGroup("Not seen yet", scheme.onSurfaceVariant, null, shown, divided = breaks != null || matches != null)
+            if (shown.size < unseen.size) {
+                HorizontalDivider(thickness = 1.dp, color = scheme.surfaceVariant)
+                Text(
+                    "Show ${unseen.size - shown.size} more",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                    color = scheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().clickable { showAllUnseen = true }.padding(10.dp),
+                )
             }
         }
     }
@@ -359,7 +336,7 @@ private fun CoverageGroup(title: String, titleColor: Color, dot: Color?, events:
             Box(if (dot != null) mark.background(dot) else mark.border(1.5.dp, scheme.outline, CircleShape))
             Text(
                 coverage.event.name,
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                style = codeTextStyle,
                 color = if (dot != null) scheme.onSurface else scheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )

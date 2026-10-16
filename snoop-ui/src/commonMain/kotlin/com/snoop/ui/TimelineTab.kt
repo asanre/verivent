@@ -83,9 +83,7 @@ internal fun TimelineTab(
     val groups = remember(entries, grouped, filters, query) {
         groupEntries(entries, grouped)
             .mapNotNull { group ->
-                val shown = group.entries.filter {
-                    matchesFilters(it, filters.type, filters.channel, query, filters.breaksPlan)
-                }
+                val shown = group.entries.filter { matchesFilters(it, filters, query) }
                 if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
             }
     }

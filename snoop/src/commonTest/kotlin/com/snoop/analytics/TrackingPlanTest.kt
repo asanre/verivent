@@ -70,13 +70,13 @@ class TrackingPlanTest {
     @Test
     fun enumAndPatternQuoteThePlanButNeverTheValue() {
         val plan = plan(
-            """{ "properties": { "list_scope": { "enum": ["search", "catalog"] },
+            """{ "properties": { "list_scope": { "enum": ["search", "catalog", "home"] },
                                  "item_id": { "pattern": "^[0-9]+$" },
                                  "position": { "enum": [1, 2] } } }""",
         )
         assertEquals(
             listOf(
-                PlanIssue("list_scope", "Not an allowed value · expects search or catalog"),
+                PlanIssue("list_scope", "Not an allowed value · expects search, catalog or home"),
                 PlanIssue("item_id", "Doesn't match the pattern ^[0-9]+$"),
             ),
             plan.issuesFor("search", "firebase", mapOf("list_scope" to "pdp", "item_id" to "AB12", "position" to 2L)),

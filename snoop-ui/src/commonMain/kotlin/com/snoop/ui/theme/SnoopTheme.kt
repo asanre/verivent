@@ -9,7 +9,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 private val LightScheme = lightColorScheme(
     primary = Color(0xFF6D5EFC),
@@ -46,6 +49,10 @@ private val SnoopShapes = Shapes(
     medium = RoundedCornerShape(12.dp),
     large = RoundedCornerShape(16.dp),
 )
+
+/** Parameter names and values, event names and plan JSON: what the host's code sent, verbatim. */
+internal val codeTextStyle: TextStyle
+    @Composable get() = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp)
 
 @Composable
 fun SnoopTheme(content: @Composable () -> Unit) {
