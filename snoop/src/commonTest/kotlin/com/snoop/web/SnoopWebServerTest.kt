@@ -8,6 +8,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
+import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -99,6 +100,57 @@ class SnoopWebServerTest {
         }
         assertEquals(HttpStatusCode.OK, response.status)
         assertTrue(SnoopCore.store.entries.value.isEmpty())
+    }
+
+    private val plan = """{ "version": "4.2.0", "events": [] }"""
+
+    @Test
+    fun loadingAPlanNeedsTheSameGuardAsClear() = testApplication {
+        application { snoopModule() }
+        assertEquals(HttpStatusCode.Forbidden, client.post("/api/tracking-plan") { setBody(plan) }.status)
+        val foreign = client.post("/api/tracking-plan") {
+            header("X-Snoop", "1")
+            header(HttpHeaders.Origin, "http://evil.example")
+            setBody(plan)
+        }
+        assertEquals(HttpStatusCode.Forbidden, foreign.status)
+        assertNull(SnoopCore.trackingPlanVersion.value)
+    }
+
+    @Test
+    fun aValidPlanLoadsAndReportsItsVersionAndClearRemovesIt() = testApplication {
+        application { snoopModule() }
+        val loaded = client.post("/api/tracking-plan") {
+            header("X-Snoop", "1")
+            setBody(plan)
+        }
+        assertEquals(HttpStatusCode.OK, loaded.status)
+        assertTrue("4.2.0" in loaded.bodyAsText())
+        assertTrue("4.2.0" in client.get("/api/tracking-plan").bodyAsText())
+
+        client.post("/api/tracking-plan/clear") { header("X-Snoop", "1") }
+        assertNull(SnoopCore.trackingPlanVersion.value)
+    }
+
+    @Test
+    fun anInvalidPlanIsRejectedWithTheReason() = testApplication {
+        application { snoopModule() }
+        val response = client.post("/api/tracking-plan") {
+            header("X-Snoop", "1")
+            setBody("""{ "version": "1" }""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+        assertTrue("events" in response.bodyAsText())
+    }
+
+    @Test
+    fun anOversizedPlanIsRejected() = testApplication {
+        application { snoopModule() }
+        val response = client.post("/api/tracking-plan") {
+            header("X-Snoop", "1")
+            setBody("x".repeat(2 * 1024 * 1024 + 1))
+        }
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
     }
 
     @Test

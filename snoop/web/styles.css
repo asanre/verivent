@@ -84,3 +84,16 @@ main{flex:1;overflow:hidden;display:flex;padding:12px;gap:12px}
 .toastwrap{position:fixed;left:0;right:0;bottom:24px;display:flex;justify-content:center;pointer-events:none;z-index:50}
 .toast{background:var(--on-surface);color:var(--bg);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:0;transform:translateY(8px);transition:opacity .2s ease,transform .2s ease}
 .toast.show{opacity:1;transform:translateY(0)}
+.planbtn{height:36px;padding:0 12px;border:1px solid var(--outline-var);border-radius:10px;background:var(--surface);color:var(--on-surface);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.planbtn:hover{background:var(--surface-var)}
+.plandialog{width:min(560px,calc(100vw - 32px));border:1px solid var(--outline-var);border-radius:14px;background:var(--surface);color:var(--on-surface);padding:20px}
+.plandialog::backdrop{background:rgba(0,0,0,.35)}
+.plandialog textarea{display:block;width:100%;box-sizing:border-box;height:220px;margin:12px 0;padding:10px;border:1px solid var(--outline-var);border-radius:10px;background:var(--bg);color:var(--on-surface);font-size:12px;resize:vertical}
+.planactions{display:flex;align-items:center;gap:8px;margin-top:12px}
+.textbtn{height:34px;padding:0 14px;border:1px solid var(--outline-var);border-radius:10px;background:var(--surface);color:var(--on-surface);font-size:13px;font-weight:600;cursor:pointer}
+.textbtn.primary{background:var(--on-surface);color:var(--bg);border-color:var(--on-surface)}
+.issues .issue{padding:6px 0;color:var(--err-fg);font-size:13px}
+.issues .issue+.issue{border-top:1px solid var(--outline-var)}
+
+#planState{white-space:normal}
+.planerror{color:var(--err-fg);font-size:13px;margin-top:8px;min-height:18px}

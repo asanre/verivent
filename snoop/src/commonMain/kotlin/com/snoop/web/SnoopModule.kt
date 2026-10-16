@@ -6,10 +6,13 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
 import io.ktor.server.application.install
+import io.ktor.server.request.contentLength
 import io.ktor.server.request.header
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -18,6 +21,8 @@ import io.ktor.server.sse.SSE
 import io.ktor.server.sse.sse
 import io.ktor.sse.ServerSentEvent
 import kotlinx.coroutines.delay
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 private const val TITLE_PLACEHOLDER = "@SNOOP_TITLE@"
 
@@ -32,6 +37,23 @@ private fun escapeHtml(text: String): String = buildString(text.length) {
             else -> append(char)
         }
     }
+}
+
+// Plans are a few hundred events at most; this only stops a runaway paste from filling memory.
+private const val MAX_PLAN_BYTES = 2 * 1024 * 1024
+
+private fun planStatus(): String =
+    buildJsonObject { put("version", SnoopCore.trackingPlanVersion.value) }.toString()
+
+/**
+ * CSRF guard for every state-changing route: the custom header forces a preflight this server
+ * never approves, and any cross-origin caller (a hostile page open in the same browser) carries a
+ * foreign Origin. Same-origin is judged against the Host actually used, which the gate vouches for.
+ */
+private fun ApplicationCall.mutationAllowed(): Boolean {
+    val origin = request.header(HttpHeaders.Origin)
+    val host = request.header(HttpHeaders.Host)
+    return request.header("X-Snoop") == "1" && (origin == null || origin == "http://$host")
 }
 
 internal fun Application.snoopModule(token: String? = null) {
@@ -57,17 +79,29 @@ internal fun Application.snoopModule(token: String? = null) {
             call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
         }
         post("/api/clear") {
-            // CSRF guard: the custom header forces a preflight this server never approves, and any
-            // cross-origin caller (a hostile page open in the same browser) carries a foreign Origin.
-            // Same-origin is judged against the Host actually used, which the gate above vouches for.
-            val origin = call.request.header(HttpHeaders.Origin)
-            val host = call.request.header(HttpHeaders.Host)
-            if (call.request.header("X-Snoop") != "1" || !(origin == null || origin == "http://$host")) {
-                call.respondText("forbidden", status = HttpStatusCode.Forbidden)
-                return@post
-            }
+            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
             SnoopCore.store.clear()
             call.respondText("ok")
+        }
+        get("/api/tracking-plan") {
+            call.respondText(planStatus(), ContentType.Application.Json)
+        }
+        post("/api/tracking-plan") {
+            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
+            val fits = (call.request.contentLength() ?: 0) <= MAX_PLAN_BYTES
+            val json = (if (fits) call.receiveText() else null)?.takeIf { it.length <= MAX_PLAN_BYTES }
+                ?: return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
+            try {
+                SnoopCore.loadTrackingPlan(json)
+            } catch (invalid: IllegalArgumentException) {
+                return@post call.respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
+            }
+            call.respondText(planStatus(), ContentType.Application.Json)
+        }
+        post("/api/tracking-plan/clear") {
+            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
+            SnoopCore.clearTrackingPlan()
+            call.respondText(planStatus(), ContentType.Application.Json)
         }
         sse("/api/stream") {
             // Deltas, tracked per connection: the store holds up to 20 MB and re-encoding all of it

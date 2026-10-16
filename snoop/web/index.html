@@ -18,6 +18,7 @@
       <span id='count' class='count mono'>0</span>
     </div>
     <div class='actions'>
+      <button class='planbtn' id='planBtn' title='Tracking plan' onclick='openPlan()'>No plan</button>
       <button class='iconbtn' id='pauseToggle' title='Pause' onclick='togglePause()'><span id='pauseIcon' style='display:inline-flex'></span><span id='playIcon' style='display:none'></span></button>
       <button class='iconbtn' id='clearBtn' title='Clear' onclick='clearAll()'></button>
       <button class='iconbtn' id='exportBtn' title='Export' onclick='exportJson()'></button>
@@ -33,6 +34,19 @@
   <div class='list' id='list'></div>
   <div class='detail' id='detail'></div>
 </main>
+<dialog id='planDialog' class='plandialog'>
+  <div class='section'>Tracking plan</div>
+  <div class='sub' id='planState'></div>
+  <textarea id='planText' class='mono' placeholder='Paste the tracking plan JSON, or pick a file below'></textarea>
+  <input type='file' id='planFile' accept='application/json,.json'>
+  <div class='planerror' id='planError'></div>
+  <div class='planactions'>
+    <button class='textbtn' onclick='clearPlan()'>Clear plan</button>
+    <span class='grow'></span>
+    <button class='textbtn' onclick='closePlan()'>Close</button>
+    <button class='textbtn primary' onclick='loadPlan()'>Load</button>
+  </div>
+</dialog>
 <div class='toastwrap'><div class='toast' id='toast'></div></div>
 <script>
 @SNOOP_JS@

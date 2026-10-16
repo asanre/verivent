@@ -35,6 +35,8 @@ function applyFrame(frame){
 }
 
 var TOKEN=new URLSearchParams(location.search).get('t')||'';
+// Stamped by Snoop when a loaded plan doesn't define the event; Annotation.NotInPlan on the Kotlin side.
+var NOT_IN_PLAN='not in plan';
 function apiUrl(p){return TOKEN?p+(p.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(TOKEN):p;}
 
 var CHANNEL_LIGHT=[['#DBEAFE','#1D4ED8'],['#D1FAE5','#047857'],['#FEF3C7','#B45309'],['#FEE2E2','#B91C1C'],['#EDE9FE','#6D28D9'],['#FCE7F3','#BE185D'],['#CCFBF1','#0F766E']];
@@ -105,8 +107,15 @@ function rowHtml(e){
     "<span class='time mono'>"+clock(e.ts)+"</span>"+
     "<div class='abox' style='"+chanStyle(pair)+"'>"+icon('bars',16)+"</div>"+
     "<div class='grow'><div class='title'>"+esc(e.name)+"</div><div class='sub'>"+sub+"</div></div>"+
+    planPill(e)+
     pill(e.channel,chanStyle(pair),false)+
     "</div>";
+}
+
+function planPill(e){
+  var n=(e.issues||[]).length;
+  if(n)return pill(n+(n===1?' issue':' issues'),tintStyle('err'),false);
+  return (e.annotations||[]).indexOf(NOT_IN_PLAN)>=0?pill(NOT_IN_PLAN,tintStyle('neu'),false):'';
 }
 
 function emptyStateHtml(title,sub){
@@ -247,6 +256,35 @@ function toast(msg){
   if(toastTimer)clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.className='toast';},1800);
 }
+// The plan lives on the device; the page only shows its version and sends what the user provides.
+function planLabel(v){return v?('Plan '+v):'No plan';}
+function showPlan(status){
+  var v=status&&status.version;
+  document.getElementById('planBtn').textContent=planLabel(v);
+  document.getElementById('planState').textContent=v?('Loaded: version '+v):'No tracking plan loaded: events are not validated.';
+}
+function refreshPlan(){
+  fetch(apiUrl('/api/tracking-plan')).then(function(r){return r.ok?r.json():null;}).then(showPlan).catch(function(){});
+}
+// Errors go inside the dialog: a modal sits in the top layer, above the toast.
+function planError(msg){document.getElementById('planError').textContent=msg||'';}
+function openPlan(){planError('');refreshPlan();document.getElementById('planDialog').showModal();}
+function closePlan(){document.getElementById('planDialog').close();}
+function planRequest(path,body){
+  return fetch(apiUrl(path),{method:'POST',headers:{'X-Snoop':'1','Content-Type':'application/json'},body:body}).then(function(r){
+    return r.text().then(function(t){if(!r.ok)throw new Error(t||('rejected: '+r.status));return JSON.parse(t);});
+  });
+}
+function loadPlan(){
+  var text=document.getElementById('planText').value;
+  if(!text.trim()){planError('Paste or pick a plan first');return;}
+  planRequest('/api/tracking-plan',text).then(function(s){
+    showPlan(s);planError('');document.getElementById('planText').value='';closePlan();toast(planLabel(s.version)+' loaded');
+  }).catch(function(err){planError(err.message);});
+}
+function clearPlan(){
+  planRequest('/api/tracking-plan/clear','').then(function(s){showPlan(s);planError('');}).catch(function(err){planError(err.message);});
+}
 function clearAll(){
   // No local reseed: the post-clear stream frame prunes everything, without racing new captures.
   fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Snoop':'1'}}).then(function(r){
@@ -331,6 +369,11 @@ function analyticsDetailHtml(e){
   });
   h+=pill(clock(e.ts),tintStyle('neu'),true);
   h+="</div>";
+  if((e.issues||[]).length){
+    h+="<div class='pblock'><div class='section'>Tracking plan</div><div class='card issues' style='margin-top:8px'>";
+    e.issues.forEach(function(i){h+="<div class='issue'>"+esc(i)+"</div>";});
+    h+="</div></div>";
+  }
   h+=propertiesBlockHtml('Parameters',e.properties,rawParams,'setRawParams');
   (e.sections||[]).forEach(function(s,i){
     h+=propertiesBlockHtml(s.title,s.properties,!!rawSections[i],'setRawSection.bind(null,'+i+')');
@@ -416,6 +459,14 @@ document.getElementById('detail').addEventListener('click',function(ev){
   var r=ev.target.closest('[data-id]');
   if(r)sel(r.getAttribute('data-id'));
 });
+document.getElementById('planFile').addEventListener('change',function(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(){document.getElementById('planText').value=reader.result;};
+  reader.readAsText(file);
+});
+refreshPlan();
 var es=new EventSource(apiUrl('/api/stream'));
 // A frame is proof the server is back, whatever the seeding fetch reported.
 es.onmessage=function(ev){setUnreachable(false);applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};
