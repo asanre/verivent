@@ -75,6 +75,23 @@ final class SnoopBridgeTests: XCTestCase {
         XCTAssertEqual(undefined["annotations"] as? [String], ["not in plan"])
     }
 
+    /// Types are only checked on the values Kotlin receives, so this pins how Swift numbers and
+    /// booleans arrive across the bridge.
+    func testSwiftValueTypesSatisfyTheirJsonSchemaTypes() async throws {
+        Snoop.configure()
+        try Snoop.loadTrackingPlan("""
+        { "version": "1.0.0", "events": [ { "name": "plan_types", "channel": "firebase",
+          "schema": { "properties": { "count": { "type": "integer" }, "value": { "type": "number" },
+                                      "first": { "type": "boolean" }, "sku": { "type": "string" } } } } ] }
+        """)
+        defer { Snoop.clearTrackingPlan() }
+
+        Snoop.log("plan_types", channel: "firebase", properties: ["count": 3, "value": 42.5, "first": true, "sku": "SKU-9"])
+
+        let entry = try await fetchEntry(named: "plan_types")
+        XCTAssertNil(entry["issues"], "unexpected issues: \(entry["issues"] ?? "")")
+    }
+
     // MARK: - Helpers
 
     private func fetchEntry(named name: String) async throws -> [String: Any] {

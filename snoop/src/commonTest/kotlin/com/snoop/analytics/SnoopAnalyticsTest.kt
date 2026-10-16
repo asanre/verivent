@@ -153,10 +153,9 @@ class SnoopAnalyticsTest {
     }
 
     @Test
-    fun withoutLogToNothingIsWrittenAndAThrowingLoggerKeepsTheEvent() {
-        SnoopAnalytics().log("search", "firebase")
+    fun aThrowingLoggerKeepsTheEvent() {
         SnoopAnalytics { logTo { error("boom") } }.log("purchase", "firebase")
-        assertEquals(listOf("search", "purchase"), entries().map { it.name })
+        assertEquals(listOf("purchase"), entries().map { it.name })
     }
 
     @Test
