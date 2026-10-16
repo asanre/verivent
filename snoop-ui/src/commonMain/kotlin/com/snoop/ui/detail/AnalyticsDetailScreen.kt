@@ -49,10 +49,28 @@ internal fun AnalyticsDetailScreen(
             ) {
                 Pill(entry.channel, tint)
                 entry.annotations.forEach {
-                    val annotationTint = if (it == Annotation.Ecommerce) colors.ecom else tint
+                    val annotationTint = when (it) {
+                        Annotation.Ecommerce -> colors.ecom
+                        Annotation.NotInPlan -> colors.neutral
+                        else -> tint
+                    }
                     Pill(it.label, annotationTint)
                 }
                 Pill(formatClock(entry.timestamp), colors.neutral, mono = true)
+            }
+
+            if (entry.issues.isNotEmpty()) {
+                Column(Modifier.padding(top = 16.dp)) {
+                    SectionLabel("Tracking plan")
+                    entry.issues.forEach {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.error.content,
+                            modifier = Modifier.padding(vertical = 2.dp),
+                        )
+                    }
+                }
             }
 
             Column(Modifier.padding(top = 16.dp)) {

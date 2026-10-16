@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -89,6 +90,9 @@ private fun SnoopContent() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val planVersion by SnoopCore.trackingPlanVersion.collectAsState()
+    var planOpen by remember { mutableStateOf(false) }
+
     val selected = entries.firstOrNull { it.id == selectedId }
     BackHandler(enabled = selected != null) { selectedId = null }
 
@@ -125,6 +129,9 @@ private fun SnoopContent() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.weight(1f))
+                    TextButton(onClick = { planOpen = true }) {
+                        Text(planVersion?.let { "Plan $it" } ?: "Plan", maxLines = 1)
+                    }
                     IconButton(onClick = {
                         if (!paused) frozen = live
                         paused = !paused
@@ -167,6 +174,7 @@ private fun SnoopContent() {
                 TimelineTab(entries, onOpen = { selectedId = it })
             }
         }
+        if (planOpen) TrackingPlanDialog(onDismiss = { planOpen = false })
         when (selected) {
             null -> Unit
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })

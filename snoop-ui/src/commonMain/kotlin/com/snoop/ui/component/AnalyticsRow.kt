@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.Annotation
 import com.snoop.ui.theme.LocalSnoopColors
 
 @Composable
@@ -63,6 +64,19 @@ internal fun AnalyticsRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+        PlanBadge(entry)
         Pill(entry.channel, tint)
+    }
+}
+
+@Composable
+private fun PlanBadge(entry: AnalyticsEntry) {
+    val colors = LocalSnoopColors.current
+    when {
+        entry.issues.isNotEmpty() -> Pill(
+            "${entry.issues.size} issue${if (entry.issues.size == 1) "" else "s"}",
+            colors.error,
+        )
+        Annotation.NotInPlan in entry.annotations -> Pill(Annotation.NotInPlan.label, colors.neutral)
     }
 }
