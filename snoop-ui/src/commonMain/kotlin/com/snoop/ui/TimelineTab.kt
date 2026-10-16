@@ -48,6 +48,7 @@ import com.snoop.ui.component.NetworkRow
 import com.snoop.ui.component.PlanStrip
 import com.snoop.ui.component.SearchPill
 import com.snoop.ui.component.SnoopIcons
+import com.snoop.ui.internal.PlanVerdict
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.TimelineUiState
@@ -55,7 +56,7 @@ import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.breaksPlan
 import com.snoop.ui.internal.groupEntries
 import com.snoop.ui.internal.matchesFilters
-import com.snoop.ui.internal.matchesPlan
+import com.snoop.ui.internal.planCoverage
 import com.snoop.ui.internal.stableKey
 
 @Composable
@@ -76,9 +77,8 @@ internal fun TimelineTab(
     val grouped = remember(entries) {
         entries.any { it is AnalyticsEntry && it.groupLabel != null }
     }
-    val events = remember(entries) { entries.filterIsInstance<AnalyticsEntry>() }
-    val breaking = events.count { it.breaksPlan }
-    val matching = events.count { it.matchesPlan }
+    val breakingRows = remember(entries) { entries.count { it.breaksPlan } }
+    val coverage = remember(entries, plan) { plan?.let { planCoverage(entries, it) }.orEmpty() }
     // Group over all entries so screen headers survive filters that hide the opening event.
     val groups = remember(entries, grouped, filters, query) {
         groupEntries(entries, grouped)
@@ -106,8 +106,8 @@ internal fun TimelineTab(
         )
         PlanStrip(
             plan = plan,
-            breaking = breaking,
-            matching = matching,
+            breaking = coverage.count { it.verdict == PlanVerdict.Breaks },
+            matching = coverage.count { it.verdict == PlanVerdict.Matches },
             onClick = onOpenPlan,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp),
         )
@@ -119,7 +119,7 @@ internal fun TimelineTab(
                 onType = { filters = filters.selectType(it) },
                 onChannel = { filters = filters.selectChannel(it) },
                 // Offered while there is something to show, so a filter left on never hides everything.
-                breaking = breaking.takeIf { it > 0 || filters.breaksPlan },
+                breaking = breakingRows.takeIf { it > 0 || filters.breaksPlan },
                 breaksPlan = filters.breaksPlan,
                 onBreaksPlan = { filters = filters.toggleBreaksPlan() },
             )

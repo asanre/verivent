@@ -75,7 +75,7 @@ internal fun AnalyticsDetailScreen(
 
             entry.planVersion?.let { version -> PlanVerdictCard(version, entry.issues) }
 
-            if (entry.properties.isEmpty()) {
+            if (entry.properties.isEmpty() && entry.issues.isEmpty()) {
                 SectionLabel("Parameters", topPadding = 22.dp)
                 Text(
                     "None",
