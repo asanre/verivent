@@ -1,6 +1,7 @@
 package com.snoop.ui.detail
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import com.snoop.ui.component.Pill
 import com.snoop.ui.component.PropertiesView
 import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.component.SnoopIcons
+import com.snoop.ui.component.dashedBorder
 import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.problemCount
 import com.snoop.ui.internal.propertiesToJson
@@ -50,14 +52,15 @@ internal fun AnalyticsDetailScreen(
             CopyIconButton("Copy payload", "Copied payload", showMessage) { propertiesToJson(entry.properties) }
         },
     ) { modifier, _ ->
-        Column(
-            modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
+        Column(modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
             val colors = LocalSnoopColors.current
             val tint = colors.channelTint(entry.channel)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 14.dp),
             ) {
                 Pill(entry.channel, tint)
                 entry.annotations.forEach {
@@ -72,81 +75,104 @@ internal fun AnalyticsDetailScreen(
 
             entry.planVersion?.let { version -> PlanVerdictCard(version, entry.issues) }
 
-            Column(Modifier.padding(top = 16.dp)) {
-                if (entry.properties.isEmpty()) {
-                    SectionLabel("Parameters")
-                    Text("None", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    PropertiesView(entry.properties, label = "Parameters", issues = entry.issues)
-                }
-                if (entry.planVersion != null) {
-                    Text(
-                        "Checked when it was captured. Loading another plan only changes the verdict of events captured after it.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
+            if (entry.properties.isEmpty()) {
+                SectionLabel("Parameters", topPadding = 22.dp)
+                Text(
+                    "None",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            } else {
+                PropertiesView(entry.properties, label = "Parameters", issues = entry.issues)
             }
+            if (entry.planVersion != null) CheckedAtCaptureNote()
 
             entry.sections.forEach { (title, section) ->
-                key(title) {
-                    Column(Modifier.padding(top = 32.dp)) {
-                        PropertiesView(section, label = title)
-                    }
-                }
+                key(title) { PropertiesView(section, label = title, collapsible = true) }
             }
         }
     }
 }
 
 @Composable
-private fun PlanVerdictCard(planVersion: String, issues: List<PlanIssue>) {
-    val colors = LocalSnoopColors.current
-    val tint = if (issues.isEmpty()) colors.success else colors.error
-    Surface(
-        color = tint.container.copy(alpha = 0.45f),
-        border = BorderStroke(1.dp, tint.container),
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+private fun CheckedAtCaptureNote() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 18.dp)
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+            .dashedBorder(MaterialTheme.colorScheme.outline, 12.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(SnoopIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Text(
+            "Checked when it was captured. Loading another plan only changes the verdict of events captured after it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun PlanVerdictCard(planVersion: String, issues: List<PlanIssue>) {
+    val verdict = if (issues.isEmpty()) LocalSnoopColors.current.planMatches else LocalSnoopColors.current.planBreaks
+    Surface(
+        color = verdict.card.container,
+        border = BorderStroke(1.dp, verdict.border),
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+    ) {
+        Column(
+            Modifier.padding(horizontal = 16.dp, vertical = if (issues.isEmpty()) 12.dp else 14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(
-                    if (issues.isEmpty()) SnoopIcons.Check else SnoopIcons.Close,
+                    if (issues.isEmpty()) SnoopIcons.MatchesCircle else SnoopIcons.BreaksCircle,
                     contentDescription = null,
-                    tint = tint.content,
-                    modifier = Modifier.size(18.dp),
+                    tint = verdict.pill.content,
+                    modifier = Modifier.size(22.dp),
                 )
                 Column {
                     Text(
                         if (issues.isEmpty()) "Matches tracking plan $planVersion" else "Breaks tracking plan $planVersion",
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
                         fontWeight = FontWeight.SemiBold,
-                        color = tint.content,
+                        color = verdict.card.content,
                     )
                     Text(
                         if (issues.isEmpty()) "Every parameter is what the plan expects" else "${problemCount(issues.size)} in its parameters",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = tint.content,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = verdict.muted,
                     )
                 }
             }
-            issues.forEach { issue ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, tint.container),
-                        shape = RoundedCornerShape(4.dp),
-                    ) {
-                        Text(
-                            issue.property,
-                            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-                            color = tint.content,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
+            if (issues.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    issues.forEach { issue ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surface,
+                                border = BorderStroke(1.dp, verdict.border),
+                                shape = RoundedCornerShape(4.dp),
+                            ) {
+                                Text(
+                                    issue.property,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                                    color = verdict.card.content,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                )
+                            }
+                            Text(
+                                issue.message,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f).padding(top = 2.dp),
+                            )
+                        }
                     }
-                    Text(issue.message, style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), modifier = Modifier.weight(1f))
                 }
             }
         }

@@ -1,10 +1,13 @@
 package com.snoop.ui.component
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.dp
 
 /**
  * Copy button for the detail screens — cURL, analytics payload, request/response body. [text] is
@@ -25,7 +28,8 @@ internal fun CopyIconButton(
             clipboard.setText(AnnotatedString(text()))
             showMessage(message)
         },
+        modifier = Modifier.size(44.dp),
     ) {
-        Icon(SnoopIcons.Copy, contentDescription = contentDescription)
+        Icon(SnoopIcons.Copy, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
     }
 }

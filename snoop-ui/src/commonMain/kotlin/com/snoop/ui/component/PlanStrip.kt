@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -17,8 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.snoop.core.model.PlanSummary
 import com.snoop.ui.theme.LocalSnoopColors
+import com.snoop.ui.theme.TintPair
 
 /** The timeline's way into the plan screen, with how this session's events did against the plan. */
 @Composable
@@ -41,7 +44,7 @@ internal fun PlanStrip(
         Row(
             modifier = Modifier.heightIn(min = 44.dp).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(
                 SnoopIcons.Plan,
@@ -52,16 +55,16 @@ internal fun PlanStrip(
             if (plan != null) {
                 Text("Plan ${plan.version}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.weight(1f))
-                if (breaking > 0) Pill("$breaking break it", colors.error)
-                if (matching > 0) Pill("$matching match", colors.success)
+                if (breaking > 0) CountPill("$breaking break it", colors.planBreaks.pill)
+                if (matching > 0) CountPill("$matching match", colors.planMatches.pill)
             } else {
                 Text(
                     "No tracking plan · events aren't checked",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
-                Text("Load", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                Text("Load", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), fontWeight = FontWeight.SemiBold)
             }
             Icon(
                 SnoopIcons.ChevronRight,
@@ -70,5 +73,17 @@ internal fun PlanStrip(
                 modifier = Modifier.size(16.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun CountPill(text: String, tint: TintPair) {
+    Surface(color = tint.container, contentColor = tint.content, shape = CircleShape) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }

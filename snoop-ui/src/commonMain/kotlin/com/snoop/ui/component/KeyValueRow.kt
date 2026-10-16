@@ -8,9 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -25,37 +23,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snoop.core.model.KeyValue
-import com.snoop.ui.theme.LocalSnoopColors
 
-/** One property; [issue] marks it as breaking the tracking plan and says how. */
 @Composable
-internal fun KeyValueRow(item: KeyValue, valueAlignEnd: Boolean = false, issue: String? = null) {
-    val error = LocalSnoopColors.current.error
-    val marked = if (issue != null) Modifier.background(error.container) else Modifier
-    Column(Modifier.fillMaxWidth().then(marked)) {
+internal fun KeyValueRow(item: KeyValue, valueAlignEnd: Boolean = false) {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(Modifier.weight(0.42f), verticalAlignment = Alignment.CenterVertically) {
-                if (issue != null) IssueDot()
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                    fontWeight = FontWeight.Medium,
-                    color = if (issue != null) error.content else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(0.42f),
+            )
             Box(Modifier.weight(0.58f), contentAlignment = if (valueAlignEnd) Alignment.CenterEnd else Alignment.CenterStart) {
                 if (item.redacted) {
-                    Box(
-                        Modifier
-                            .padding(top = 2.dp)
-                            .width(64.dp)
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.onSurface),
-                    )
+                    RedactedValue(Modifier.padding(top = 2.dp))
                 } else {
                     Text(
                         text = item.value,
@@ -66,46 +51,18 @@ internal fun KeyValueRow(item: KeyValue, valueAlignEnd: Boolean = false, issue: 
                 }
             }
         }
-        issue?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.bodySmall,
-                color = error.content,
-                modifier = Modifier.padding(start = 20.dp, end = 8.dp, bottom = 8.dp),
-            )
-        }
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
     }
 }
 
-/** A property the tracking plan requires but the event didn't send. */
+/** Stands in for a value the host redacted: its length would already say too much. */
 @Composable
-internal fun MissingPropertyRow(name: String) {
-    val error = LocalSnoopColors.current.error
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(4.dp)
-            .dashedBorder(error.content, 8.dp)
-            .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IssueDot()
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-            fontWeight = FontWeight.Medium,
-            color = error.content,
-            modifier = Modifier.weight(1f),
-        )
-        Text("missing · required", style = MaterialTheme.typography.labelSmall, color = error.content)
-    }
-}
-
-@Composable
-private fun IssueDot() {
+internal fun RedactedValue(modifier: Modifier = Modifier) {
     Box(
-        Modifier.padding(end = 6.dp).size(6.dp).clip(CircleShape)
-            .background(LocalSnoopColors.current.error.content),
+        modifier
+            .width(64.dp)
+            .height(14.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(MaterialTheme.colorScheme.onSurface),
     )
 }

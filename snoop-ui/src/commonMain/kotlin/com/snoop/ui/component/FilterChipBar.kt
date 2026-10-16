@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,15 +20,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.theme.LocalSnoopColors
 import com.snoop.ui.theme.TintPair
 
 /**
  * Pill chip in the approved mockup style: unselected = hairline border on surface, selected =
- * inverted fill (or the [tint] pair when the chip represents a colored channel).
+ * inverted fill (or the [tint] pair when the chip represents a colored channel). An [alert] chip
+ * keeps its [tint] while unselected, so it stands out before anyone picks it.
  */
 @Composable
 internal fun SnoopChip(
@@ -37,6 +41,8 @@ internal fun SnoopChip(
     modifier: Modifier = Modifier,
     tint: TintPair? = null,
     leadingDot: Color? = null,
+    leadingIcon: ImageVector? = null,
+    alert: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     val container = when {
@@ -47,11 +53,13 @@ internal fun SnoopChip(
     val content = when {
         selected && tint != null -> tint.content
         selected -> scheme.surface
+        alert && tint != null -> tint.content
         else -> scheme.onSurface
     }
     val border = when {
         selected && tint != null -> BorderStroke(2.dp, tint.content)
         selected -> null
+        alert && tint != null -> BorderStroke(1.dp, tint.content.copy(alpha = 0.45f))
         else -> BorderStroke(1.dp, scheme.outlineVariant)
     }
     Surface(
@@ -65,10 +73,15 @@ internal fun SnoopChip(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
         ) {
             leadingDot?.let { Box(Modifier.size(8.dp).clip(CircleShape).background(it)) }
-            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium)
+            leadingIcon?.let { Icon(it, contentDescription = null, modifier = Modifier.size(14.dp)) }
+            Text(
+                label,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
+                fontWeight = if (selected || alert) FontWeight.SemiBold else FontWeight.Normal,
+            )
         }
     }
 }
@@ -83,32 +96,33 @@ internal fun FilterChipBar(
     breaking: Int?,
     breaksPlan: Boolean,
     onBreaksPlan: () -> Unit,
+    grouped: Boolean?,
+    onGrouped: () -> Unit,
 ) {
     val colors = LocalSnoopColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(end = 16.dp),
+            .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TypeFilter.entries.forEach { option ->
+        @Composable
+        fun typeChip(option: TypeFilter) = SnoopChip(label = option.name, selected = type == option, onClick = { onType(option) })
+
+        typeChip(TypeFilter.All)
+        typeChip(TypeFilter.Analytics)
+        breaking?.let { count ->
             SnoopChip(
-                label = option.name,
-                selected = type == option,
-                onClick = { onType(option) },
+                label = "Breaks plan · $count",
+                selected = breaksPlan,
+                onClick = onBreaksPlan,
+                tint = colors.planBreaks.pill,
+                leadingIcon = SnoopIcons.Alert,
+                alert = true,
             )
-            // Right after All, where it's seen without scrolling the chips.
-            if (option == TypeFilter.All && breaking != null) {
-                SnoopChip(
-                    label = "Breaks plan · $breaking",
-                    selected = breaksPlan,
-                    onClick = onBreaksPlan,
-                    tint = colors.error,
-                    leadingDot = colors.error.content,
-                )
-            }
         }
+        typeChip(TypeFilter.Network)
         channels.forEach { name ->
             val tint = colors.channelTint(name)
             SnoopChip(
@@ -119,5 +133,6 @@ internal fun FilterChipBar(
                 leadingDot = tint.content,
             )
         }
+        grouped?.let { SnoopChip(label = "Group", selected = it, onClick = onGrouped) }
     }
 }

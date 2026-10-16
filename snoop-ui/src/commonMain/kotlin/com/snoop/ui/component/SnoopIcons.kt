@@ -67,8 +67,8 @@ internal object SnoopIcons {
     val Copy: ImageVector by lazy {
         outline(
             name = "Snoop.Copy",
-            d = roundedRect(9f, 9f, 11f, 11f, 2f) +
-                " M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1",
+            d = roundedRect(8f, 8f, 12f, 12f, 2f) +
+                " M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2",
         )
     }
 
@@ -99,8 +99,29 @@ internal object SnoopIcons {
         outline(name = "Snoop.Plan", strokeWidth = 1.8f, d = "M9 4h6l1 2h3v14H5V6h3z" + " M9 12l2 2 4-4")
     }
 
+    val Alert: ImageVector by lazy {
+        outline(name = "Snoop.Alert", strokeWidth = 2f, d = circle(12f, 12f, 9f) + " M12 8v5" + " M12 16.5v.5")
+    }
+
+    val Info: ImageVector by lazy {
+        outline(name = "Snoop.Info", strokeWidth = 1.8f, d = circle(12f, 12f, 9f) + " M12 11v5" + " M12 8v.5")
+    }
+
     val Clipboard: ImageVector by lazy {
-        outline(name = "Snoop.Clipboard", strokeWidth = 1.8f, d = "M9 4h6l1 2h3v14H5V6h3z")
+        outline(name = "Snoop.Clipboard", strokeWidth = 1.8f, d = roundedRect(7f, 4f, 10f, 4f, 1f) + " M7 6H5v14h14V6h-2")
+    }
+
+    /** The plan screen's larger mark: [Plan] with the clipboard's clip drawn in. */
+    val PlanBoard: ImageVector by lazy {
+        outline(name = "Snoop.PlanBoard", d = "M9 4h6l1 2h3v14H5V6h3z" + " M9 4v3h6V4" + " M9 12l2 2 4-4")
+    }
+
+    val BreaksCircle: ImageVector by lazy {
+        outline(name = "Snoop.BreaksCircle", strokeWidth = 2f, d = circle(12f, 12f, 9f) + " M9 9l6 6" + " M15 9l-6 6")
+    }
+
+    val MatchesCircle: ImageVector by lazy {
+        outline(name = "Snoop.MatchesCircle", strokeWidth = 2f, d = circle(12f, 12f, 9f) + " M8 12.5l2.8 2.8L16.5 9.5")
     }
 
     val Phone: ImageVector by lazy {

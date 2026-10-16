@@ -47,7 +47,6 @@ import com.snoop.ui.component.FilterChipBar
 import com.snoop.ui.component.NetworkRow
 import com.snoop.ui.component.PlanStrip
 import com.snoop.ui.component.SearchPill
-import com.snoop.ui.component.SnoopChip
 import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
@@ -105,24 +104,16 @@ internal fun TimelineTab(
         SearchPill(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp),
         )
         PlanStrip(
             plan = plan,
             breaking = breaking,
             matching = matching,
             onClick = onOpenPlan,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp),
         )
-        Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (groupable) {
-                SnoopChip(
-                    label = "Group",
-                    selected = grouped,
-                    onClick = { grouped = !grouped },
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-            }
+        Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             FilterChipBar(
                 type = filters.type,
                 channel = filters.channel,
@@ -133,18 +124,22 @@ internal fun TimelineTab(
                 breaking = breaking.takeIf { it > 0 || filters.breaksPlan },
                 breaksPlan = filters.breaksPlan,
                 onBreaksPlan = { filters = filters.toggleBreaksPlan() },
+                // Last, so the filters lead; only offered when something can open a group.
+                grouped = grouped.takeIf { groupable },
+                onGrouped = { grouped = !grouped },
             )
         }
+        // Hugs its rows, and scrolls them once they reach the bottom.
         Surface(
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier.fillMaxSize().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f, fill = groups.isEmpty()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         ) {
             if (groups.isEmpty()) {
                 EmptyState(entries.isEmpty())
             } else {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                LazyColumn(state = listState, modifier = Modifier.fillMaxWidth()) {
                     groups.forEach { (groupKey, group) ->
                         val isCollapsed = groupKey in collapsed.value
                         if (grouped && group.screen != null) {
@@ -163,7 +158,9 @@ internal fun TimelineTab(
                                         onClick = { onOpen(entry.id) },
                                     )
                                 }
-                                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                                if (entry !== group.entries.last() || groupKey != groups.last().first) {
+                                    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.surfaceVariant)
+                                }
                             }
                         }
                     }
@@ -179,9 +176,9 @@ private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -
     val calls = group.entries.count { it is NetworkTransaction }
     val rotation by animateFloatAsState(if (collapsed) 0f else 90f)
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
             imageVector = SnoopIcons.ChevronRight,
@@ -189,15 +186,9 @@ private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp).rotate(rotation),
         )
-        Icon(
-            imageVector = SnoopIcons.Phone,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(14.dp),
-        )
         Text(
             group.screen ?: "session",
-            style = MaterialTheme.typography.titleSmall.copy(fontSize = 13.sp, fontWeight = FontWeight.W600),
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, fontWeight = FontWeight.W600),
             modifier = Modifier.weight(1f),
         )
         Text(
@@ -210,7 +201,7 @@ private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -
             } else {
                 group.openedBy.orEmpty()
             },
-            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

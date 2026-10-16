@@ -3,6 +3,7 @@ package com.snoop.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +22,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,7 @@ import com.snoop.ui.internal.plainText
 import com.snoop.ui.internal.planCoverage
 import com.snoop.ui.theme.LocalSnoopColors
 import com.snoop.ui.theme.TintPair
+import com.snoop.ui.theme.VerdictColors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,19 +66,12 @@ import kotlinx.coroutines.withContext
 internal fun TrackingPlanScreen(entries: List<SnoopEntry>, onBack: () -> Unit) {
     val plan by SnoopCore.trackingPlan.collectAsState()
     var replacing by remember { mutableStateOf(false) }
-    DetailScaffold(
-        title = "Tracking plan",
-        subtitle = null,
-        onBack = onBack,
-    ) { modifier, _ ->
-        Column(
-            modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            val loaded = plan
-            if (loaded == null || replacing) {
-                PlanLoader(current = loaded, onLoaded = { replacing = false }, onCancel = { replacing = false })
-            } else {
+    DetailScaffold(title = "Tracking plan", subtitle = null, onBack = onBack) { modifier, _ ->
+        val loaded = plan
+        if (loaded == null || replacing) {
+            PlanLoader(modifier, current = loaded, onLoaded = { replacing = false }, onCancel = { replacing = false })
+        } else {
+            Column(modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
                 LoadedPlan(loaded, entries, onReplace = { replacing = true })
             }
         }
@@ -84,7 +79,7 @@ internal fun TrackingPlanScreen(entries: List<SnoopEntry>, onBack: () -> Unit) {
 }
 
 @Composable
-private fun PlanLoader(current: PlanSummary?, onLoaded: () -> Unit, onCancel: () -> Unit) {
+private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -> Unit, onCancel: () -> Unit) {
     val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
     var json by remember { mutableStateOf("") }
@@ -113,233 +108,259 @@ private fun PlanLoader(current: PlanSummary?, onLoaded: () -> Unit, onCancel: ()
     }
 
     val scheme = MaterialTheme.colorScheme
-    if (current == null) {
-        Column(
-            Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+    // The footer stays at the bottom, as on the design; only what is above it scrolls.
+    Column(modifier) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+            if (current == null) {
+                Column(
+                    Modifier.fillMaxWidth().padding(start = 32.dp, end = 32.dp, top = 40.dp, bottom = 28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Surface(color = scheme.surface, border = BorderStroke(1.dp, scheme.outlineVariant), shape = RoundedCornerShape(18.dp)) {
+                        Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                            Icon(SnoopIcons.PlanBoard, contentDescription = null, modifier = Modifier.size(32.dp))
+                        }
+                    }
+                    Text(
+                        "Check events against the plan",
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        "Load the analytics team's tracking plan and every event it defines, captured from then on, is " +
+                            "checked for missing or wrong parameters.",
+                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 21.sp),
+                        color = scheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            } else {
+                Box(Modifier.padding(horizontal = 16.dp)) {
+                    SectionLabel("Replace version ${current.version}", topPadding = 8.dp, bottomPadding = 12.dp)
+                }
+            }
+
+            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val pasted = clipboard.getClipEntry()?.plainText()
+                            if (pasted.isNullOrBlank()) error = "The clipboard has no text to paste." else load(pasted)
+                        }
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                ) {
+                    Icon(SnoopIcons.Clipboard, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Text(
+                        "Paste from clipboard",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 10.dp),
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    HorizontalDivider(Modifier.weight(1f), color = scheme.outlineVariant)
+                    Text("or paste it here", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                    HorizontalDivider(Modifier.weight(1f), color = scheme.outlineVariant)
+                }
+                PlanJsonField(json, isError = error != null) {
+                    json = it
+                    error = null
+                }
+                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = LocalSnoopColors.current.planBreaks.card.content) }
+                if (json.isNotBlank() || current != null) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                        if (current != null) TextButton(onClick = onCancel) { Text("Cancel", color = scheme.onSurface) }
+                        Button(
+                            onClick = { load(json) },
+                            enabled = json.isNotBlank(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
+                        ) { Text("Load plan", fontWeight = FontWeight.SemiBold) }
+                    }
+                }
+            }
+
             Surface(
                 color = scheme.surface,
                 border = BorderStroke(1.dp, scheme.outlineVariant),
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp),
             ) {
-                Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
-                    Icon(SnoopIcons.Plan, contentDescription = null, modifier = Modifier.size(28.dp))
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Testing on BrowserStack?", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        "Copy the plan's JSON on your computer, tap the field above and press ⌘V. The remote device receives what you paste.",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp, lineHeight = 19.sp),
+                        color = scheme.onSurfaceVariant,
+                    )
                 }
             }
-            Text("Check events against the plan", style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), fontWeight = FontWeight.SemiBold)
-            Text(
-                "Load the analytics team's tracking plan and every event it defines, captured from then on, is " +
-                    "checked for missing or wrong parameters.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = scheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
         }
-    } else {
-        SectionLabel("Replace version ${current.version}", topPadding = 0.dp, bottomPadding = 0.dp)
+        Text(
+            if (SnoopCore.storageDir != null) "The plan stays on this device until you clear it." else "The plan lasts until the app restarts.",
+            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
+            color = scheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 28.dp),
+        )
     }
+}
 
-    Button(
-        onClick = {
-            scope.launch {
-                val pasted = clipboard.getClipEntry()?.plainText()
-                if (pasted.isNullOrBlank()) error = "The clipboard has no text to paste." else load(pasted)
-            }
-        },
-        shape = RoundedCornerShape(14.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
-        modifier = Modifier.fillMaxWidth().height(52.dp),
-    ) {
-        Icon(SnoopIcons.Clipboard, contentDescription = null, modifier = Modifier.size(18.dp))
-        Text("Paste from clipboard", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 10.dp))
-    }
-
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        HorizontalDivider(Modifier.weight(1f), color = scheme.outlineVariant)
-        Text("or paste it here", style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
-        HorizontalDivider(Modifier.weight(1f), color = scheme.outlineVariant)
-    }
+@Composable
+private fun PlanJsonField(json: String, isError: Boolean, onChange: (String) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val mono = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp)
     OutlinedTextField(
         value = json,
-        onValueChange = {
-            json = it
-            error = null
-        },
-        placeholder = {
-            Text(
-                "{ \"version\": \"…\", \"events\": [ … ] }",
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
-            )
-        },
-        isError = error != null,
+        onValueChange = onChange,
+        placeholder = { Text("{ \"version\": \"…\", \"events\": [ … ] }", style = mono) },
+        isError = isError,
         shape = RoundedCornerShape(14.dp),
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = scheme.surface,
             focusedContainerColor = scheme.surface,
             errorContainerColor = scheme.surface,
             unfocusedBorderColor = scheme.outline,
+            focusedBorderColor = scheme.onSurface,
         ),
-        textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+        textStyle = mono,
         modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 240.dp),
-    )
-    error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = LocalSnoopColors.current.error.content) }
-    if (json.isNotBlank() || current != null) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-            if (current != null) TextButton(onClick = onCancel) { Text("Cancel", color = scheme.onSurface) }
-            Button(
-                onClick = { load(json) },
-                enabled = json.isNotBlank(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = scheme.onSurface, contentColor = scheme.surface),
-            ) { Text("Load plan", fontWeight = FontWeight.SemiBold) }
-        }
-    }
-
-    Surface(
-        color = scheme.surface,
-        border = BorderStroke(1.dp, scheme.outlineVariant),
-        shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-    ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Testing on BrowserStack?", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), fontWeight = FontWeight.SemiBold)
-            Text(
-                "Copy the plan's JSON on your computer, tap the field above and press ⌘V. The remote device receives what you paste.",
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                color = scheme.onSurfaceVariant,
-            )
-        }
-    }
-    Text(
-        if (SnoopCore.storageDir != null) "The plan stays on this device until you clear it." else "The plan lasts until the app restarts.",
-        style = MaterialTheme.typography.labelMedium,
-        color = scheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 12.dp),
     )
 }
 
 @Composable
 private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: () -> Unit) {
     val colors = LocalSnoopColors.current
+    val scheme = MaterialTheme.colorScheme
     val coverage = remember(plan, entries) { planCoverage(entries, plan) }
     val byVerdict = coverage.groupBy { it.verdict }
+    val notSeen = VerdictColors(
+        pill = TintPair(scheme.onSurfaceVariant, scheme.onSurfaceVariant),
+        card = TintPair(scheme.surface, scheme.onSurface),
+        border = scheme.outlineVariant,
+        muted = scheme.onSurfaceVariant,
+    )
     var showAllUnseen by remember { mutableStateOf(false) }
 
-    val scheme = MaterialTheme.colorScheme
     Surface(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outlineVariant),
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp),
     ) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(Modifier.weight(1f)) {
-                Text("Version ${plan.version}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                Text("${plan.events.size} events", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Version ${plan.version}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                Text("${plan.events.size} events", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
-            OutlinedButton(
-                onClick = onReplace,
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, scheme.outline),
-            ) { Text("Replace", color = scheme.onSurface, fontWeight = FontWeight.SemiBold) }
-            OutlinedButton(
-                onClick = { SnoopCore.clearTrackingPlan() },
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, colors.error.container),
-            ) { Text("Clear", color = colors.error.content, fontWeight = FontWeight.SemiBold) }
+            SmallOutlinedButton("Replace", scheme.onSurface, scheme.outline, onReplace)
+            SmallOutlinedButton("Clear", colors.planBreaks.pill.content, colors.planBreaks.border) { SnoopCore.clearTrackingPlan() }
         }
     }
 
-    SectionLabel("This session against the plan", topPadding = 8.dp, bottomPadding = 0.dp)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        CoverageCount(byVerdict[PlanVerdict.Breaks].orEmpty().size, "break it", colors.error, Modifier.weight(1f))
-        CoverageCount(byVerdict[PlanVerdict.Matches].orEmpty().size, "match it", colors.success, Modifier.weight(1f))
-        CoverageCount(
-            byVerdict[PlanVerdict.NotSeen].orEmpty().size,
-            "not seen yet",
-            TintPair(scheme.outlineVariant, scheme.onSurfaceVariant),
-            Modifier.weight(1f),
-        )
+    Box(Modifier.padding(horizontal = 16.dp)) {
+        SectionLabel("This session against the plan", topPadding = 20.dp, bottomPadding = 8.dp)
+    }
+    Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        CoverageCount(byVerdict[PlanVerdict.Breaks].orEmpty().size, "break it", colors.planBreaks, Modifier.weight(1f))
+        CoverageCount(byVerdict[PlanVerdict.Matches].orEmpty().size, "match it", colors.planMatches, Modifier.weight(1f))
+        CoverageCount(byVerdict[PlanVerdict.NotSeen].orEmpty().size, "not seen yet", notSeen, Modifier.weight(1f))
     }
 
     Surface(
         color = scheme.surface,
         border = BorderStroke(1.dp, scheme.outlineVariant),
         shape = RoundedCornerShape(14.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp),
     ) {
         Column {
-            byVerdict[PlanVerdict.Breaks]?.let { CoverageGroup("Breaks the plan", colors.error, it) }
-            byVerdict[PlanVerdict.Matches]?.let { CoverageGroup("Matches the plan", colors.success, it) }
+            var first = true
+            fun divided(): Boolean = (!first).also { first = false }
+            byVerdict[PlanVerdict.Breaks]?.let { CoverageGroup("Breaks the plan", colors.planBreaks.card.content, colors.error.content, it, divided()) }
+            byVerdict[PlanVerdict.Matches]?.let { CoverageGroup("Matches the plan", colors.planMatches.muted, colors.success.content, it, divided()) }
             byVerdict[PlanVerdict.NotSeen]?.let { unseen ->
                 val shown = if (showAllUnseen) unseen else unseen.take(UNSEEN_PREVIEW)
-                CoverageGroup("Not seen yet", colors.neutral, shown)
+                CoverageGroup("Not seen yet", scheme.onSurfaceVariant, null, shown, divided())
                 if (shown.size < unseen.size) {
-                    TextButton(onClick = { showAllUnseen = true }, modifier = Modifier.fillMaxWidth()) {
-                        Text("Show ${unseen.size - shown.size} more", color = scheme.onSurfaceVariant)
-                    }
+                    HorizontalDivider(thickness = 1.dp, color = scheme.surfaceVariant)
+                    Text(
+                        "Show ${unseen.size - shown.size} more",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                        color = scheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().clickable { showAllUnseen = true }.padding(10.dp),
+                    )
                 }
             }
         }
     }
     Text(
         "Events the plan doesn't define aren't checked.",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+        color = scheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
     )
 }
 
 private const val UNSEEN_PREVIEW = 3
 
 @Composable
-private fun CoverageCount(count: Int, label: String, tint: TintPair, modifier: Modifier) {
-    Surface(
-        color = tint.container.copy(alpha = 0.45f),
-        border = BorderStroke(1.dp, tint.container),
-        shape = RoundedCornerShape(12.dp),
-        modifier = modifier,
-    ) {
-        Column(Modifier.padding(12.dp)) {
-            Text("$count", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = tint.content)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = tint.content)
-        }
+private fun SmallOutlinedButton(label: String, content: Color, border: Color, onClick: () -> Unit) {
+    Surface(onClick = onClick, color = Color.Transparent, border = BorderStroke(1.dp, border), shape = RoundedCornerShape(10.dp)) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+            fontWeight = FontWeight.SemiBold,
+            color = content,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+        )
     }
 }
 
 @Composable
-private fun CoverageGroup(title: String, tint: TintPair, events: List<EventCoverage>) {
+private fun CoverageCount(count: Int, label: String, verdict: VerdictColors, modifier: Modifier) {
+    Surface(color = verdict.card.container, border = BorderStroke(1.dp, verdict.border), shape = RoundedCornerShape(12.dp), modifier = modifier) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("$count", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, color = verdict.card.content)
+            Text(label, style = MaterialTheme.typography.bodySmall, color = verdict.muted)
+        }
+    }
+}
+
+/** One verdict's events; a null [dot] draws the hollow mark of events not seen yet. */
+@Composable
+private fun CoverageGroup(title: String, titleColor: Color, dot: Color?, events: List<EventCoverage>, divided: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    if (divided) HorizontalDivider(thickness = 1.dp, color = scheme.surfaceVariant)
     Text(
         title,
-        style = MaterialTheme.typography.labelMedium,
+        style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.SemiBold,
-        color = tint.content,
-        modifier = Modifier.padding(start = 14.dp, top = 10.dp, bottom = 6.dp),
+        color = titleColor,
+        modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = if (divided) 12.dp else 10.dp, bottom = 6.dp),
     )
     events.forEach { coverage ->
-        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+        HorizontalDivider(thickness = 1.dp, color = scheme.surfaceVariant)
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            val dot = Modifier.size(8.dp).clip(CircleShape)
-            Box(
-                if (coverage.verdict == PlanVerdict.NotSeen) {
-                    dot.border(1.5.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                } else {
-                    dot.background(tint.content)
-                },
-            )
+            val mark = Modifier.size(8.dp).clip(CircleShape)
+            Box(if (dot != null) mark.background(dot) else mark.border(1.5.dp, scheme.outline, CircleShape))
             Text(
                 coverage.event.name,
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp),
+                color = if (dot != null) scheme.onSurface else scheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             Text(
@@ -348,8 +369,8 @@ private fun CoverageGroup(title: String, tint: TintPair, events: List<EventCover
                     PlanVerdict.Matches -> "${coverage.event.channel} · ${coverage.captured} seen"
                     PlanVerdict.NotSeen -> coverage.event.channel
                 },
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                color = scheme.onSurfaceVariant,
             )
         }
     }

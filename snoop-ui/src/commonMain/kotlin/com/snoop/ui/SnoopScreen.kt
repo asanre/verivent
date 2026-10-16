@@ -2,7 +2,6 @@ package com.snoop.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -110,13 +109,14 @@ private fun SnoopContent(onClose: (() -> Unit)?) {
             contentWindowInsets = WindowInsets(0),
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = if (onClose != null) 4.dp else 16.dp, end = 4.dp, top = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = if (onClose != null) 4.dp else 16.dp, end = 4.dp, top = 12.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     if (onClose != null) {
-                        IconButton(onClick = onClose) {
-                            Icon(SnoopIcons.Back, contentDescription = "Close inspector")
+                        IconButton(onClick = onClose, modifier = Modifier.padding(end = 2.dp).size(44.dp)) {
+                            Icon(SnoopIcons.Back, contentDescription = "Close inspector", modifier = Modifier.size(22.dp))
                         }
                     }
                     Text(
@@ -125,28 +125,33 @@ private fun SnoopContent(onClose: (() -> Unit)?) {
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
+                        modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp),
                     )
                     LiveDot(active = !paused && live.isNotEmpty())
                     Text(
                         "${entries.size}",
                         style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
                     Spacer(Modifier.weight(1f))
-                    IconButton(onClick = {
-                        if (!paused) frozen = live
-                        paused = !paused
-                    }) {
+                    IconButton(
+                        onClick = {
+                            if (!paused) frozen = live
+                            paused = !paused
+                        },
+                        modifier = Modifier.size(44.dp),
+                    ) {
                         Icon(
                             imageVector = if (paused) SnoopIcons.Play else SnoopIcons.Pause,
                             contentDescription = if (paused) "Resume" else "Pause",
+                            modifier = Modifier.size(20.dp),
                         )
                     }
-                    IconButton(onClick = { SnoopCore.store.clear() }) {
-                        Icon(SnoopIcons.Clear, contentDescription = "Clear")
+                    IconButton(onClick = { SnoopCore.store.clear() }, modifier = Modifier.size(44.dp)) {
+                        Icon(SnoopIcons.Clear, contentDescription = "Clear", modifier = Modifier.size(20.dp))
                     }
-                    IconButton(onClick = {
+                    IconButton(modifier = Modifier.size(44.dp), onClick = {
                         // Serialize off the main thread and cap before ClipData (binder ~1MB limit).
                         val snapshot = entries
                         scope.launch {
@@ -163,7 +168,7 @@ private fun SnoopContent(onClose: (() -> Unit)?) {
                             )
                         }
                     }) {
-                        Icon(SnoopIcons.Export, contentDescription = "Export as JSON")
+                        Icon(SnoopIcons.Export, contentDescription = "Export as JSON", modifier = Modifier.size(20.dp))
                     }
                 }
             },

@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun SearchPill(value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.height(40.dp),
+        modifier = modifier.height(44.dp),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -38,7 +38,7 @@ internal fun SearchPill(value: String, onValueChange: (String) -> Unit, modifier
                 imageVector = SnoopIcons.Search,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(16.dp),
             )
             Box(Modifier.weight(1f)) {
                 if (value.isEmpty()) {

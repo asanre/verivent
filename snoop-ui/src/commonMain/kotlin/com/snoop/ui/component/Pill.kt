@@ -23,7 +23,7 @@ internal fun Pill(text: String, tint: TintPair, modifier: Modifier = Modifier, m
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             style = MaterialTheme.typography.labelMedium.copy(
                 fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
             ),

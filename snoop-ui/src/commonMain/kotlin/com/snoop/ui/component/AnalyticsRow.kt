@@ -62,7 +62,7 @@ internal fun AnalyticsRow(
             )
             Text(
                 text = "${entry.properties.size} param${if (entry.properties.size == 1) "" else "s"}",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -78,8 +78,8 @@ private fun PlanBadge(entry: AnalyticsEntry) {
     val colors = LocalSnoopColors.current
     when {
         entry.breaksPlan -> Surface(
-            color = colors.error.container,
-            contentColor = colors.error.content,
+            color = colors.planBreaks.pill.container,
+            contentColor = colors.planBreaks.pill.content,
             shape = RoundedCornerShape(6.dp),
             modifier = Modifier.semantics(mergeDescendants = true) {
                 contentDescription = "Breaks the plan: ${problemCount(entry.issues.size)}"
@@ -88,7 +88,7 @@ private fun PlanBadge(entry: AnalyticsEntry) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
                 Icon(SnoopIcons.Close, contentDescription = null, modifier = Modifier.size(12.dp))
                 Text("${entry.issues.size}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
@@ -97,8 +97,8 @@ private fun PlanBadge(entry: AnalyticsEntry) {
         entry.matchesPlan -> Icon(
             SnoopIcons.Check,
             contentDescription = "Matches the plan",
-            tint = colors.success.content,
-            modifier = Modifier.size(16.dp),
+            tint = colors.planMatches.pill.content,
+            modifier = Modifier.size(18.dp),
         )
     }
 }

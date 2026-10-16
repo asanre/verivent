@@ -11,6 +11,13 @@ import com.snoop.core.model.NetworkTransaction
 internal data class TintPair(val container: Color, val content: Color)
 
 /**
+ * A tracking plan verdict: [pill] for marks and counts on the timeline, and the softer [card] fill,
+ * [border] and [muted] text around the verdict where it is explained.
+ */
+@Immutable
+internal data class VerdictColors(val pill: TintPair, val card: TintPair, val border: Color, val muted: Color)
+
+/**
  * Semantic colors the Material scheme has no role for: HTTP status, request methods, analytics
  * channels and JSON syntax. Explicit light/dark instances — alpha tints over pure hues wash out
  * in dark mode.
@@ -31,6 +38,8 @@ internal data class SnoopColors(
     val jsonKeyword: Color,
     val jsonPunctuation: Color,
     val liveDot: Color,
+    val planBreaks: VerdictColors,
+    val planMatches: VerdictColors,
 ) {
     fun methodTint(method: String): TintPair = when (method.uppercase()) {
         "GET" -> info
@@ -80,6 +89,18 @@ internal val SnoopLightColors = SnoopColors(
     jsonKeyword = Color(0xFF047857),
     jsonPunctuation = Color(0xFF6B7280),
     liveDot = Color(0xFF16A34A),
+    planBreaks = VerdictColors(
+        pill = TintPair(Color(0xFFFEE2E2), Color(0xFFB91C1C)),
+        card = TintPair(Color(0xFFFFF5F5), Color(0xFF991B1B)),
+        border = Color(0xFFFECACA),
+        muted = Color(0xFF7F1D1D),
+    ),
+    planMatches = VerdictColors(
+        pill = TintPair(Color(0xFFDCFCE7), Color(0xFF15803D)),
+        card = TintPair(Color(0xFFF0FDF4), Color(0xFF14532D)),
+        border = Color(0xFFBBF7D0),
+        muted = Color(0xFF166534),
+    ),
 )
 
 internal val SnoopDarkColors = SnoopColors(
@@ -105,6 +126,18 @@ internal val SnoopDarkColors = SnoopColors(
     jsonKeyword = Color(0xFF34D399),
     jsonPunctuation = Color(0xFF9AA0AA),
     liveDot = Color(0xFF22C55E),
+    planBreaks = VerdictColors(
+        pill = TintPair(Color(0xFF3A1A1A), Color(0xFFF87171)),
+        card = TintPair(Color(0xFF241313), Color(0xFFFCA5A5)),
+        border = Color(0xFF4C1D1D),
+        muted = Color(0xFFF87171),
+    ),
+    planMatches = VerdictColors(
+        pill = TintPair(Color(0xFF16321F), Color(0xFF4ADE80)),
+        card = TintPair(Color(0xFF0F2417), Color(0xFF86EFAC)),
+        border = Color(0xFF1E4D2B),
+        muted = Color(0xFF4ADE80),
+    ),
 )
 
 internal val LocalSnoopColors = staticCompositionLocalOf { SnoopLightColors }
