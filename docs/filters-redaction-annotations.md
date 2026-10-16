@@ -51,7 +51,7 @@ what `URLProtocol` cannot reach.
 | Option | Type | Effect |
 |---|---|---|
 | `filter { event -> Bool }` | additive | Keep an event only if every filter returns true. |
-| `sanitizeProperty { key -> Bool }` | additive | Redact matching property and user property values. |
+| `sanitizeProperty { key -> Bool }` | additive | Redact matching property values, in the event and in every extra parameter block. |
 | `annotate { event -> List<Annotation> }` | additive | Attach semantic badges. |
 | `groupBy(event, labelProperty)` | replaces | Which event opens a collapsible timeline group, and which property labels it. Defaults to `"screen_view"` / `"screen_name"`. |
 

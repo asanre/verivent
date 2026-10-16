@@ -55,6 +55,22 @@ so `String`, `Int`, `Double` and `Bool` all work.
 Redaction runs on the same engine as the Compose Multiplatform build — a matching key is replaced
 with a visible `██` rather than dropped.
 
+### Console lines and the tracking plan
+
+`Snoop.configure(logToConsole: true)` also writes each captured event as one JSON line to the
+unified log (`log stream --predicate 'eventMessage BEGINSWITH "SnoopEvent"'`). To check events
+against the analytics team's tracking plan, load it, and set a folder to keep it across launches:
+
+```swift
+Snoop.storageDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    .appendingPathComponent("snoop")
+try Snoop.loadTrackingPlan(planJSON)   // throws on an invalid plan; Snoop.clearTrackingPlan() removes it
+```
+
+The format and what the verdict means are in
+[the analytics integration guide](integration-analytics-facade.md#tracking-plan). Without the
+Compose inspector, paste the plan in the web viewer instead.
+
 ## Capture network traffic
 
 Install the interceptor on the `URLSessionConfiguration` your app builds its session from, and every

@@ -82,3 +82,74 @@ snoop.log(
 
 `properties` stays the event itself: it is what `filter`, `annotate` and `groupBy` see, and what
 *Raw* and *Copy payload* show. `sanitizeProperty` redacts every block too.
+
+## Console lines
+
+Turn on `logTo` and every captured event is also written as one JSON line, so whoever can't open
+the inspector (an agent driving the app, a CI log) still sees what was sent:
+
+```kotlin
+val snoop = SnoopAnalytics {
+    sanitizeProperty { it == "user_email" }
+    logTo()                                   // Logcat (tag SnoopEvent) / unified log on iOS
+    // logTo { Timber.tag("SnoopEvent").i(it) } to go through your own logging
+}
+```
+
+```text
+adb logcat -s SnoopEvent
+SnoopEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…]}
+```
+
+The line is the captured entry, the same JSON the web viewer receives, so redacted values stay
+redacted. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
+split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON back.
+
+## Tracking plan
+
+Load the analytics team's tracking plan and Snoop checks every event captured from then on against
+it. The plan defines each event per channel with a JSON Schema subset over its properties:
+
+```json
+{ "version": "1.4.0",
+  "events": [
+    { "name": "add_to_cart", "channel": "server-side",
+      "schema": { "required": ["list_scope", "item_id"],
+                  "properties": { "list_scope": { "enum": ["search", "catalog", "pdp"] },
+                                  "item_id":    { "type": "string", "pattern": "^[0-9]+$" } },
+                  "additionalProperties": false } } ] }
+```
+
+- Supported keywords: `required`, `properties` with `type` (one or a list), `enum` and `pattern`,
+  and `additionalProperties`, true when absent as in JSON Schema. Others are ignored. `pattern`
+  only applies to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
+- The check runs on the values you pass to `log`, before redaction, so types are the host's types.
+  `sections` are not checked.
+- An event that breaks the plan carries `issues`, shown as a badge, in the detail and in console
+  lines. Issues name the property and what was expected, never the value.
+- An event the plan doesn't define gets the `not in plan` annotation, not an issue: a partial plan
+  is expected while the catalog grows.
+- Like grouping, the verdict is stamped at capture. Loading or clearing a plan doesn't revisit
+  earlier events.
+
+Load it whichever way suits who is testing:
+
+| Who | How |
+|---|---|
+| Host code, tests | `SnoopCore.loadTrackingPlan(json)` / `clearTrackingPlan()`; throws `IllegalArgumentException` on an invalid plan and keeps the current one |
+| Someone on the device (BrowserStack included) | *Plan* in the inspector's top bar, then paste the JSON |
+| Someone on the web viewer | *No plan* / *Plan x.y* in the header: paste or pick a file |
+| An agent with `adb` | write the file below with `run-as`, then restart the app |
+
+To keep the plan across launches, give Snoop a directory; setting it loads the plan stored there:
+
+```kotlin
+SnoopCore.configure(storageDir = "${context.filesDir}/snoop")
+```
+
+```text
+adb shell "run-as <your.package> sh -c 'mkdir -p files/snoop && cat > files/snoop/tracking-plan.json'" < plan.json
+```
+
+`SnoopCore.trackingPlanVersion` is a `StateFlow` of the loaded plan's version, null when none.
+
