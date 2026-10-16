@@ -27,9 +27,9 @@ class TrackingPlanStorageTest {
         SnoopCore.loadTrackingPlan(plan)
 
         SnoopCore.reset() // what a restart leaves behind: nothing in memory
-        assertNull(SnoopCore.trackingPlanVersion.value)
+        assertNull(SnoopCore.trackingPlan.value)
         SnoopCore.configure(storageDir = "$dir/snoop")
-        assertEquals("3.0.0", SnoopCore.trackingPlanVersion.value)
+        assertEquals("3.0.0", SnoopCore.trackingPlan.value?.version)
     }
 
     @Test
@@ -44,6 +44,6 @@ class TrackingPlanStorageTest {
     fun aCorruptStoredPlanIsIgnored() {
         File(dir, "tracking-plan.json").writeText("{")
         SnoopCore.configure(storageDir = dir.path)
-        assertNull(SnoopCore.trackingPlanVersion.value)
+        assertNull(SnoopCore.trackingPlan.value)
     }
 }

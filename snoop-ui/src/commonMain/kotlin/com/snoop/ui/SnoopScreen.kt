@@ -90,7 +90,7 @@ private fun SnoopContent() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val planVersion by SnoopCore.trackingPlanVersion.collectAsState()
+    val planVersion = SnoopCore.trackingPlan.collectAsState().value?.version
     var planOpen by remember { mutableStateOf(false) }
 
     val selected = entries.firstOrNull { it.id == selectedId }

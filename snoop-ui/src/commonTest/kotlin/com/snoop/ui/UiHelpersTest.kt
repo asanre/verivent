@@ -4,6 +4,7 @@ import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.BodyPreview
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanIssue
 import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.internal.buildCurl
 import com.snoop.ui.internal.entriesToJsonCapped
@@ -170,7 +171,8 @@ class ExportJsonTest {
                 AnalyticsEntry(
                     "1", Instant.fromEpochMilliseconds(0), "search", "firebase",
                     sections = mapOf("User properties" to listOf(KeyValue("user_logged", "false"))),
-                    issues = listOf("missing required: search_term"),
+                    planVersion = "1.0.0",
+                    issues = listOf(PlanIssue("search_term", "Required, but not sent")),
                 ),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "view_item_list", "server-side"),
             ),
@@ -180,8 +182,11 @@ class ExportJsonTest {
         assertEquals("User properties", section.getValue("title").jsonPrimitive.content)
         assertEquals("false", section.getValue("properties").jsonObject.getValue("user_logged").jsonPrimitive.content)
         assertTrue("sections" !in without)
-        assertEquals("missing required: search_term", withSection.getValue("issues").jsonArray.single().jsonPrimitive.content)
+        val issue = withSection.getValue("issues").jsonArray.single().jsonObject
+        assertEquals("search_term", issue.getValue("property").jsonPrimitive.content)
+        assertEquals("1.0.0", withSection.getValue("planVersion").jsonPrimitive.content)
         assertTrue("issues" !in without)
+        assertTrue("planVersion" !in without)
     }
 
     @Test

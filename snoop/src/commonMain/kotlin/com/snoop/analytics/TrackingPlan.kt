@@ -1,5 +1,8 @@
 package com.snoop.analytics
 
+import com.snoop.core.model.PlanEvent
+import com.snoop.core.model.PlanIssue
+import com.snoop.core.model.PlanSummary
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -26,15 +29,14 @@ import kotlinx.serialization.json.doubleOrNull
  */
 internal class TrackingPlan private constructor(
     val version: String,
-    private val schemas: Map<EventKey, EventSchema>,
+    private val schemas: Map<PlanEvent, EventSchema>,
 ) {
 
-    /**
-     * What breaks the plan in this event, or null when the plan doesn't define it. Messages name the
-     * property and the expectation but never the value, which may be one the host redacts.
-     */
-    fun issuesFor(name: String, channel: String, properties: Map<String, Any?>): List<String>? =
-        schemas[EventKey(name, channel)]?.issuesFor(properties)
+    val summary = PlanSummary(version, schemas.keys.toList())
+
+    /** What breaks the plan in this event, or null when the plan doesn't define it. */
+    fun issuesFor(name: String, channel: String, properties: Map<String, Any?>): List<PlanIssue>? =
+        schemas[PlanEvent(name, channel)]?.issuesFor(properties)
 
     companion object {
         /** @throws IllegalArgumentException naming what is wrong with [json]. */
@@ -44,10 +46,10 @@ internal class TrackingPlan private constructor(
                 .asObject("the document")
             val version = root["version"].asString("version")
             val events = (root["events"] as? JsonArray) ?: invalid("events must be an array")
-            val schemas = mutableMapOf<EventKey, EventSchema>()
+            val schemas = mutableMapOf<PlanEvent, EventSchema>()
             events.forEachIndexed { index, element ->
                 val event = element.asObject("events[$index]")
-                val key = EventKey(event["name"].asString("events[$index].name"), event["channel"].asString("events[$index].channel"))
+                val key = PlanEvent(event["name"].asString("events[$index].name"), event["channel"].asString("events[$index].channel"))
                 require(key !in schemas) { "tracking plan: ${key.name} on ${key.channel} is defined twice" }
                 schemas[key] = EventSchema.parse(event["schema"].asObject("${key.name}.schema"), key.name)
             }
@@ -56,22 +58,20 @@ internal class TrackingPlan private constructor(
     }
 }
 
-private data class EventKey(val name: String, val channel: String)
-
 private class EventSchema(
     private val required: List<String>,
     private val properties: Map<String, PropertySchema>,
     private val additionalProperties: Boolean,
 ) {
 
-    fun issuesFor(values: Map<String, Any?>): List<String> = buildList {
-        required.filterNot { it in values }.forEach { add("missing required: $it") }
+    fun issuesFor(values: Map<String, Any?>): List<PlanIssue> = buildList {
+        required.filterNot { it in values }.forEach { add(PlanIssue(it, "Required, but not sent")) }
         values.forEach { (key, value) ->
             val schema = properties[key]
             if (schema == null) {
-                if (!additionalProperties) add("unexpected param: $key")
+                if (!additionalProperties) add(PlanIssue(key, "Not in the plan for this event"))
             } else {
-                schema.issueFor(value)?.let { add("$key: $it") }
+                schema.issueFor(value)?.let { add(PlanIssue(key, it)) }
             }
         }
     }
@@ -101,9 +101,11 @@ private class PropertySchema(
         val type = jsonType(value)
         return when {
             types.isNotEmpty() && types.none { type.satisfies(it, value) } ->
-                "expected ${types.joinToString(" or ")}, got $type"
-            allowed != null && allowed.none { it.matches(value) } -> "not one of the allowed values"
-            pattern != null && value is String && !pattern.containsMatchIn(value) -> "does not match the pattern"
+                "Expected ${types.joinToString(" or ")}, got $type"
+            allowed != null && allowed.none { it.matches(value) } ->
+                "Not an allowed value · expects ${allowed.map { it.content }.joinAsChoice()}"
+            pattern != null && value is String && !pattern.containsMatchIn(value) ->
+                "Doesn't match the pattern ${pattern.pattern}"
             else -> null
         }
     }
@@ -130,6 +132,10 @@ private class PropertySchema(
         )
     }
 }
+
+/** "a", "a or b", "a, b or c". */
+private fun List<String>.joinAsChoice(): String =
+    if (size < 2) joinToString() else dropLast(1).joinToString(", ") + " or " + last()
 
 private val JSON_TYPES = setOf("string", "integer", "number", "boolean", "null", "object", "array")
 

@@ -28,7 +28,7 @@ import com.snoop.ui.theme.LocalSnoopColors
  */
 @Composable
 internal fun TrackingPlanDialog(onDismiss: () -> Unit) {
-    val version by SnoopCore.trackingPlanVersion.collectAsState()
+    val version = SnoopCore.trackingPlan.collectAsState().value?.version
     var json by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     AlertDialog(

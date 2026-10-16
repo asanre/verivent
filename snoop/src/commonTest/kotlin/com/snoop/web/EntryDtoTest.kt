@@ -4,6 +4,7 @@ import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.BodyPreview
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanIssue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -89,16 +90,23 @@ class EntryDtoTest {
     }
 
     @Test
-    fun issuesAreSentOnlyWhenTheEventHasThem() {
+    fun planVerdictIsSentOnlyWhenThePlanChecksTheEvent() {
         val json = encodeEntries(
             listOf(
-                AnalyticsEntry("1", Instant.fromEpochMilliseconds(1000), "search", "firebase", issues = listOf("missing required: q")),
+                AnalyticsEntry(
+                    "1", Instant.fromEpochMilliseconds(1000), "search", "firebase",
+                    planVersion = "1.0.0", issues = listOf(PlanIssue("q", "Required, but not sent")),
+                ),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "search", "firebase"),
             ),
         )
         val (withIssues, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
-        assertEquals("missing required: q", withIssues.getValue("issues").jsonArray.single().jsonPrimitive.content)
+        assertEquals("1.0.0", withIssues.getValue("planVersion").jsonPrimitive.content)
+        val issue = withIssues.getValue("issues").jsonArray.single().jsonObject
+        assertEquals("q", issue.getValue("property").jsonPrimitive.content)
+        assertEquals("Required, but not sent", issue.getValue("message").jsonPrimitive.content)
         assertTrue("issues" !in without)
+        assertTrue("planVersion" !in without)
     }
 
     @Test

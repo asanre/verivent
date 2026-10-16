@@ -20,7 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.Annotation
 import com.snoop.ui.theme.LocalSnoopColors
 
 @Composable
@@ -77,6 +76,5 @@ private fun PlanBadge(entry: AnalyticsEntry) {
             "${entry.issues.size} issue${if (entry.issues.size == 1) "" else "s"}",
             colors.error,
         )
-        Annotation.NotInPlan in entry.annotations -> Pill(Annotation.NotInPlan.label, colors.neutral)
     }
 }

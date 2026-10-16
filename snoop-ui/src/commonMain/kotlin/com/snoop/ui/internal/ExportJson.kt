@@ -71,8 +71,16 @@ private fun SnoopEntry.toJson(): JsonObject = when (this) {
                 }
             }
         }
+        planVersion?.let { put("planVersion", it) }
         if (issues.isNotEmpty()) {
-            putJsonArray("issues") { issues.forEach { add(it) } }
+            putJsonArray("issues") {
+                issues.forEach { issue ->
+                    addJsonObject {
+                        put("property", issue.property)
+                        put("message", issue.message)
+                    }
+                }
+            }
         }
     }
 }

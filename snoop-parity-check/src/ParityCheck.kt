@@ -17,6 +17,9 @@ import com.snoop.core.model.BodyPreview
 import com.snoop.core.model.KeyValue
 import com.snoop.core.model.NetworkState
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanEvent
+import com.snoop.core.model.PlanIssue
+import com.snoop.core.model.PlanSummary
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.redaction.RedactionEngine
 import com.snoop.core.store.SnoopStore
@@ -52,7 +55,14 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     val storageDir: String? = SnoopCore.storageDir
     SnoopCore.loadTrackingPlan("{}")
     SnoopCore.clearTrackingPlan()
-    val planVersion: StateFlow<String?> = SnoopCore.trackingPlanVersion
+    val planFlow: StateFlow<PlanSummary?> = SnoopCore.trackingPlan
+    val plan: PlanSummary? = planFlow.value
+    val planVersion: String? = plan?.version
+    val planEvents: List<PlanEvent>? = plan?.events
+    val planEvent: PlanEvent = PlanEvent(name = "e", channel = "c")
+    val planEventName: String = planEvent.name
+    val planEventChannel: String = planEvent.channel
+    val summary: PlanSummary = PlanSummary(version = "1", events = listOf(planEvent))
     val title: String = SnoopCore.title
     val id: String = SnoopCore.nextId()
     val now: Instant = SnoopCore.now()
@@ -106,14 +116,17 @@ private fun model() {
             Annotation.Conversion,
             Annotation.Consent,
             Annotation.ScreenView,
-            Annotation.NotInPlan,
             Annotation("custom"),
         ),
         groupLabel = "Home",
         sections = mapOf("User properties" to listOf(kv)),
-        issues = listOf("missing required: k"),
+        planVersion = "1.0.0",
+        issues = listOf(PlanIssue(property = "k", message = "Required, but not sent")),
     )
-    val issues: List<String> = event.issues
+    val entryPlanVersion: String? = event.planVersion
+    val issues: List<PlanIssue> = event.issues
+    val issueProperty: String = issues.first().property
+    val issueMessage: String = issues.first().message
     val groupLabel: String? = event.groupLabel
     val sections: Map<String, List<KeyValue>> = event.sections
     val label: String = Annotation.Ecommerce.label

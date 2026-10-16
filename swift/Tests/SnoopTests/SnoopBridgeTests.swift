@@ -70,9 +70,11 @@ final class SnoopBridgeTests: XCTestCase {
         Snoop.log("plan_undefined", channel: "firebase")
 
         let search = try await fetchEntry(named: "plan_search")
-        XCTAssertEqual(search["issues"] as? [String], ["missing required: search_term"])
+        XCTAssertEqual(search["planVersion"] as? String, "1.0.0")
+        let issues = search["issues"] as? [[String: String]]
+        XCTAssertEqual(issues, [["property": "search_term", "message": "Required, but not sent"]])
         let undefined = try await fetchEntry(named: "plan_undefined")
-        XCTAssertEqual(undefined["annotations"] as? [String], ["not in plan"])
+        XCTAssertNil(undefined["planVersion"], "an event the plan doesn't define isn't checked")
     }
 
     /// Types are only checked on the values Kotlin receives, so this pins how Swift numbers and

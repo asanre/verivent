@@ -10,6 +10,5 @@ value class Annotation(val label: String) {
         val Conversion = Annotation("conversion")
         val Consent = Annotation("consent")
         val ScreenView = Annotation("screen")
-        val NotInPlan = Annotation("not in plan")
     }
 }

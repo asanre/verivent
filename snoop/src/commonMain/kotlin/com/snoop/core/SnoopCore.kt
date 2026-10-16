@@ -7,6 +7,7 @@ import com.snoop.core.internal.readTextFile
 import com.snoop.core.internal.writeTextFile
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanSummary
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.store.SnoopStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -100,13 +101,13 @@ object SnoopCore {
     // --- tracking plan ---
 
     @Volatile
-    internal var trackingPlan: TrackingPlan? = null
+    internal var activePlan: TrackingPlan? = null
         private set
 
-    private val loadedPlanVersion = MutableStateFlow<String?>(null)
+    private val loadedPlan = MutableStateFlow<PlanSummary?>(null)
 
-    /** Version of the loaded tracking plan, or null when none is loaded. */
-    val trackingPlanVersion: StateFlow<String?> = loadedPlanVersion.asStateFlow()
+    /** The loaded tracking plan's version and events, or null when none is loaded. */
+    val trackingPlan: StateFlow<PlanSummary?> = loadedPlan.asStateFlow()
 
     /**
      * Validate every analytics event captured from now on against this tracking plan, replacing the
@@ -131,8 +132,8 @@ object SnoopCore {
     }
 
     private fun install(plan: TrackingPlan?) {
-        trackingPlan = plan
-        loadedPlanVersion.value = plan?.version
+        activePlan = plan
+        loadedPlan.value = plan?.summary
     }
 
     // A directory without a stored plan leaves the current one alone: it may have just been loaded.

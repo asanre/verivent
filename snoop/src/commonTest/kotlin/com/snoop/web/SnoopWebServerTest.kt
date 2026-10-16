@@ -27,6 +27,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -102,7 +106,7 @@ class SnoopWebServerTest {
         assertTrue(SnoopCore.store.entries.value.isEmpty())
     }
 
-    private val plan = """{ "version": "4.2.0", "events": [] }"""
+    private val plan = """{ "version": "4.2.0", "events": [ { "name": "search", "channel": "firebase", "schema": {} } ] }"""
 
     @Test
     fun loadingAPlanNeedsTheSameGuardAsClear() = testApplication {
@@ -114,11 +118,11 @@ class SnoopWebServerTest {
             setBody(plan)
         }
         assertEquals(HttpStatusCode.Forbidden, foreign.status)
-        assertNull(SnoopCore.trackingPlanVersion.value)
+        assertNull(SnoopCore.trackingPlan.value)
     }
 
     @Test
-    fun aValidPlanLoadsAndReportsItsVersionAndClearRemovesIt() = testApplication {
+    fun aValidPlanLoadsAndReportsItsVersionAndEventsAndClearRemovesIt() = testApplication {
         application { snoopModule() }
         val loaded = client.post("/api/tracking-plan") {
             header("X-Snoop", "1")
@@ -126,10 +130,14 @@ class SnoopWebServerTest {
         }
         assertEquals(HttpStatusCode.OK, loaded.status)
         assertTrue("4.2.0" in loaded.bodyAsText())
-        assertTrue("4.2.0" in client.get("/api/tracking-plan").bodyAsText())
+        val status = Json.parseToJsonElement(client.get("/api/tracking-plan").bodyAsText()).jsonObject
+        assertEquals("4.2.0", status.getValue("version").jsonPrimitive.content)
+        val event = status.getValue("events").jsonArray.single().jsonObject
+        assertEquals("search", event.getValue("name").jsonPrimitive.content)
+        assertEquals("firebase", event.getValue("channel").jsonPrimitive.content)
 
         client.post("/api/tracking-plan/clear") { header("X-Snoop", "1") }
-        assertNull(SnoopCore.trackingPlanVersion.value)
+        assertNull(SnoopCore.trackingPlan.value)
     }
 
     @Test

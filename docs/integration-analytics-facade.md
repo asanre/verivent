@@ -125,10 +125,12 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
   only applies to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
 - The check runs on the values you pass to `log`, before redaction, so types are the host's types.
   `sections` are not checked.
-- An event that breaks the plan carries `issues`, shown as a badge, in the detail and in console
-  lines. Issues name the property and what was expected, never the value.
-- An event the plan doesn't define gets the `not in plan` annotation, not an issue: a partial plan
-  is expected while the catalog grows.
+- An event the plan defines carries `planVersion`, the version it was checked against, and
+  `issues`: one `PlanIssue(property, message)` per thing that breaks the plan, empty when it
+  matches. Messages state what the plan expects, never the value sent. Both reach the inspector,
+  the web viewer and console lines.
+- An event the plan doesn't define isn't checked: no `planVersion`, no issues. A partial plan is
+  expected while the catalog grows.
 - Like grouping, the verdict is stamped at capture. Loading or clearing a plan doesn't revisit
   earlier events.
 
@@ -151,5 +153,6 @@ SnoopCore.configure(storageDir = "${context.filesDir}/snoop")
 adb shell "run-as <your.package> sh -c 'mkdir -p files/snoop && cat > files/snoop/tracking-plan.json'" < plan.json
 ```
 
-`SnoopCore.trackingPlanVersion` is a `StateFlow` of the loaded plan's version, null when none.
+`SnoopCore.trackingPlan` is a `StateFlow` of the loaded plan's version and the events it defines,
+null when none.
 

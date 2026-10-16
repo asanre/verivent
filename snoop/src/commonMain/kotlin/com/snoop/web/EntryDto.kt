@@ -11,6 +11,9 @@ import kotlinx.serialization.json.Json
 @Serializable
 internal data class KvDto(val name: String, val value: String, val redacted: Boolean)
 
+@Serializable
+internal data class IssueDto(val property: String, val message: String)
+
 /** A list, not an object, so the order survives: JS reorders integer-like object keys. */
 @Serializable
 internal data class SectionDto(val title: String, val properties: List<KvDto>)
@@ -47,7 +50,8 @@ internal data class EntryDto(
     val properties: List<KvDto>? = null,
     val groupLabel: String? = null,
     val sections: List<SectionDto>? = null,
-    val issues: List<String>? = null,
+    val planVersion: String? = null,
+    val issues: List<IssueDto>? = null,
 )
 
 /**
@@ -95,7 +99,8 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         groupLabel = groupLabel,
         sections = sections.takeIf { it.isNotEmpty() }
             ?.map { (title, section) -> SectionDto(title, section.map { it.toDto() }) },
-        issues = issues.takeIf { it.isNotEmpty() },
+        planVersion = planVersion,
+        issues = issues.takeIf { it.isNotEmpty() }?.map { IssueDto(it.property, it.message) },
     )
 }
 

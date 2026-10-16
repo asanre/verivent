@@ -2,6 +2,7 @@ package com.snoop.core
 
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanSummary
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.store.SnoopStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +39,7 @@ object SnoopCore {
 
     fun recordAnalytics(entry: AnalyticsEntry) = Unit
 
-    val trackingPlanVersion: StateFlow<String?> = MutableStateFlow(null)
+    val trackingPlan: StateFlow<PlanSummary?> = MutableStateFlow(null)
 
     fun loadTrackingPlan(json: String) = Unit
 

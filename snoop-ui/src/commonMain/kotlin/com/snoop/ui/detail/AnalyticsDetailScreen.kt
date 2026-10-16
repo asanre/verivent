@@ -51,7 +51,6 @@ internal fun AnalyticsDetailScreen(
                 entry.annotations.forEach {
                     val annotationTint = when (it) {
                         Annotation.Ecommerce -> colors.ecom
-                        Annotation.NotInPlan -> colors.neutral
                         else -> tint
                     }
                     Pill(it.label, annotationTint)
@@ -64,7 +63,7 @@ internal fun AnalyticsDetailScreen(
                     SectionLabel("Tracking plan")
                     entry.issues.forEach {
                         Text(
-                            it,
+                            "${it.property}: ${it.message}",
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.error.content,
                             modifier = Modifier.padding(vertical = 2.dp),

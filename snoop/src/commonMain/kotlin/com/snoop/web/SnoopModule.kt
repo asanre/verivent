@@ -21,8 +21,10 @@ import io.ktor.server.sse.SSE
 import io.ktor.server.sse.sse
 import io.ktor.sse.ServerSentEvent
 import kotlinx.coroutines.delay
+import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 
 private const val TITLE_PLACEHOLDER = "@SNOOP_TITLE@"
 
@@ -42,8 +44,18 @@ private fun escapeHtml(text: String): String = buildString(text.length) {
 // Plans are a few hundred events at most; this only stops a runaway paste from filling memory.
 private const val MAX_PLAN_BYTES = 2 * 1024 * 1024
 
-private fun planStatus(): String =
-    buildJsonObject { put("version", SnoopCore.trackingPlanVersion.value) }.toString()
+private fun planStatus(): String = buildJsonObject {
+    val plan = SnoopCore.trackingPlan.value
+    put("version", plan?.version)
+    putJsonArray("events") {
+        plan?.events?.forEach { event ->
+            addJsonObject {
+                put("name", event.name)
+                put("channel", event.channel)
+            }
+        }
+    }
+}.toString()
 
 /**
  * CSRF guard for every state-changing route: the custom header forces a preflight this server

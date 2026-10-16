@@ -77,7 +77,7 @@ object SnoopEvents {
         set(value) = SnoopCore.configure(storageDir = value)
 
     /** Version of the loaded tracking plan, or null when none is loaded. */
-    val trackingPlanVersion: String? get() = SnoopCore.trackingPlanVersion.value
+    val trackingPlanVersion: String? get() = SnoopCore.trackingPlan.value?.version
 
     /** Validate events captured from now on against [json]; see `SnoopCore.loadTrackingPlan`. */
     @Throws(IllegalArgumentException::class)

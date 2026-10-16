@@ -23,10 +23,12 @@ data class AnalyticsEntry(
      */
     val sections: Map<String, List<KeyValue>> = emptyMap(),
     /**
-     * What breaks the loaded tracking plan in this event's properties, stamped at capture. Empty
-     * when it complies, or when no plan defines it — see [Annotation.NotInPlan].
+     * Version of the tracking plan this event was checked against, stamped at capture; null when no
+     * loaded plan defines it. With empty [issues] it means the event complies.
      */
-    val issues: List<String> = emptyList(),
+    val planVersion: String? = null,
+    /** What breaks the plan in this event's properties, stamped at capture alongside [planVersion]. */
+    val issues: List<PlanIssue> = emptyList(),
 ) : SnoopEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
@@ -37,7 +39,7 @@ data class AnalyticsEntry(
                 sections.entries.sumOf { (title, section) ->
                     title.length + section.sumOf { it.name.length + it.value.length }
                 } +
-                issues.sumOf { it.length }
+                (planVersion?.length ?: 0) + issues.sumOf { it.property.length + it.message.length }
             ).toLong()
     }
 }

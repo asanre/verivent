@@ -71,7 +71,7 @@ public enum Snoop {
     }
 
     /// Validate events captured from now on against the analytics team's tracking plan. Each event
-    /// then shows the issues it has, or a "not in plan" badge when the plan doesn't define it.
+    /// the plan defines then shows whether it matches it, and what breaks it when it doesn't.
     ///
     /// - Throws: when `json` isn't a valid tracking plan; the current plan stays in place.
     public static func loadTrackingPlan(_ json: String) throws {

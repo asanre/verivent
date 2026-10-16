@@ -1,5 +1,8 @@
 package com.snoop.analytics
 
+import com.snoop.core.model.PlanEvent
+import com.snoop.core.model.PlanIssue
+import com.snoop.core.model.PlanSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -16,7 +19,7 @@ class TrackingPlanTest {
     fun aCompliantEventHasNoIssues() {
         val plan = plan("""{ "required": ["search_term"], "properties": { "search_term": { "type": "string" } } }""")
         assertEquals(emptyList(), plan.issuesFor("search", "firebase", mapOf("search_term" to "shoes")))
-        assertEquals("1.0.0", plan.version)
+        assertEquals(PlanSummary("1.0.0", listOf(PlanEvent("search", "firebase"))), plan.summary)
     }
 
     @Test
@@ -30,7 +33,10 @@ class TrackingPlanTest {
     fun reportsMissingRequiredAndUnexpectedParams() {
         val plan = plan("""{ "required": ["search_term"], "properties": { "search_term": {} }, "additionalProperties": false }""")
         assertEquals(
-            listOf("missing required: search_term", "unexpected param: serch_term"),
+            listOf(
+                PlanIssue("search_term", "Required, but not sent"),
+                PlanIssue("serch_term", "Not in the plan for this event"),
+            ),
             plan.issuesFor("search", "firebase", mapOf("serch_term" to "shoes")),
         )
     }
@@ -44,8 +50,8 @@ class TrackingPlanTest {
     fun typeMismatchNamesTheTypesButNeverTheValue() {
         val plan = plan("""{ "properties": { "num_results": { "type": "integer" } } }""")
         val issue = plan.issuesFor("search", "firebase", mapOf("num_results" to "secret-42"))!!.single()
-        assertEquals("num_results: expected integer, got string", issue)
-        assertTrue("secret-42" !in issue)
+        assertEquals(PlanIssue("num_results", "Expected integer, got string"), issue)
+        assertTrue("secret-42" !in issue.message)
     }
 
     @Test
@@ -56,20 +62,23 @@ class TrackingPlanTest {
         assertEquals(emptyList(), integer.issuesFor("search", "firebase", mapOf("count" to 2.0)))
         assertEquals(emptyList(), integer.issuesFor("search", "firebase", mapOf("count" to null)))
         assertEquals(
-            listOf("count: expected integer or null, got number"),
+            listOf(PlanIssue("count", "Expected integer or null, got number")),
             integer.issuesFor("search", "firebase", mapOf("count" to 2.5)),
         )
     }
 
     @Test
-    fun enumAndPatternReportWithoutQuotingTheValue() {
+    fun enumAndPatternQuoteThePlanButNeverTheValue() {
         val plan = plan(
             """{ "properties": { "list_scope": { "enum": ["search", "catalog"] },
                                  "item_id": { "pattern": "^[0-9]+$" },
                                  "position": { "enum": [1, 2] } } }""",
         )
         assertEquals(
-            listOf("list_scope: not one of the allowed values", "item_id: does not match the pattern"),
+            listOf(
+                PlanIssue("list_scope", "Not an allowed value · expects search or catalog"),
+                PlanIssue("item_id", "Doesn't match the pattern ^[0-9]+$"),
+            ),
             plan.issuesFor("search", "firebase", mapOf("list_scope" to "pdp", "item_id" to "AB12", "position" to 2L)),
         )
     }

@@ -35,8 +35,6 @@ function applyFrame(frame){
 }
 
 var TOKEN=new URLSearchParams(location.search).get('t')||'';
-// Stamped by Snoop when a loaded plan doesn't define the event; Annotation.NotInPlan on the Kotlin side.
-var NOT_IN_PLAN='not in plan';
 function apiUrl(p){return TOKEN?p+(p.indexOf('?')<0?'?':'&')+'t='+encodeURIComponent(TOKEN):p;}
 
 var CHANNEL_LIGHT=[['#DBEAFE','#1D4ED8'],['#D1FAE5','#047857'],['#FEF3C7','#B45309'],['#FEE2E2','#B91C1C'],['#EDE9FE','#6D28D9'],['#FCE7F3','#BE185D'],['#CCFBF1','#0F766E']];
@@ -114,8 +112,7 @@ function rowHtml(e){
 
 function planPill(e){
   var n=(e.issues||[]).length;
-  if(n)return pill(n+(n===1?' issue':' issues'),tintStyle('err'),false);
-  return (e.annotations||[]).indexOf(NOT_IN_PLAN)>=0?pill(NOT_IN_PLAN,tintStyle('neu'),false):'';
+  return n?pill(n+(n===1?' issue':' issues'),tintStyle('err'),false):'';
 }
 
 function emptyStateHtml(title,sub){
@@ -371,7 +368,7 @@ function analyticsDetailHtml(e){
   h+="</div>";
   if((e.issues||[]).length){
     h+="<div class='pblock'><div class='section'>Tracking plan</div><div class='card issues' style='margin-top:8px'>";
-    e.issues.forEach(function(i){h+="<div class='issue'>"+esc(i)+"</div>";});
+    e.issues.forEach(function(i){h+="<div class='issue'>"+esc(i.property)+": "+esc(i.message)+"</div>";});
     h+="</div></div>";
   }
   h+=propertiesBlockHtml('Parameters',e.properties,rawParams,'setRawParams');
