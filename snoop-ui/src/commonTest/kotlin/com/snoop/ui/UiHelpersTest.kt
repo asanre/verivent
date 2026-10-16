@@ -164,12 +164,13 @@ class ExportJsonTest {
     }
 
     @Test
-    fun exportCarriesSectionsOnlyWhenPresent() {
+    fun exportCarriesSectionsAndIssuesOnlyWhenPresent() {
         val (json, _) = entriesToJsonCapped(
             listOf(
                 AnalyticsEntry(
                     "1", Instant.fromEpochMilliseconds(0), "search", "firebase",
                     sections = mapOf("User properties" to listOf(KeyValue("user_logged", "false"))),
+                    issues = listOf("missing required: search_term"),
                 ),
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "view_item_list", "server-side"),
             ),
@@ -179,6 +180,8 @@ class ExportJsonTest {
         assertEquals("User properties", section.getValue("title").jsonPrimitive.content)
         assertEquals("false", section.getValue("properties").jsonObject.getValue("user_logged").jsonPrimitive.content)
         assertTrue("sections" !in without)
+        assertEquals("missing required: search_term", withSection.getValue("issues").jsonArray.single().jsonPrimitive.content)
+        assertTrue("issues" !in without)
     }
 
     @Test
