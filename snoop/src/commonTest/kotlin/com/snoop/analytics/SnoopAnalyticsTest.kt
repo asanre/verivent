@@ -10,6 +10,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -164,5 +165,57 @@ class SnoopAnalyticsTest {
         SnoopCore.enabled = false
         SnoopAnalytics { logTo { lines += it } }.log("search", "firebase")
         assertTrue(lines.isEmpty())
+    }
+
+    private val searchPlan = """
+        { "version": "2.1.0", "events": [ { "name": "search", "channel": "firebase",
+          "schema": { "required": ["search_term"], "properties": { "user_id": { "type": "integer" } } } } ] }
+    """
+
+    @Test
+    fun aLoadedPlanStampsIssuesBeforeRedactionAndMarksUndefinedEvents() {
+        SnoopCore.loadTrackingPlan(searchPlan)
+        val lines = mutableListOf<String>()
+        val snoop = SnoopAnalytics {
+            sanitizeProperty { it == "user_id" }
+            logTo { lines += it }
+        }
+        snoop.log("search", "firebase", mapOf("user_id" to 42))
+        snoop.log("purchase", "firebase")
+
+        val (search, purchase) = entries()
+        assertEquals(listOf("missing required: search_term"), search.issues)
+        assertTrue(Annotation.NotInPlan !in search.annotations)
+        assertEquals(emptyList(), purchase.issues)
+        assertTrue(Annotation.NotInPlan in purchase.annotations)
+        assertTrue("missing required: search_term" in lines.first())
+    }
+
+    @Test
+    fun withoutAPlanNothingIsStamped() {
+        SnoopAnalytics().log("search", "firebase")
+        val entry = entries().single()
+        assertEquals(emptyList(), entry.issues)
+        assertTrue(Annotation.NotInPlan !in entry.annotations)
+    }
+
+    @Test
+    fun clearingThePlanStopsValidationButKeepsEarlierVerdicts() {
+        SnoopCore.loadTrackingPlan(searchPlan)
+        assertEquals("2.1.0", SnoopCore.trackingPlanVersion.value)
+        val snoop = SnoopAnalytics()
+        snoop.log("search", "firebase")
+        SnoopCore.clearTrackingPlan()
+        snoop.log("search", "firebase")
+
+        assertNull(SnoopCore.trackingPlanVersion.value)
+        assertEquals(listOf(1, 0), entries().map { it.issues.size })
+    }
+
+    @Test
+    fun anInvalidPlanThrowsAndLeavesTheCurrentOneInPlace() {
+        SnoopCore.loadTrackingPlan(searchPlan)
+        assertFailsWith<IllegalArgumentException> { SnoopCore.loadTrackingPlan("{}") }
+        assertEquals("2.1.0", SnoopCore.trackingPlanVersion.value)
     }
 }

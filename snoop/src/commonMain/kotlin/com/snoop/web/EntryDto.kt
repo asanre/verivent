@@ -47,6 +47,7 @@ internal data class EntryDto(
     val properties: List<KvDto>? = null,
     val groupLabel: String? = null,
     val sections: List<SectionDto>? = null,
+    val issues: List<String>? = null,
 )
 
 /**
@@ -94,6 +95,7 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
         groupLabel = groupLabel,
         sections = sections.takeIf { it.isNotEmpty() }
             ?.map { (title, section) -> SectionDto(title, section.map { it.toDto() }) },
+        issues = issues.takeIf { it.isNotEmpty() },
     )
 }
 

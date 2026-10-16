@@ -4,6 +4,7 @@ import com.snoop.core.SnoopCore
 import com.snoop.core.internal.SnoopLog
 import com.snoop.core.internal.runSafely
 import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.Annotation
 import com.snoop.core.model.KeyValue
 import com.snoop.core.redaction.RedactionEngine
 import com.snoop.web.encodeEntry
@@ -33,6 +34,11 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             }
             if (!visible) return@runSafely
 
+            // Checked before redaction because only the raw values still carry their types.
+            val plan = SnoopCore.trackingPlan
+            val issues = plan?.issuesFor(name, channel, properties)
+            val planAnnotations = if (plan != null && issues == null) listOf(Annotation.NotInPlan) else emptyList()
+
             // Labelled off the redacted list on purpose: a group must never surface a value the
             // host asked to hide, and the viewers already only ever read redacted properties.
             val redacted = redact(properties)
@@ -51,7 +57,9 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                             .onFailure { failure -> SnoopLog.warn(TAG, "annotator threw", failure) }
                             .getOrDefault(emptyList())
                     }
+                    .plus(planAnnotations)
                     .distinct(),
+                issues = issues.orEmpty(),
             )
             SnoopCore.recordAnalytics(entry)
             config.lineLogger?.let { logger -> writeLines(entry, logger) }

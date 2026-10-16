@@ -14,5 +14,8 @@ value class Annotation(val label: String) {
         val Conversion = Annotation("conversion")
         val Consent = Annotation("consent")
         val ScreenView = Annotation("screen")
+
+        /** Stamped by Snoop itself when a tracking plan is loaded and doesn't define the event. */
+        val NotInPlan = Annotation("not in plan")
     }
 }

@@ -47,6 +47,12 @@ private fun snoopCore(txn: NetworkTransaction, event: AnalyticsEntry) {
     SnoopCore.configure(capacity = 100)
     SnoopCore.configure(capacity = 100, maxTotalBytes = 1_000L)
     SnoopCore.configure(title = "Patata Inspector")
+    SnoopCore.configure(storageDir = "/data/snoop")
+    SnoopCore.configure(storageDir = null)
+    val storageDir: String? = SnoopCore.storageDir
+    SnoopCore.loadTrackingPlan("{}")
+    SnoopCore.clearTrackingPlan()
+    val planVersion: StateFlow<String?> = SnoopCore.trackingPlanVersion
     val title: String = SnoopCore.title
     val id: String = SnoopCore.nextId()
     val now: Instant = SnoopCore.now()
@@ -100,11 +106,14 @@ private fun model() {
             Annotation.Conversion,
             Annotation.Consent,
             Annotation.ScreenView,
+            Annotation.NotInPlan,
             Annotation("custom"),
         ),
         groupLabel = "Home",
         sections = mapOf("User properties" to listOf(kv)),
+        issues = listOf("missing required: k"),
     )
+    val issues: List<String> = event.issues
     val groupLabel: String? = event.groupLabel
     val sections: Map<String, List<KeyValue>> = event.sections
     val label: String = Annotation.Ecommerce.label

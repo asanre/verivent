@@ -22,6 +22,11 @@ data class AnalyticsEntry(
      * blocks are never stored.
      */
     val sections: Map<String, List<KeyValue>> = emptyMap(),
+    /**
+     * What breaks the loaded tracking plan in this event's properties, stamped at capture. Empty
+     * when it complies, or when no plan defines it — see [Annotation.NotInPlan].
+     */
+    val issues: List<String> = emptyList(),
 ) : SnoopEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
@@ -31,7 +36,8 @@ data class AnalyticsEntry(
                 properties.sumOf { it.name.length + it.value.length } +
                 sections.entries.sumOf { (title, section) ->
                     title.length + section.sumOf { it.name.length + it.value.length }
-                }
+                } +
+                issues.sumOf { it.length }
             ).toLong()
     }
 }

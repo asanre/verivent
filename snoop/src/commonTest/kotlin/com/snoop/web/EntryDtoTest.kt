@@ -89,6 +89,19 @@ class EntryDtoTest {
     }
 
     @Test
+    fun issuesAreSentOnlyWhenTheEventHasThem() {
+        val json = encodeEntries(
+            listOf(
+                AnalyticsEntry("1", Instant.fromEpochMilliseconds(1000), "search", "firebase", issues = listOf("missing required: q")),
+                AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "search", "firebase"),
+            ),
+        )
+        val (withIssues, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertEquals("missing required: q", withIssues.getValue("issues").jsonArray.single().jsonPrimitive.content)
+        assertTrue("issues" !in without)
+    }
+
+    @Test
     fun anEmptyFrameStillCarriesBothKeys() {
         val frame = Json.parseToJsonElement(encodeFrame(emptyList(), emptyList())).jsonObject
         assertTrue(frame.getValue("ids").jsonArray.isEmpty())

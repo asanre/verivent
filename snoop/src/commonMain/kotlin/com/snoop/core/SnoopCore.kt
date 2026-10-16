@@ -1,9 +1,17 @@
 package com.snoop.core
 
+import com.snoop.analytics.TrackingPlan
+import com.snoop.core.internal.SnoopLog
+import com.snoop.core.internal.deleteFile
+import com.snoop.core.internal.readTextFile
+import com.snoop.core.internal.writeTextFile
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.SnoopEntry
 import com.snoop.core.store.SnoopStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -39,19 +47,32 @@ object SnoopCore {
         private set
 
     /**
-     * Reconfigure the store limits and the name the viewers show. Changing the limits clears
-     * existing entries — set them before traffic starts; changing the title leaves the store alone.
-     * The store and its StateFlow survive, so already-attached collectors (Compose UI, SSE) keep
-     * working. [reset] restores the defaults.
+     * Directory where Snoop keeps what must survive a restart (today, the tracking plan). Null keeps
+     * everything in memory for the life of the process.
+     */
+    var storageDir: String? = null
+        private set
+
+    /**
+     * Reconfigure the store limits, the name the viewers show and the [storageDir]. Changing the
+     * limits clears existing entries — set them before traffic starts; changing the title leaves the
+     * store alone. The store and its StateFlow survive, so already-attached collectors (Compose UI,
+     * SSE) keep working. Setting a [storageDir] that holds a tracking plan loads it. [reset]
+     * restores the defaults.
      */
     fun configure(
         capacity: Int = store.capacity,
         maxTotalBytes: Long = store.maxTotalBytes,
         title: String = this.title,
+        storageDir: String? = this.storageDir,
     ) {
         this.title = title
         if (capacity != store.capacity || maxTotalBytes != store.maxTotalBytes) {
             store.reconfigure(capacity = capacity, maxTotalBytes = maxTotalBytes)
+        }
+        if (storageDir != this.storageDir) {
+            this.storageDir = storageDir
+            restoreTrackingPlan()
         }
     }
 
@@ -76,15 +97,67 @@ object SnoopCore {
         if (enabled) store.record(entry)
     }
 
+    // --- tracking plan ---
+
+    @Volatile
+    internal var trackingPlan: TrackingPlan? = null
+        private set
+
+    private val loadedPlanVersion = MutableStateFlow<String?>(null)
+
+    /** Version of the loaded tracking plan, or null when none is loaded. */
+    val trackingPlanVersion: StateFlow<String?> = loadedPlanVersion.asStateFlow()
+
+    /**
+     * Validate every analytics event captured from now on against this tracking plan, replacing the
+     * current one, and keep it in [storageDir] when there is one. Events captured earlier keep the
+     * verdict they were stamped with. The format is described in the analytics integration docs.
+     *
+     * @throws IllegalArgumentException when [json] isn't a valid tracking plan; nothing changes then.
+     */
+    fun loadTrackingPlan(json: String) {
+        val plan = TrackingPlan.parse(json)
+        install(plan)
+        planFile()?.let { path ->
+            runCatching { writeTextFile(path, json) }
+                .onFailure { SnoopLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
+        }
+    }
+
+    /** Stop validating, and forget the plan kept in [storageDir]. */
+    fun clearTrackingPlan() {
+        install(null)
+        planFile()?.let { path -> runCatching { deleteFile(path) } }
+    }
+
+    private fun install(plan: TrackingPlan?) {
+        trackingPlan = plan
+        loadedPlanVersion.value = plan?.version
+    }
+
+    // A directory without a stored plan leaves the current one alone: it may have just been loaded.
+    private fun restoreTrackingPlan() {
+        val json = planFile()?.let { path -> runCatching { readTextFile(path) }.getOrNull() } ?: return
+        runCatching { TrackingPlan.parse(json) }
+            .onSuccess(::install)
+            .onFailure { failure -> SnoopLog.warn(TAG, "ignoring the stored tracking plan", failure) }
+    }
+
+    private fun planFile(): String? = storageDir?.let { "${it.trimEnd('/')}/$PLAN_FILE" }
+
     /** Test/utility hook to reset all state. */
     fun reset() {
         idCounter.store(0)
         store.clear()
         enabled = true
         title = DEFAULT_TITLE
+        storageDir = null
+        install(null)
     }
 
     private const val DEFAULT_TITLE = "Snoop"
+    private const val PLAN_FILE = "tracking-plan.json"
+    private const val TAG = "core"
 
     val entriesSnapshot: List<SnoopEntry> get() = store.entries.value
 }

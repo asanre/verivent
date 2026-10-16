@@ -12,4 +12,5 @@ data class AnalyticsEntry(
     val annotations: List<Annotation> = emptyList(),
     val groupLabel: String? = null,
     val sections: Map<String, List<KeyValue>> = emptyMap(),
+    val issues: List<String> = emptyList(),
 ) : SnoopEntry
