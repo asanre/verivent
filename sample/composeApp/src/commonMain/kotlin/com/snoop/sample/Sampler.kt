@@ -27,6 +27,7 @@ class Sampler {
         filter { !it.name.startsWith("debug_") }
         sanitizeProperty { it == "user_email" }
         annotate { if (it.name in ecommerce) listOf(Annotation.Ecommerce) else emptyList() }
+        logTo()
     }
 
     suspend fun getSuccess() {
