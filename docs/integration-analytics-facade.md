@@ -139,7 +139,7 @@ Load it whichever way suits who is testing:
 | Who | How |
 |---|---|
 | Host code, tests | `SnoopCore.loadTrackingPlan(json)` / `clearTrackingPlan()`; throws `IllegalArgumentException` on an invalid plan and keeps the current one |
-| Someone on the device (BrowserStack included) | *Plan* in the inspector's top bar, then paste the JSON |
+| Someone on the device (BrowserStack included) | the plan strip under the inspector's search, then *Paste from clipboard* or paste in the field |
 | Someone on the web viewer | *No plan* / *Plan x.y* in the header: paste or pick a file |
 | An agent with `adb` | write the file below with `run-as`, then restart the app |
 

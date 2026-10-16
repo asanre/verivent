@@ -87,6 +87,22 @@ internal object SnoopIcons {
         )
     }
 
+    val Close: ImageVector by lazy {
+        outline(name = "Snoop.Close", strokeWidth = 2.4f, d = "M6 6l12 12" + " M18 6L6 18")
+    }
+
+    val Check: ImageVector by lazy {
+        outline(name = "Snoop.Check", strokeWidth = 2.2f, d = "M5 12.5l4.5 4.5L19 7.5")
+    }
+
+    val Plan: ImageVector by lazy {
+        outline(name = "Snoop.Plan", strokeWidth = 1.8f, d = "M9 4h6l1 2h3v14H5V6h3z" + " M9 12l2 2 4-4")
+    }
+
+    val Clipboard: ImageVector by lazy {
+        outline(name = "Snoop.Clipboard", strokeWidth = 1.8f, d = "M9 4h6l1 2h3v14H5V6h3z")
+    }
+
     val Phone: ImageVector by lazy {
         outline(
             name = "Snoop.Phone",

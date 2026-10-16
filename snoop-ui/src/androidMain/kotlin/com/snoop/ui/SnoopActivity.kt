@@ -12,6 +12,6 @@ class SnoopActivity : ComponentActivity() {
         // the inspector looks the same on every API level. SnoopScreen insets its own content.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContent { SnoopScreen() }
+        setContent { SnoopScreen(onClose = ::finish) }
     }
 }

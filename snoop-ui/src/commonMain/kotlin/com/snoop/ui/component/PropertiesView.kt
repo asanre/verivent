@@ -14,15 +14,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.KeyValue
+import com.snoop.core.model.PlanIssue
 import com.snoop.ui.internal.prettyPrintJson
 import com.snoop.ui.internal.propertiesToJson
 
 /**
  * Analytics parameters viewer. Pretty = one key-value row per top-level property (nested values
- * stay as compact JSON in the cell), Raw = the whole payload as indented JSON.
+ * stay as compact JSON in the cell), Raw = the whole payload as indented JSON. In Pretty, [issues]
+ * mark the properties that break the tracking plan and add the required ones that weren't sent.
  */
 @Composable
-internal fun PropertiesView(properties: List<KeyValue>, label: String) {
+internal fun PropertiesView(properties: List<KeyValue>, label: String, issues: List<PlanIssue> = emptyList()) {
     var showRaw by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxWidth()) {
@@ -48,7 +50,10 @@ internal fun PropertiesView(properties: List<KeyValue>, label: String) {
             }
         } else {
             SectionCard(modifier = Modifier.padding(top = 8.dp)) {
-                properties.forEach { KeyValueRow(it, valueAlignEnd = true) }
+                val issueFor = issues.associate { it.property to it.message }
+                properties.forEach { KeyValueRow(it, valueAlignEnd = true, issue = issueFor[it.name]) }
+                val sent = properties.mapTo(HashSet()) { it.name }
+                issues.filter { it.property !in sent }.forEach { MissingPropertyRow(it.property) }
             }
         }
     }

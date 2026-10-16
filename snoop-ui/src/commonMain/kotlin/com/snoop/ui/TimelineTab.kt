@@ -40,10 +40,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanSummary
 import com.snoop.core.model.SnoopEntry
 import com.snoop.ui.component.AnalyticsRow
 import com.snoop.ui.component.FilterChipBar
 import com.snoop.ui.component.NetworkRow
+import com.snoop.ui.component.PlanStrip
 import com.snoop.ui.component.SearchPill
 import com.snoop.ui.component.SnoopChip
 import com.snoop.ui.component.SnoopIcons
@@ -51,14 +53,18 @@ import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TimelineGroup
 import com.snoop.ui.internal.TimelineUiState
 import com.snoop.ui.internal.TypeFilter
+import com.snoop.ui.internal.breaksPlan
 import com.snoop.ui.internal.groupEntries
 import com.snoop.ui.internal.matchesFilters
+import com.snoop.ui.internal.matchesPlan
 import com.snoop.ui.internal.stableKey
 
 @Composable
 internal fun TimelineTab(
     entries: List<SnoopEntry>,
+    plan: PlanSummary?,
     onOpen: (String) -> Unit,
+    onOpenPlan: () -> Unit,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
     var filters by TimelineUiState.filters
@@ -73,11 +79,16 @@ internal fun TimelineTab(
     val groupable = remember(entries) {
         entries.any { it is AnalyticsEntry && it.groupLabel != null }
     }
+    val events = remember(entries) { entries.filterIsInstance<AnalyticsEntry>() }
+    val breaking = events.count { it.breaksPlan }
+    val matching = events.count { it.matchesPlan }
     // Group over all entries so screen headers survive filters that hide the opening event.
     val groups = remember(entries, grouped, filters, query) {
         groupEntries(entries, grouped)
             .mapNotNull { group ->
-                val shown = group.entries.filter { matchesFilters(it, filters.type, filters.channel, query) }
+                val shown = group.entries.filter {
+                    matchesFilters(it, filters.type, filters.channel, query, filters.breaksPlan)
+                }
                 if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
             }
     }
@@ -96,6 +107,13 @@ internal fun TimelineTab(
             onValueChange = { query = it },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
+        PlanStrip(
+            plan = plan,
+            breaking = breaking,
+            matching = matching,
+            onClick = onOpenPlan,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        )
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             if (groupable) {
                 SnoopChip(
@@ -111,6 +129,10 @@ internal fun TimelineTab(
                 channels = channels,
                 onType = { filters = filters.selectType(it) },
                 onChannel = { filters = filters.selectChannel(it) },
+                // Offered while there is something to show, so a filter left on never hides everything.
+                breaking = breaking.takeIf { it > 0 || filters.breaksPlan },
+                breaksPlan = filters.breaksPlan,
+                onBreaksPlan = { filters = filters.toggleBreaksPlan() },
             )
         }
         Surface(

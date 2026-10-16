@@ -22,7 +22,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,6 +40,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.snoop.core.SnoopCore
@@ -60,17 +60,18 @@ import kotlinx.coroutines.withContext
 
 /**
  * The whole Snoop inspector as one embeddable composable. Host it anywhere (a screen, a bottom
- * sheet, a dedicated Activity). Reads straight from the shared [SnoopCore] store.
+ * sheet, a dedicated Activity). Reads straight from the shared [SnoopCore] store. With [onClose],
+ * the top bar shows a back button that calls it.
  */
 @Composable
-fun SnoopScreen(modifier: Modifier = Modifier) {
+fun SnoopScreen(modifier: Modifier = Modifier, onClose: (() -> Unit)? = null) {
     SnoopTheme {
         Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             // The one place insets are applied: the Surface stays edge to edge so the background
             // paints behind the bars, and only the content moves in. `windowInsetsPadding` is
             // consumption-aware, so a host that already inset us adds nothing on top.
             Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) {
-                SnoopContent()
+                SnoopContent(onClose)
             }
         }
     }
@@ -78,7 +79,7 @@ fun SnoopScreen(modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun SnoopContent() {
+private fun SnoopContent(onClose: (() -> Unit)?) {
     val live by SnoopCore.store.entries.collectAsState()
     var paused by remember { mutableStateOf(false) }
     var frozen by remember { mutableStateOf<List<SnoopEntry>>(emptyList()) }
@@ -90,11 +91,13 @@ private fun SnoopContent() {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val planVersion = SnoopCore.trackingPlan.collectAsState().value?.version
-    var planOpen by remember { mutableStateOf(false) }
+    val plan by SnoopCore.trackingPlan.collectAsState()
+    var planOpen by rememberSaveable { mutableStateOf(false) }
 
     val selected = entries.firstOrNull { it.id == selectedId }
-    BackHandler(enabled = selected != null) { selectedId = null }
+    BackHandler(enabled = selected != null || planOpen) {
+        if (selected != null) selectedId = null else planOpen = false
+    }
 
     // The detail overlays the timeline instead of replacing it, so TimelineTab never leaves
     // composition and query/filters/collapsed groups/scroll survive opening an entry.
@@ -107,20 +110,22 @@ private fun SnoopContent() {
             contentWindowInsets = WindowInsets(0),
             topBar = {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = if (onClose != null) 4.dp else 16.dp, end = 4.dp, top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Icon(
-                        imageVector = SnoopIcons.LogoMark,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.size(22.dp),
-                    )
+                    if (onClose != null) {
+                        IconButton(onClick = onClose) {
+                            Icon(SnoopIcons.Back, contentDescription = "Close inspector")
+                        }
+                    }
                     Text(
                         SnoopCore.title,
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp),
+                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     LiveDot(active = !paused && live.isNotEmpty())
                     Text(
@@ -129,9 +134,6 @@ private fun SnoopContent() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = { planOpen = true }) {
-                        Text(planVersion?.let { "Plan $it" } ?: "Plan", maxLines = 1)
-                    }
                     IconButton(onClick = {
                         if (!paused) frozen = live
                         paused = !paused
@@ -169,12 +171,12 @@ private fun SnoopContent() {
         ) { padding ->
             // The detail overlays this and swallows touches, but TalkBack and keyboard focus would
             // still walk the timeline underneath it.
-            val hidden = if (selected != null) Modifier.clearAndSetSemantics {} else Modifier
+            val hidden = if (selected != null || planOpen) Modifier.clearAndSetSemantics {} else Modifier
             Box(Modifier.padding(padding).then(hidden)) {
-                TimelineTab(entries, onOpen = { selectedId = it })
+                TimelineTab(entries, plan, onOpen = { selectedId = it }, onOpenPlan = { planOpen = true })
             }
         }
-        if (planOpen) TrackingPlanDialog(onDismiss = { planOpen = false })
+        if (planOpen) TrackingPlanScreen(entries, onBack = { planOpen = false })
         when (selected) {
             null -> Unit
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })

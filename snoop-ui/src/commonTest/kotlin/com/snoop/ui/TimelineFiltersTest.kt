@@ -1,6 +1,8 @@
 package com.snoop.ui
 
+import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
+import com.snoop.core.model.PlanIssue
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.matchesFilters
@@ -45,6 +47,23 @@ class TimelineFiltersTest {
     fun switchingChannelReplacesSelection() {
         val filters = TimelineFilters(TypeFilter.Analytics, "firebase").selectChannel("amplitude")
         assertEquals("amplitude", filters.channel)
+    }
+
+    @Test
+    fun breaksPlanForcesAnalyticsTypeAndNetworkClearsIt() {
+        val filters = TimelineFilters(TypeFilter.Network).toggleBreaksPlan()
+        assertEquals(TypeFilter.Analytics, filters.type)
+        assertTrue(filters.breaksPlan)
+        assertFalse(filters.selectType(TypeFilter.Network).breaksPlan)
+    }
+
+    @Test
+    fun breaksPlanKeepsOnlyEventsWithIssues() {
+        fun event(issues: List<PlanIssue>) =
+            AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "search", "firebase", planVersion = "1", issues = issues)
+        val breaking = event(listOf(PlanIssue("q", "Required, but not sent")))
+        assertTrue(matchesFilters(breaking, TypeFilter.Analytics, null, "", breaksPlan = true))
+        assertFalse(matchesFilters(event(emptyList()), TypeFilter.Analytics, null, "", breaksPlan = true))
     }
 }
 

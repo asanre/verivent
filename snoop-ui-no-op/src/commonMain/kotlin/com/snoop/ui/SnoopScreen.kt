@@ -5,4 +5,4 @@ import androidx.compose.ui.Modifier
 
 /** No-op mirror of `snoop-ui` for release builds: the inspector renders nothing. */
 @Composable
-fun SnoopScreen(modifier: Modifier = Modifier) = Unit
+fun SnoopScreen(modifier: Modifier = Modifier, onClose: (() -> Unit)? = null) = Unit

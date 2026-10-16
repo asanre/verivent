@@ -7,27 +7,32 @@ import com.snoop.core.model.SnoopEntry
 internal enum class TypeFilter { All, Network, Analytics }
 
 /**
- * Type and channel selection for the timeline. Channels only exist on analytics entries, so the
- * two selections are kept mutually consistent: picking a channel forces the Analytics type, and
- * picking Network drops any channel.
+ * Type, channel and plan selection for the timeline. Channels and plan verdicts only exist on
+ * analytics entries, so the selections are kept mutually consistent: picking a channel or "breaks
+ * plan" forces the Analytics type, and picking Network drops both.
  */
 internal data class TimelineFilters(
     val type: TypeFilter = TypeFilter.All,
     val channel: String? = null,
+    val breaksPlan: Boolean = false,
 ) {
     fun selectType(newType: TypeFilter): TimelineFilters =
-        copy(type = newType, channel = if (newType == TypeFilter.Network) null else channel)
+        if (newType == TypeFilter.Network) TimelineFilters(newType) else copy(type = newType)
 
     fun selectChannel(name: String): TimelineFilters =
-        if (channel == name) copy(channel = null) else TimelineFilters(TypeFilter.Analytics, name)
+        if (channel == name) copy(channel = null) else copy(type = TypeFilter.Analytics, channel = name)
+
+    fun toggleBreaksPlan(): TimelineFilters =
+        if (breaksPlan) copy(breaksPlan = false) else copy(type = TypeFilter.Analytics, breaksPlan = true)
 }
 
-/** Whether [entry] survives the current type/channel selection and free-text [query]. */
+/** Whether [entry] survives the current type/channel/plan selection and free-text [query]. */
 internal fun matchesFilters(
     entry: SnoopEntry,
     type: TypeFilter,
     channel: String?,
     query: String,
+    breaksPlan: Boolean = false,
 ): Boolean {
     val typeOk = when (type) {
         TypeFilter.All -> true
@@ -36,6 +41,7 @@ internal fun matchesFilters(
     }
     if (!typeOk) return false
     if (channel != null && !(entry is AnalyticsEntry && entry.channel == channel)) return false
+    if (breaksPlan && !entry.breaksPlan) return false
     if (query.isBlank()) return true
     val q = query.trim().lowercase()
     return when (entry) {

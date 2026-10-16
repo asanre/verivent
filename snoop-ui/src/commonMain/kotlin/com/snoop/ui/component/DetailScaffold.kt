@@ -49,7 +49,7 @@ internal fun SnoopToast(data: SnackbarData) {
 @Composable
 internal fun DetailScaffold(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     onBack: () -> Unit,
     actions: @Composable RowScope.(showMessage: (String) -> Unit) -> Unit = {},
     content: @Composable (modifier: Modifier, showMessage: (String) -> Unit) -> Unit,
@@ -79,13 +79,15 @@ internal fun DetailScaffold(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    subtitle?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
                 actions(showMessage)
             }

@@ -30,8 +30,9 @@ internal fun presentInspector() {
 
     // A host whose own UI is SwiftUI may never have set CADisableMinimumFrameDurationOnPhone, and
     // the strict check would crash it the first time the inspector opens.
-    val inspector = ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
-        SnoopScreen()
+    lateinit var inspector: UIViewController
+    inspector = ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
+        SnoopScreen(onClose = { inspector.dismissViewControllerAnimated(true, completion = null) })
     }
     inspector.modalPresentationStyle = UIModalPresentationPageSheet
     presented = WeakReference(inspector)

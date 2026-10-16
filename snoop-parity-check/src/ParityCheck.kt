@@ -234,4 +234,6 @@ private fun androidEntryPoints(context: Context) {
 private fun screen() {
     SnoopScreen()
     SnoopScreen(modifier = Modifier)
+    SnoopScreen(onClose = {})
+    SnoopScreen(modifier = Modifier, onClose = null)
 }

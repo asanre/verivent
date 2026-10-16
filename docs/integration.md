@@ -17,7 +17,12 @@ SnoopScreen()
 
 // or sized by a modifier:
 SnoopScreen(modifier = Modifier.fillMaxSize())
+
+// with a back button in the top bar that leaves the inspector:
+SnoopScreen(onClose = { navController.popBackStack() })
 ```
+
+`Snoop.open()` and the notification already pass `onClose`, so their inspector closes itself.
 
 `SnoopScreen` insets its own content against the status bar, the navigation bar, display cutouts and
 the keyboard, while painting its background edge to edge behind them — so it looks right whether or

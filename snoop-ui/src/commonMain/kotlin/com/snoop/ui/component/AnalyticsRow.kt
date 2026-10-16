@@ -16,10 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
+import com.snoop.ui.internal.breaksPlan
+import com.snoop.ui.internal.matchesPlan
+import com.snoop.ui.internal.problemCount
 import com.snoop.ui.theme.LocalSnoopColors
 
 @Composable
@@ -72,9 +77,28 @@ internal fun AnalyticsRow(
 private fun PlanBadge(entry: AnalyticsEntry) {
     val colors = LocalSnoopColors.current
     when {
-        entry.issues.isNotEmpty() -> Pill(
-            "${entry.issues.size} issue${if (entry.issues.size == 1) "" else "s"}",
-            colors.error,
+        entry.breaksPlan -> Surface(
+            color = colors.error.container,
+            contentColor = colors.error.content,
+            shape = RoundedCornerShape(6.dp),
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = "Breaks the plan: ${problemCount(entry.issues.size)}"
+            },
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            ) {
+                Icon(SnoopIcons.Close, contentDescription = null, modifier = Modifier.size(12.dp))
+                Text("${entry.issues.size}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        entry.matchesPlan -> Icon(
+            SnoopIcons.Check,
+            contentDescription = "Matches the plan",
+            tint = colors.success.content,
+            modifier = Modifier.size(16.dp),
         )
     }
 }

@@ -80,6 +80,9 @@ internal fun FilterChipBar(
     channels: List<String>,
     onType: (TypeFilter) -> Unit,
     onChannel: (String) -> Unit,
+    breaking: Int?,
+    breaksPlan: Boolean,
+    onBreaksPlan: () -> Unit,
 ) {
     val colors = LocalSnoopColors.current
     Row(
@@ -95,6 +98,16 @@ internal fun FilterChipBar(
                 selected = type == option,
                 onClick = { onType(option) },
             )
+            // Right after All, where it's seen without scrolling the chips.
+            if (option == TypeFilter.All && breaking != null) {
+                SnoopChip(
+                    label = "Breaks plan · $breaking",
+                    selected = breaksPlan,
+                    onClick = onBreaksPlan,
+                    tint = colors.error,
+                    leadingDot = colors.error.content,
+                )
+            }
         }
         channels.forEach { name ->
             val tint = colors.channelTint(name)
