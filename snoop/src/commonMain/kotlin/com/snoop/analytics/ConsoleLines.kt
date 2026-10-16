@@ -16,8 +16,14 @@ internal fun consoleLines(id: String, json: String, maxBytes: Int): List<String>
     var bytes = 0
     var index = 0
     while (index < json.length) {
-        val width = if (json[index].isHighSurrogate() && index + 1 < json.length) 2 else 1
-        val size = json.substring(index, index + width).utf8Size()
+        val char = json[index]
+        val width = if (char.isHighSurrogate() && index + 1 < json.length) 2 else 1
+        val size = when {
+            width == 2 -> 4
+            char.code < 0x80 -> 1
+            char.code < 0x800 -> 2
+            else -> 3
+        }
         if (bytes + size > budget) {
             pieces += json.substring(start, index)
             start = index

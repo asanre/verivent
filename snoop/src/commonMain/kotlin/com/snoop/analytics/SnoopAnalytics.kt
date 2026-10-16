@@ -37,7 +37,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
             // Checked before redaction because only the raw values still carry their types.
             val plan = SnoopCore.trackingPlan
             val issues = plan?.issuesFor(name, channel, properties)
-            val planAnnotations = if (plan != null && issues == null) listOf(Annotation.NotInPlan) else emptyList()
+            val notInPlan = plan != null && issues == null
 
             // Labelled off the redacted list on purpose: a group must never surface a value the
             // host asked to hide, and the viewers already only ever read redacted properties.
@@ -57,7 +57,7 @@ class SnoopAnalytics internal constructor(private val config: SnoopAnalyticsConf
                             .onFailure { failure -> SnoopLog.warn(TAG, "annotator threw", failure) }
                             .getOrDefault(emptyList())
                     }
-                    .plus(planAnnotations)
+                    .let { if (notInPlan) it + Annotation.NotInPlan else it }
                     .distinct(),
                 issues = issues.orEmpty(),
             )
