@@ -83,7 +83,10 @@ private class EventSchema(
                 .map { it.asString("$event.required") },
             properties = schema["properties"]?.asObject("$event.properties").orEmpty()
                 .mapValues { (key, value) -> PropertySchema.parse(value.asObject("$event.$key"), "$event.$key") },
-            additionalProperties = (schema["additionalProperties"] as? JsonPrimitive)?.booleanOrNull ?: true,
+            additionalProperties = schema["additionalProperties"]?.let { flag ->
+                (flag as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull
+                    ?: invalid("$event.additionalProperties must be true or false")
+            } ?: true,
         )
     }
 }
@@ -109,8 +112,12 @@ private class PropertySchema(
         fun parse(schema: JsonObject, path: String): PropertySchema = PropertySchema(
             types = when (val type = schema["type"]) {
                 null -> emptyList()
-                is JsonArray -> type.map { it.asString("$path.type") }
-                else -> listOf(type.asString("$path.type"))
+                is JsonArray -> type.toList()
+                else -> listOf(type)
+            }.map { element ->
+                element.asString("$path.type").also {
+                    require(it in JSON_TYPES) { "tracking plan: $path.type '$it' is not one of $JSON_TYPES" }
+                }
             },
             allowed = schema["enum"]?.let { values ->
                 (values as? JsonArray)?.map { it as? JsonPrimitive ?: invalid("$path.enum must hold plain values") }
@@ -123,6 +130,8 @@ private class PropertySchema(
         )
     }
 }
+
+private val JSON_TYPES = setOf("string", "integer", "number", "boolean", "null", "object", "array")
 
 /** The JSON Schema type name of a value the host passed, used in messages instead of the value. */
 private fun jsonType(value: Any?): String = when (value) {

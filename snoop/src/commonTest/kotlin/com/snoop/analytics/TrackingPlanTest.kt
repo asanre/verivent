@@ -90,6 +90,14 @@ class TrackingPlanTest {
             """{ "version": "1", "events": [ { "name": "a", "channel": "c", "schema": {} },
                                              { "name": "a", "channel": "c", "schema": {} } ] }""",
         ))
+        assertTrue("interger" in reason(
+            """{ "version": "1", "events": [ { "name": "a", "channel": "c",
+                 "schema": { "properties": { "p": { "type": "interger" } } } } ] }""",
+        ))
+        assertTrue("additionalProperties" in reason(
+            """{ "version": "1", "events": [ { "name": "a", "channel": "c",
+                 "schema": { "additionalProperties": "false" } } ] }""",
+        ))
         assertTrue("pattern" in reason(
             """{ "version": "1", "events": [ { "name": "a", "channel": "c",
                  "schema": { "properties": { "p": { "pattern": "[" } } } } ] }""",
