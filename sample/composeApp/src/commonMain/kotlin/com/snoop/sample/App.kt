@@ -57,6 +57,7 @@ fun SampleApp() {
         Wide("Log purchase (ecommerce)") { sampler.logPurchase() }
         Wide("Log server-side (gtm)") { sampler.logServerSide() }
         Wide("Flush events to collector") { scope.launch { runCatching { sampler.flushToCollector() } } }
+        Wide("Load sample tracking plan") { sampler.loadTrackingPlan() }
 
         Section("Inspector")
         Wide("Open Snoop (embedded)") { showInspector = true }

@@ -1,6 +1,7 @@
 package com.snoop.sample
 
 import com.snoop.analytics.SnoopAnalytics
+import com.snoop.core.SnoopCore
 import com.snoop.core.model.Annotation
 import com.snoop.ktor.Snoop
 import io.ktor.client.HttpClient
@@ -70,6 +71,12 @@ class Sampler {
     }
 
     /**
+     * A plan these demo events partly break: screen_view sends a screen it doesn't list, purchase
+     * misses transaction_id and sends user_email, the gtm events match, and the rest aren't logged.
+     */
+    fun loadTrackingPlan() = SnoopCore.loadTrackingPlan(SAMPLE_PLAN)
+
+    /**
      * Log a batch of events and immediately flush them to a collector endpoint — the shape a
      * client-side GTM/GA4 setup produces. The demo endpoint answers 404; the timeline shows the
      * two events followed by the flush call.
@@ -83,3 +90,24 @@ class Sampler {
         }.bodyAsText()
     }
 }
+
+private val SAMPLE_PLAN = """
+{ "version": "0.1.0", "events": [
+  { "name": "screen_view", "channel": "firebase",
+    "schema": { "required": ["screen_name"],
+                "properties": { "screen_name": { "type": "string", "enum": ["search", "catalog", "pdp"] } } } },
+  { "name": "purchase", "channel": "firebase",
+    "schema": { "required": ["value", "currency", "transaction_id"],
+                "properties": { "value": { "type": "number" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" } },
+                "additionalProperties": false } },
+  { "name": "add_to_cart", "channel": "gtm",
+    "schema": { "required": ["item"], "properties": { "item": { "type": "string", "pattern": "^SN-[0-9]+$" } } } },
+  { "name": "checkout_started", "channel": "gtm",
+    "schema": { "required": ["cart_size"], "properties": { "cart_size": { "type": "integer" } } } },
+  { "name": "view_item_list", "channel": "firebase", "schema": {} },
+  { "name": "view_item", "channel": "firebase", "schema": {} },
+  { "name": "begin_checkout", "channel": "server-side", "schema": {} },
+  { "name": "add_payment_info", "channel": "server-side", "schema": {} },
+  { "name": "refund", "channel": "firebase", "schema": {} }
+] }
+"""
