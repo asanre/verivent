@@ -55,6 +55,26 @@ final class SnoopBridgeTests: XCTestCase {
         XCTAssertFalse(names.contains("debug_ping"), "a filtered event must never reach the store")
     }
 
+    func testTrackingPlanStampsIssuesAndRejectsAnInvalidPlan() async throws {
+        Snoop.configure()
+        try Snoop.loadTrackingPlan("""
+        { "version": "1.0.0", "events": [ { "name": "plan_search", "channel": "firebase",
+          "schema": { "required": ["search_term"] } } ] }
+        """)
+        defer { Snoop.clearTrackingPlan() }
+        XCTAssertEqual(Snoop.trackingPlanVersion, "1.0.0")
+        XCTAssertThrowsError(try Snoop.loadTrackingPlan("{}"))
+        XCTAssertEqual(Snoop.trackingPlanVersion, "1.0.0", "a rejected plan leaves the current one in place")
+
+        Snoop.log("plan_search", channel: "firebase")
+        Snoop.log("plan_undefined", channel: "firebase")
+
+        let search = try await fetchEntry(named: "plan_search")
+        XCTAssertEqual(search["issues"] as? [String], ["missing required: search_term"])
+        let undefined = try await fetchEntry(named: "plan_undefined")
+        XCTAssertEqual(undefined["annotations"] as? [String], ["not in plan"])
+    }
+
     // MARK: - Helpers
 
     private func fetchEntry(named name: String) async throws -> [String: Any] {

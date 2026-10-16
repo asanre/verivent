@@ -33,11 +33,14 @@ public enum Snoop {
     ///     Applied as events are captured, so it does not regroup what was captured before.
     ///   - groupLabelProperty: property of that event whose value labels the group. When `nil`, or
     ///     absent from the event, the group is labelled with the event's own name.
+    ///   - logToConsole: also write each captured event as one JSON line to the unified log
+    ///     (`log stream --predicate 'eventMessage BEGINSWITH "SnoopEvent"'`), already redacted.
     public static func configure(
         keepEvent: ((Event) -> Bool)? = nil,
         redactProperty: ((String) -> Bool)? = nil,
         groupByEvent: String? = SnoopEvents.shared.groupByEvent,
-        groupLabelProperty: String? = SnoopEvents.shared.groupLabelProperty
+        groupLabelProperty: String? = SnoopEvents.shared.groupLabelProperty,
+        logToConsole: Bool = SnoopEvents.shared.logToConsole
     ) {
         SnoopEvents.shared.configure(
             keepEvent: keepEvent.map { predicate in
@@ -47,7 +50,8 @@ public enum Snoop {
                 { key in KotlinBoolean(bool: predicate(key)) }
             },
             groupByEvent: groupByEvent,
-            groupLabelProperty: groupLabelProperty
+            groupLabelProperty: groupLabelProperty,
+            logToConsole: logToConsole
         )
     }
 
@@ -55,6 +59,31 @@ public enum Snoop {
     public static func log(_ name: String, channel: String, properties: [String: Any] = [:]) {
         SnoopEvents.shared.log(name: name, channel: channel, properties: properties)
     }
+
+    // MARK: - Tracking plan
+
+    /// Where the loaded tracking plan is kept across launches, for example a folder in Application
+    /// Support. `nil` keeps it in memory for the life of the process. Setting a folder that already
+    /// holds a plan loads it.
+    public static var storageDirectory: URL? {
+        get { SnoopEvents.shared.storageDir.map { URL(fileURLWithPath: $0) } }
+        set { SnoopEvents.shared.storageDir = newValue?.path }
+    }
+
+    /// Validate events captured from now on against the analytics team's tracking plan. Each event
+    /// then shows the issues it has, or a "not in plan" badge when the plan doesn't define it.
+    ///
+    /// - Throws: when `json` isn't a valid tracking plan; the current plan stays in place.
+    public static func loadTrackingPlan(_ json: String) throws {
+        try SnoopEvents.shared.loadTrackingPlan(json: json)
+    }
+
+    public static func clearTrackingPlan() {
+        SnoopEvents.shared.clearTrackingPlan()
+    }
+
+    /// Version of the loaded tracking plan, or `nil` when none is loaded.
+    public static var trackingPlanVersion: String? { SnoopEvents.shared.trackingPlanVersion }
 
     // MARK: - Web viewer
 
