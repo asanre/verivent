@@ -1,4 +1,4 @@
-var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,rawSections={},toastTimer=null,unreachable=false;
+var entries=[],byId=Object.create(null),latest=null,paused=false,typeFilter='all',channelFilter=null,breaksFilter=false,search='',selectedId=null,collapsedGroups={},openHeaders={},detailTab='overview',rawBody=false,rawParams=false,rawSections={},openSections={},toastTimer=null,unreachable=false,plan=null,planOpen=false,showAllUnseen=false,shownSummary=null;
 
 // Detail rendering looks entries up by id on every SSE frame; index once per frame instead of
 // scanning the list per lookup. Null-prototype map so a captured id can't reach Object.prototype.
@@ -48,12 +48,16 @@ var ICONS={
   chevron:{d:'<path d="M9 6l6 6-6 6"></path>',w:1.6},
   clear:{d:'<path d="M4 7h16"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12"></path>',w:1.6},
   export:{d:'<path d="M12 4v11"></path><path d="M8 11l4 4 4-4"></path><path d="M5 20h14"></path>',w:1.6},
-  copy:{d:'<rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>',w:1.6},
-  phone:{d:'<rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M11 18h2"></path>',w:1.6},
+  copy:{d:'<rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>',w:1.6},
   bars:{d:'<path d="M5 20V11"></path><path d="M12 20V4"></path><path d="M19 20v-6"></path>',w:1.6},
   pause:{d:'<rect x="6" y="5" width="4" height="14" rx="1.3"></rect><rect x="14" y="5" width="4" height="14" rx="1.3"></rect>',fill:true},
   play:{d:'<path d="M7 5l12 7-12 7z"></path>',fill:true},
-  close:{d:'<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path>',w:1.6}
+  close:{d:'<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path>',w:1.6},
+  back:{d:'<path d="M15 5l-7 7 7 7"></path>',w:1.8},
+  check:{d:'<path d="M5 12.5l4.5 4.5L19 7.5"></path>',w:2.2},
+  plan:{d:'<path d="M9 4h6l1 2h3v14H5V6h3z"></path><path d="M9 12l2 2 4-4"></path>',w:1.8},
+  alert:{d:'<circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5v.5"></path>',w:2},
+  upload:{d:'<path d="M12 16V5"></path><path d="M7 10l5-5 5 5"></path><path d="M5 19h14"></path>',w:1.6}
 };
 function icon(name,size){
   var ic=ICONS[name];
@@ -81,6 +85,7 @@ function pill(text,style,mono){return "<span class='pill"+(mono?' mono':'')+"' s
 function matches(e){
   if(typeFilter!=='all'&&e.type!==typeFilter)return false;
   if(channelFilter&&e.channel!==channelFilter)return false;
+  if(breaksFilter&&!breaksPlan(e))return false;
   if(search){
     var q=search.toLowerCase();
     var hay=e.type==='network'?((e.url||'')+' '+(e.host||'')+' '+(e.method||'')):((e.name||'')+' '+(e.channel||''));
@@ -105,14 +110,23 @@ function rowHtml(e){
     "<span class='time mono'>"+clock(e.ts)+"</span>"+
     "<div class='abox' style='"+chanStyle(pair)+"'>"+icon('bars',16)+"</div>"+
     "<div class='grow'><div class='title'>"+esc(e.name)+"</div><div class='sub'>"+sub+"</div></div>"+
-    planPill(e)+
+    planMark(e)+
     pill(e.channel,chanStyle(pair),false)+
     "</div>";
 }
 
-function planPill(e){
+// Only the loaded plan's verdicts are shown: one stamped by a plan since cleared or replaced stays in
+// the entry, for the export, but no longer counts.
+function checkedBy(e){return !!plan&&e.planVersion===plan.version;}
+function breaksPlan(e){return checkedBy(e)&&(e.issues||[]).length>0;}
+function problems(n){return n===1?'1 problem':n+' problems';}
+var BREAKS_PILL='background:var(--breaks-pill-bg);color:var(--breaks-pill-fg)';
+// ✕ n when the loaded plan found problems, ✓ when it found none, nothing when it didn't check the event.
+function planMark(e){
+  if(!checkedBy(e))return '';
   var n=(e.issues||[]).length;
-  return n?pill(n+(n===1?' issue':' issues'),tintStyle('err'),false):'';
+  if(n)return "<span class='pill' style='"+BREAKS_PILL+"' role='img' aria-label='Breaks the plan: "+problems(n)+"'>✕ "+n+"</span>";
+  return "<span class='okmark' role='img' aria-label='Matches the plan'>"+icon('check',16)+"</span>";
 }
 
 function emptyStateHtml(title,sub){
@@ -162,7 +176,7 @@ function listHtml(){
       }
       html+="<div class='hgroup' data-group='"+esc(k)+"'>"+
         "<span class='chev"+(col?'':' open')+"'>"+icon('chevron',14)+"</span>"+
-        icon('phone',14)+" "+esc(g.screen)+
+        esc(g.screen)+
         "<span class='hlabel'>"+esc(label)+"</span></div>";
       if(col)return;
     }
@@ -172,11 +186,21 @@ function listHtml(){
 }
 function toggleGroup(k){collapsedGroups[k]=!collapsedGroups[k];render();}
 
-function kvHtml(items,alignEnd){
-  return (items||[]).map(function(k){
+// [issues] mark the rows that break the tracking plan and add the required ones that weren't sent.
+function kvHtml(items,alignEnd,issues){
+  var issueFor=Object.create(null),sent=Object.create(null);
+  (issues||[]).forEach(function(i){issueFor[i.property]=i.message;});
+  var h=(items||[]).map(function(k){
+    sent[k.name]=true;
     var v=k.redacted?"<span class='redact'></span>":esc(k.value);
-    return "<div class='kv"+(alignEnd?' end':'')+"'><div class='k mono'>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
+    var issue=issueFor[k.name];
+    if(issue==null)return "<div class='kv"+(alignEnd?' end':'')+"'><div class='k mono'>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
+    return "<div class='kv issue"+(alignEnd?' end':'')+"' title='"+esc(issue)+"'><div class='k mono'><span class='idot'></span>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
   }).join('');
+  (issues||[]).forEach(function(i){
+    if(!sent[i.property])h+="<div class='kv ghost'><div class='k mono'><span class='idot'></span>"+esc(i.property)+"</div><div class='v'>missing · required</div></div>";
+  });
+  return h;
 }
 function pretty(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s),null,2);}catch(e){return s;}}
 function compact(s){if(!s)return '';try{return JSON.stringify(JSON.parse(s));}catch(e){return s;}}
@@ -211,6 +235,7 @@ function segHtml(active,fn){
 function setRaw(v){rawBody=v;renderDetail();}
 function setRawParams(v){rawParams=v;renderDetail();}
 function setRawSection(i,v){rawSections[i]=v;renderDetail();}
+function toggleSection(i){openSections[i]=!openSections[i];renderDetail();}
 
 function shq(s){return (''+s).replace(/'/g,"'\\''");}
 function curlCmd(e){
@@ -253,20 +278,98 @@ function toast(msg){
   if(toastTimer)clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.className='toast';},1800);
 }
-// The plan lives on the device; the page only shows its version and sends what the user provides.
-function planLabel(v){return v?('Plan '+v):'No plan';}
+// The plan lives on the device; the page only shows its summary and sends what the user provides.
 function showPlan(status){
-  var v=status&&status.version;
-  document.getElementById('planBtn').textContent=planLabel(v);
-  document.getElementById('planState').textContent=v?('Loaded: version '+v):'No tracking plan loaded: events are not validated.';
+  plan=(status&&status.version)?{version:status.version,events:status.events||[]}:null;
+  render();
 }
 function refreshPlan(){
   fetch(apiUrl('/api/tracking-plan')).then(function(r){return r.ok?r.json():null;}).then(showPlan).catch(function(){});
 }
-// Errors go inside the dialog: a modal sits in the top layer, above the toast.
-function planError(msg){document.getElementById('planError').textContent=msg||'';}
-function openPlan(){planError('');refreshPlan();document.getElementById('planDialog').showModal();}
-function closePlan(){document.getElementById('planDialog').close();}
+// Same as the inspector's planCoverage: every event the plan defines, against the captures checked by
+// this same version (events stamped by an earlier plan say nothing about this one). Verdict 0 breaks,
+// 1 matches, 2 not seen; ordered by verdict, then plan order.
+function planCoverage(list,p){
+  var checked=Object.create(null);
+  list.forEach(function(e){
+    if(e.type!=='analytics'||e.planVersion!==p.version)return;
+    var key=e.name+'\u0000'+e.channel;
+    var c=checked[key]||(checked[key]={captured:0,breaking:0});
+    c.captured++;
+    if(breaksPlan(e))c.breaking++;
+  });
+  return p.events.map(function(ev,i){
+    var c=checked[ev.name+'\u0000'+ev.channel]||{captured:0,breaking:0};
+    return {event:ev,captured:c.captured,breaking:c.breaking,verdict:c.breaking?0:(c.captured?1:2),order:i};
+  }).sort(function(a,b){return (a.verdict-b.verdict)||(a.order-b.order);});
+}
+function countVerdicts(cov){var n=[0,0,0];cov.forEach(function(c){n[c.verdict]++;});return n;}
+function planChipHtml(cov){
+  if(!plan)return icon('plan',16)+'No plan';
+  var breaking=countVerdicts(cov)[0];
+  return icon('plan',16)+esc('Plan '+plan.version)+(breaking?"<span class='countpill'>"+breaking+" break it</span>":'');
+}
+var UNSEEN_PREVIEW=3,VERDICT_CLASS=['breaks','matches','unseen'];
+function coverageRowHtml(c){
+  var meta=c.verdict===0?(c.breaking+' of '+c.captured):(c.verdict===1?(c.captured+' seen'):'not seen');
+  return "<div class='covrow "+VERDICT_CLASS[c.verdict]+"'><span class='cdot "+VERDICT_CLASS[c.verdict]+"'></span><code class='mono'>"+esc(c.event.name)+"</code><span class='cmeta'>"+esc(c.event.channel)+" · "+meta+"</span></div>";
+}
+function planSummaryHtml(cov){
+  if(!plan)return "<div class='pintro'><b>Check events against the plan</b><span>Load the analytics team's tracking plan and every event it defines, captured from then on, is checked for missing or wrong parameters.</span></div>";
+  var n=countVerdicts(cov),total=plan.events.length;
+  var h="<div class='ploaded'><div class='grow'><div class='title'>Version "+esc(plan.version)+" is loaded</div><div class='sub'>"+total+(total===1?' event':' events')+"</div></div><button class='dangerbtn' onclick='clearPlan()'>Clear</button></div>";
+  h+="<div class='pcounts'>"+[[n[0],'break it'],[n[1],'match it'],[n[2],'not seen yet']].map(function(x,i){
+    return "<div class='pcount "+VERDICT_CLASS[i]+"'><b>"+x[0]+"</b><span>"+x[1]+"</span></div>";
+  }).join('')+"</div>";
+  if(total){
+    var seen=cov.filter(function(c){return c.verdict<2;}),unseen=cov.filter(function(c){return c.verdict===2;});
+    var shown=showAllUnseen?unseen:unseen.slice(0,UNSEEN_PREVIEW);
+    h+="<div class='cov'>"+seen.concat(shown).map(coverageRowHtml).join('');
+    if(shown.length<unseen.length)h+="<button class='covmore' onclick='showUnseen()'>Show "+(unseen.length-shown.length)+" more</button>";
+    h+="</div>";
+  }
+  return h+"<div class='pnote'>Events the plan doesn't define aren't checked.</div>";
+}
+function showUnseen(){showAllUnseen=true;render();}
+function renderPlan(){
+  var cov=plan?planCoverage(entries,plan):[];
+  var chip=document.getElementById('planBtn');
+  chip.className='planchip'+(countVerdicts(cov)[0]?' breaks':'');
+  chip.innerHTML=planChipHtml(cov);
+  if(!planOpen)return;
+  // Rewritten only when it changes: stream frames re-render several times a second, and replacing
+  // the Clear button between mousedown and mouseup would swallow the click.
+  var html=planSummaryHtml(cov);
+  if(html!==shownSummary)document.getElementById('planSummary').innerHTML=shownSummary=html;
+  document.getElementById('planLoadLabel').textContent=plan?'Replace the plan':'Load a plan';
+}
+// Inline, under the field: the message names what is wrong, and that nothing was lost.
+function planError(msg){
+  var el=document.getElementById('planError');
+  document.getElementById('planText').classList.toggle('invalid',!!msg);
+  if(!msg){el.hidden=true;el.innerHTML='';return;}
+  msg=msg.replace(/\.$/,'');
+  // Sentence case, except when the message opens with a path into the plan such as events[0].name.
+  if(/^[a-z]+ /.test(msg))msg=msg.charAt(0).toUpperCase()+msg.slice(1);
+  var text=msg+(plan?'. Nothing changed: '+plan.version+' is still loaded.':'.');
+  el.innerHTML=icon('alert',16)+'<span>'+esc(text)+'</span>';
+  el.hidden=false;
+}
+function setPlanOpen(open){
+  planOpen=open;showAllUnseen=false;
+  document.getElementById('planPanel').hidden=!open;
+  document.getElementById('planScrim').hidden=!open;
+}
+function openPlan(){planError('');setPlanOpen(true);refreshPlan();render();}
+function closePlan(){planError('');setPlanOpen(false);}
+function syncLoadButton(){document.getElementById('planLoad').disabled=!document.getElementById('planText').value.trim();}
+function setPlanText(text){document.getElementById('planText').value=text;planError('');syncLoadButton();}
+function readPlanFile(file){
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(){setPlanText(reader.result);};
+  reader.readAsText(file);
+}
 function planRequest(path,body){
   return fetch(apiUrl(path),{method:'POST',headers:{'X-Snoop':'1','Content-Type':'application/json'},body:body}).then(function(r){
     return r.text().then(function(t){if(!r.ok)throw new Error(t||('rejected: '+r.status));return JSON.parse(t);});
@@ -274,9 +377,9 @@ function planRequest(path,body){
 }
 function loadPlan(){
   var text=document.getElementById('planText').value;
-  if(!text.trim()){planError('Paste or pick a plan first');return;}
+  if(!text.trim())return;
   planRequest('/api/tracking-plan',text).then(function(s){
-    showPlan(s);planError('');document.getElementById('planText').value='';closePlan();toast(planLabel(s.version)+' loaded');
+    setPlanText('');showPlan(s);toast('Plan '+s.version+' loaded');
   }).catch(function(err){planError(err.message);});
 }
 function clearPlan(){
@@ -326,8 +429,9 @@ function requestResponseHtml(e,side){
   h+="</div>";
   return h;
 }
+function detailBackHtml(){return "<button class='dback' onclick='sel(null)' aria-label='Back to events'>"+icon('back',18)+"Events</button>";}
 function networkDetailHtml(e){
-  var h="<div class='dwrap'>";
+  var h="<div class='dwrap'>"+detailBackHtml();
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.method)+" "+esc(e.path||'/')+"</div><div class='dsub'>"+esc(e.host)+"</div></div>"+
     detailActionsHtml("<button class='copybtn' data-curl='"+esc(e.id)+"'>"+icon('copy',14)+" Copy as cURL</button>")+"</div>";
   h+="<div class='pillrow'>"+pill(statusLabel(e),tintStyle(statusTint(e)),true);
@@ -354,9 +458,17 @@ function networkDetailHtml(e){
   h+="</div>";
   return h;
 }
+function verdictHtml(e){
+  if(!checkedBy(e))return '';
+  var issues=e.issues||[];
+  if(!issues.length)return "<div class='verdict matches'><div class='vtitle'>Matches tracking plan "+esc(e.planVersion)+"</div><div class='vsub'>Every parameter is what the plan expects</div></div>";
+  var h="<div class='verdict breaks'><div class='vtitle'>Breaks tracking plan "+esc(e.planVersion)+" · "+problems(issues.length)+"</div>";
+  issues.forEach(function(i){h+="<div class='vissue'><code class='mono'>"+esc(i.property)+"</code><span>"+esc(i.message)+"</span></div>";});
+  return h+"</div>";
+}
 function analyticsDetailHtml(e){
   var pair=pal(e.channel);
-  var h="<div class='dwrap'>";
+  var h="<div class='dwrap'>"+detailBackHtml();
   h+="<div class='dheadrow'><div><div class='dtitle'>"+esc(e.name)+"</div><div class='dsub'>event · "+esc(e.channel)+"</div></div>"+
     detailActionsHtml("<button class='copybtn' data-payload='"+esc(e.id)+"'>"+icon('copy',14)+" Copy payload</button>")+"</div>";
   h+="<div class='pillrow'>"+pill(e.channel,chanStyle(pair),false);
@@ -366,45 +478,49 @@ function analyticsDetailHtml(e){
   });
   h+=pill(clock(e.ts),tintStyle('neu'),true);
   h+="</div>";
-  if((e.issues||[]).length){
-    h+="<div class='pblock'><div class='section'>Tracking plan</div><div class='card issues' style='margin-top:8px'>";
-    e.issues.forEach(function(i){h+="<div class='issue'>"+esc(i.property)+": "+esc(i.message)+"</div>";});
-    h+="</div></div>";
-  }
-  h+=propertiesBlockHtml('Parameters',e.properties,rawParams,'setRawParams');
+  h+=verdictHtml(e);
+  h+=propertiesBlockHtml('Parameters',e.properties,rawParams,'setRawParams',checkedBy(e)?e.issues:null);
   (e.sections||[]).forEach(function(s,i){
-    h+=propertiesBlockHtml(s.title,s.properties,!!rawSections[i],'setRawSection.bind(null,'+i+')');
+    h+=propertiesBlockHtml(s.title,s.properties,!!rawSections[i],'setRawSection.bind(null,'+i+')',null,i);
   });
   h+="</div>";
   return h;
 }
 function detailActionsHtml(copyBtn){
-  return "<div class='dactions'>"+copyBtn+"<button class='iconbtn' onclick='sel(null)' aria-label='Close' title='Close'>"+icon('close',16)+"</button></div>";
+  return "<div class='dactions'>"+copyBtn+"<button class='iconbtn closebtn' onclick='sel(null)' aria-label='Close' title='Close'>"+icon('close',16)+"</button></div>";
 }
-function propertiesBlockHtml(label,list,raw,setter){
-  var h="<div class='pblock'><div class='shrow'><div class='section'>"+esc(label)+"</div>"+segHtml(raw,setter)+"</div>";
-  if(!(list||[]).length){
+// A block with a [section] index starts closed and counts its properties, as in the inspector.
+function propertiesBlockHtml(label,list,raw,setter,issues,section){
+  var collapsible=section!=null,open=!collapsible||!!openSections[section];
+  var head=collapsible?
+    ("<div class='section stoggle' data-section='"+section+"'><span class='chev"+(open?' open':'')+"'>"+icon('chevron',12)+"</span>"+esc(label)+" · "+(list||[]).length+"</div>"):
+    ("<div class='section'>"+esc(label)+"</div>");
+  var h="<div class='pblock'><div class='shrow'>"+head+(open?segHtml(raw,setter):'')+"</div>";
+  if(!open)return h+"</div>";
+  if(!(list||[]).length&&!(issues||[]).length){
     h+="<div class='sub'>None</div>";
   }else if(raw){
-    var obj={};list.forEach(function(k){obj[k.name]=k.redacted?'•••':k.value;});
+    var obj={};(list||[]).forEach(function(k){obj[k.name]=k.redacted?'•••':k.value;});
     h+="<div class='code mono' style='margin-top:8px'>"+hl(JSON.stringify(obj,null,2))+"</div>";
   }else{
-    h+="<div class='card' style='margin-top:8px'>"+kvHtml(list,true)+"</div>";
+    h+="<div class='card' style='margin-top:8px'>"+kvHtml(list,true,issues)+"</div>";
   }
   return h+"</div>";
 }
 function renderDetail(){
   var d=document.getElementById('detail');
   var e=entryById(selectedId);
+  document.querySelector('main').classList.toggle('has-detail',!!e);
   if(!e){d.className='detail';d.innerHTML='';return;}
   d.className='detail open';
   d.innerHTML=e.type==='network'?networkDetailHtml(e):analyticsDetailHtml(e);
 }
 function sel(id){
-  if(id!==selectedId){detailTab='overview';rawBody=false;rawParams=false;rawSections={};}
+  if(id!==selectedId){detailTab='overview';rawBody=false;rawParams=false;rawSections={};openSections={};}
   selectedId=id;render();
 }
-function setType(t){typeFilter=t;if(t==='network')channelFilter=null;render();}
+function setType(t){typeFilter=t;if(t==='network'){channelFilter=null;breaksFilter=false;}render();}
+function toggleBreaks(){if(breaksFilter){breaksFilter=false;}else{breaksFilter=true;typeFilter='analytics';}render();}
 function setChan(c){if(channelFilter===c){channelFilter=null;}else{channelFilter=c;typeFilter='analytics';}render();}
 
 function render(){
@@ -414,6 +530,9 @@ function render(){
   var tc=[['all','All'],['network','Network'],['analytics','Analytics']].map(function(t){
     return "<span class='chip"+(typeFilter===t[0]?' on':'')+"' onclick='setType(\""+t[0]+"\")'>"+t[1]+"</span>";
   }).join('');
+  // Offered while there is something to show, so a filter left on never hides everything.
+  var breaking=entries.filter(breaksPlan).length;
+  if(breaking||breaksFilter)tc+="<span class='chip alert"+(breaksFilter?' on':'')+"' onclick='toggleBreaks()'>Breaks plan · "+breaking+"</span>";
   document.getElementById('typechips').innerHTML=tc;
   document.getElementById('chanchips').innerHTML=chans.map(function(c){
     var pair=pal(c);
@@ -423,6 +542,7 @@ function render(){
   }).join('');
   document.getElementById('list').innerHTML=listHtml()||emptyHtml();
   renderDetail();
+  renderPlan();
   document.getElementById('pauseIcon').style.display=paused?'none':'inline-flex';
   document.getElementById('playIcon').style.display=paused?'inline-flex':'none';
 }
@@ -431,6 +551,8 @@ document.getElementById('pauseIcon').innerHTML=icon('pause',18);
 document.getElementById('playIcon').innerHTML=icon('play',18);
 document.getElementById('clearBtn').innerHTML=icon('clear',18);
 document.getElementById('exportBtn').innerHTML=icon('export',18);
+document.getElementById('planClose').innerHTML=icon('close',16);
+document.getElementById('planDropIcon').innerHTML=icon('upload',24);
 document.getElementById('q').addEventListener('input',function(ev){search=ev.target.value;render();});
 // Delegated clicks: entry data (ids, channels, header keys) never lands in inline handlers,
 // so a crafted value can't execute as script even if it survives escaping.
@@ -453,20 +575,33 @@ document.getElementById('detail').addEventListener('click',function(ev){
   if(cb){copyBody(cb.getAttribute('data-copybody'));return;}
   var hd=ev.target.closest('[data-headers]');
   if(hd){toggleHeaders(hd.getAttribute('data-headers'));return;}
+  var sc=ev.target.closest('[data-section]');
+  if(sc){toggleSection(sc.getAttribute('data-section'));return;}
   var r=ev.target.closest('[data-id]');
   if(r)sel(r.getAttribute('data-id'));
 });
-document.getElementById('planFile').addEventListener('change',function(ev){
-  var file=ev.target.files&&ev.target.files[0];
-  if(!file)return;
-  var reader=new FileReader();
-  reader.onload=function(){document.getElementById('planText').value=reader.result;};
-  reader.readAsText(file);
-});
+document.getElementById('planFile').addEventListener('change',function(ev){readPlanFile(ev.target.files&&ev.target.files[0]);ev.target.value='';});
+var drop=document.getElementById('planDrop');
+drop.addEventListener('dragover',function(ev){ev.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',function(){drop.classList.remove('over');});
+drop.addEventListener('drop',function(ev){ev.preventDefault();drop.classList.remove('over');readPlanFile(ev.dataTransfer.files&&ev.dataTransfer.files[0]);});
+document.getElementById('planText').addEventListener('input',function(){planError('');syncLoadButton();});
+document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&planOpen)closePlan();});
+// The plan isn't streamed: re-read it when the page regains focus or an event arrives stamped by
+// another version (it was loaded or replaced on the device).
+window.addEventListener('focus',refreshPlan);
+function planChanged(frame){
+  return (frame.entries||[]).some(function(e){return e.planVersion!=null&&e.planVersion!==(plan&&plan.version);});
+}
 refreshPlan();
 var es=new EventSource(apiUrl('/api/stream'));
 // A frame is proof the server is back, whatever the seeding fetch reported.
-es.onmessage=function(ev){setUnreachable(false);applyFrame(JSON.parse(ev.data));if(!paused){setEntries(latest,streamById);render();}};
+es.onmessage=function(ev){
+  var frame=JSON.parse(ev.data);
+  setUnreachable(false);applyFrame(frame);
+  if(planChanged(frame))refreshPlan();
+  if(!paused){setEntries(latest,streamById);render();}
+};
 fetch(apiUrl('/api/entries')).then(function(r){
   if(!r.ok)throw new Error('entries rejected: '+r.status);
   return r.json();
