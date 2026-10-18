@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.snoop.core.model.AnalyticsEntry
+import com.snoop.core.model.PlanSummary
 import com.snoop.ui.internal.breaksPlan
 import com.snoop.ui.internal.matchesPlan
 import com.snoop.ui.internal.problemCount
@@ -30,6 +31,7 @@ import com.snoop.ui.theme.LocalSnoopColors
 @Composable
 internal fun AnalyticsRow(
     entry: AnalyticsEntry,
+    plan: PlanSummary?,
     onClick: () -> Unit,
 ) {
     val colors = LocalSnoopColors.current
@@ -68,16 +70,16 @@ internal fun AnalyticsRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        PlanBadge(entry)
+        PlanBadge(entry, plan)
         Pill(entry.channel, tint)
     }
 }
 
 @Composable
-private fun PlanBadge(entry: AnalyticsEntry) {
+private fun PlanBadge(entry: AnalyticsEntry, plan: PlanSummary?) {
     val colors = LocalSnoopColors.current
     when {
-        entry.breaksPlan -> Surface(
+        entry.breaksPlan(plan) -> Surface(
             color = colors.planBreaks.pill.container,
             contentColor = colors.planBreaks.pill.content,
             shape = RoundedCornerShape(6.dp),
@@ -94,7 +96,7 @@ private fun PlanBadge(entry: AnalyticsEntry) {
                 Text("${entry.issues.size}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             }
         }
-        entry.matchesPlan -> Icon(
+        entry.matchesPlan(plan) -> Icon(
             SnoopIcons.Check,
             contentDescription = "Matches the plan",
             tint = colors.planMatches.pill.content,

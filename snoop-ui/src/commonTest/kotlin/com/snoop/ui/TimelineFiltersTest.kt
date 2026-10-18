@@ -3,6 +3,7 @@ package com.snoop.ui
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.NetworkTransaction
 import com.snoop.core.model.PlanIssue
+import com.snoop.core.model.PlanSummary
 import com.snoop.ui.internal.TimelineFilters
 import com.snoop.ui.internal.TypeFilter
 import com.snoop.ui.internal.matchesFilters
@@ -58,13 +59,16 @@ class TimelineFiltersTest {
     }
 
     @Test
-    fun breaksPlanKeepsOnlyEventsWithIssues() {
+    fun breaksPlanKeepsOnlyEventsTheLoadedPlanFoundBroken() {
         fun event(issues: List<PlanIssue>) =
             AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "search", "firebase", planVersion = "1", issues = issues)
         val breaking = event(listOf(PlanIssue("q", "Required, but not sent")))
         val onlyBreaking = TimelineFilters().toggleBreaksPlan()
-        assertTrue(matchesFilters(breaking, onlyBreaking, ""))
-        assertFalse(matchesFilters(event(emptyList()), onlyBreaking, ""))
+        val loaded = PlanSummary("1", emptyList())
+        assertTrue(matchesFilters(breaking, onlyBreaking, "", loaded))
+        assertFalse(matchesFilters(event(emptyList()), onlyBreaking, "", loaded))
+        assertFalse(matchesFilters(breaking, onlyBreaking, "", PlanSummary("2", emptyList())))
+        assertFalse(matchesFilters(breaking, onlyBreaking, "", plan = null))
     }
 }
 
@@ -79,7 +83,7 @@ class SearchMatchingTest {
         path = "/users",
     )
 
-    private fun matches(query: String) = matchesFilters(call, TimelineFilters(), query)
+    private fun matches(query: String) = matchesFilters(call, TimelineFilters(), query, plan = null)
 
     @Test
     fun searchReachesTheQueryString() {

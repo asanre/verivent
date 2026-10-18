@@ -77,13 +77,13 @@ internal fun TimelineTab(
     val grouped = remember(entries) {
         entries.any { it is AnalyticsEntry && it.groupLabel != null }
     }
-    val breakingRows = remember(entries) { entries.count { it.breaksPlan } }
+    val breakingRows = remember(entries, plan) { entries.count { it.breaksPlan(plan) } }
     val coverage = remember(entries, plan) { plan?.let { planCoverage(entries, it) }.orEmpty() }
     // Group over all entries so screen headers survive filters that hide the opening event.
-    val groups = remember(entries, grouped, filters, query) {
+    val groups = remember(entries, grouped, filters, query, plan) {
         groupEntries(entries, grouped)
             .mapNotNull { group ->
-                val shown = group.entries.filter { matchesFilters(it, filters, query) }
+                val shown = group.entries.filter { matchesFilters(it, filters, query, plan) }
                 if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
             }
     }
@@ -148,6 +148,7 @@ internal fun TimelineTab(
                                     is NetworkTransaction -> NetworkRow(entry) { onOpen(entry.id) }
                                     is AnalyticsEntry -> AnalyticsRow(
                                         entry = entry,
+                                        plan = plan,
                                         onClick = { onOpen(entry.id) },
                                     )
                                 }

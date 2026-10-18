@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.snoop.core.model.AnalyticsEntry
 import com.snoop.core.model.Annotation
 import com.snoop.core.model.PlanIssue
+import com.snoop.core.model.PlanSummary
 import com.snoop.ui.component.CopyIconButton
 import com.snoop.ui.component.DetailScaffold
 import com.snoop.ui.component.Pill
@@ -34,6 +35,7 @@ import com.snoop.ui.component.PropertiesView
 import com.snoop.ui.component.SectionLabel
 import com.snoop.ui.component.SnoopIcons
 import com.snoop.ui.component.dashedBorder
+import com.snoop.ui.internal.checkedBy
 import com.snoop.ui.internal.formatClock
 import com.snoop.ui.internal.problemCount
 import com.snoop.ui.internal.propertiesToJson
@@ -42,8 +44,10 @@ import com.snoop.ui.theme.LocalSnoopColors
 @Composable
 internal fun AnalyticsDetailScreen(
     entry: AnalyticsEntry,
+    plan: PlanSummary?,
     onBack: () -> Unit,
 ) {
+    val issues = if (entry.checkedBy(plan)) entry.issues else emptyList()
     DetailScaffold(
         title = entry.name,
         subtitle = "event · ${entry.channel}",
@@ -73,9 +77,9 @@ internal fun AnalyticsDetailScreen(
                 Pill(formatClock(entry.timestamp), colors.neutral, mono = true)
             }
 
-            entry.planVersion?.let { version -> PlanVerdictCard(version, entry.issues) }
+            if (plan != null && entry.checkedBy(plan)) PlanVerdictCard(plan.version, issues)
 
-            if (entry.properties.isEmpty() && entry.issues.isEmpty()) {
+            if (entry.properties.isEmpty() && issues.isEmpty()) {
                 SectionLabel("Parameters", topPadding = 22.dp)
                 Text(
                     "None",
@@ -84,9 +88,9 @@ internal fun AnalyticsDetailScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             } else {
-                PropertiesView(entry.properties, label = "Parameters", issues = entry.issues)
+                PropertiesView(entry.properties, label = "Parameters", issues = issues)
             }
-            if (entry.planVersion != null) CheckedAtCaptureNote()
+            if (entry.checkedBy(plan)) CheckedAtCaptureNote()
 
             entry.sections.forEach { (title, section) ->
                 key(title) { PropertiesView(section, label = title, collapsible = true) }
@@ -108,7 +112,7 @@ private fun CheckedAtCaptureNote() {
     ) {
         Icon(SnoopIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         Text(
-            "Checked when it was captured. Loading another plan only changes the verdict of events captured after it.",
+            "Checked when it was captured. Clearing or replacing the plan hides this verdict, and events captured before a plan is loaded aren't checked.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

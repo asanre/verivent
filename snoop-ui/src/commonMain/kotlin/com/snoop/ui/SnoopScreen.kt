@@ -187,6 +187,7 @@ private fun SnoopContent(onClose: (() -> Unit)?) {
             is NetworkTransaction -> NetworkDetailScreen(selected, onBack = { selectedId = null })
             is AnalyticsEntry -> AnalyticsDetailScreen(
                 entry = selected,
+                plan = plan,
                 onBack = { selectedId = null },
             )
         }
