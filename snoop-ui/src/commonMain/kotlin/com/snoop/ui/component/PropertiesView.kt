@@ -54,7 +54,7 @@ internal fun PropertiesView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .then(if (collapsible) Modifier.clickable { expanded = !expanded } else Modifier)
+                .then(if (collapsible) Modifier.clickable(interactionSource = null, indication = null) { expanded = !expanded } else Modifier)
                 .padding(start = 16.dp, end = 16.dp, top = 22.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,

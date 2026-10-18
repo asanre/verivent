@@ -110,7 +110,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                 }
                 is IllegalArgumentException -> {
                     json = text
-                    error = failure.message.orEmpty().replaceFirstChar { it.uppercase() } +
+                    error = failure.message.orEmpty().sentenceCase() +
                         (current?.let { ". Nothing changed: ${it.version} is still loaded." } ?: ".")
                 }
                 else -> throw failure
@@ -300,6 +300,10 @@ private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: 
 }
 
 private const val UNSEEN_PREVIEW = 3
+
+// Capitalized like a sentence unless it opens with a path into the plan, such as events[0].name.
+private fun String.sentenceCase(): String =
+    if (Regex("^[a-z]+ ").containsMatchIn(this)) replaceFirstChar { it.uppercase() } else this
 
 @Composable
 private fun SmallOutlinedButton(label: String, content: Color, border: Color, onClick: () -> Unit) {
