@@ -65,6 +65,24 @@ timeline, type and channel filters, search, per-screen
 so the page needs no configuration of its own), and a detail panel with headers (redaction preserved), pretty-printed bodies,
 and an event's [extra parameter blocks](integration-analytics-facade.md#extra-parameter-blocks) in their own block.
 
+## Tracking plan
+
+The page shows the device's [tracking plan](integration-analytics-facade.md#tracking-plan) verdicts
+like the inspector does:
+
+- The header chip reads *Plan x.y · n break it*, or *No plan*. It opens the plan panel, where you
+  see the loaded version and its coverage (the events the plan defines that break it, match it or
+  haven't been seen yet), clear it, or load another one: drop the JSON file, pick it, or paste it.
+  An invalid plan is rejected inline and leaves the loaded one untouched.
+- *Breaks plan · n* filters the timeline down to the events that break the loaded plan.
+- An event row carries `✕ n` when it breaks the plan and `✓` when it matches. Its detail lists the
+  problems, marks the parameters at fault, and adds the required ones that weren't sent.
+
+The plan lives on the device; the page only reads it and sends what you load. It isn't streamed:
+the page reads it again when you open the panel, when the tab regains focus, and when an event
+arrives checked against another version. A plan cleared on the device stays on the page until one
+of those happens.
+
 ## Several developers on one network
 
 Each device runs its own server over its own network stack, serving only its own in-memory store.

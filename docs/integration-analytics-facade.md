@@ -123,6 +123,8 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
 - Supported keywords: `required`, `properties` with `type` (one or a list), `enum` and `pattern`,
   and `additionalProperties`, true when absent as in JSON Schema. Others are ignored. `pattern`
   only applies to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
+- `pattern` isn't anchored, as in JSON Schema: `[0-9]+` accepts `"sku-42"` because it finds digits
+  somewhere in it. Write `^[0-9]+$` to constrain the whole value.
 - The check runs on the values you pass to `log`, before redaction, so types are the host's types.
   `sections` are not checked.
 - An event the plan defines carries `planVersion`, the version it was checked against, and
@@ -132,7 +134,9 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
 - An event the plan doesn't define isn't checked: no `planVersion`, no issues. A partial plan is
   expected while the catalog grows.
 - Like grouping, the verdict is stamped at capture. Loading or clearing a plan doesn't revisit
-  earlier events.
+  earlier events: they keep their `planVersion` and `issues` in the export and in console lines.
+  The inspector and the web viewer only show the verdicts of the plan loaded now, so clearing or
+  replacing it hides the earlier ones, and loading the same version again brings them back.
 
 Load it whichever way suits who is testing:
 
@@ -140,7 +144,7 @@ Load it whichever way suits who is testing:
 |---|---|
 | Host code, tests | `SnoopCore.loadTrackingPlan(json)` / `clearTrackingPlan()`; throws `IllegalArgumentException` on an invalid plan and keeps the current one |
 | Someone on the device (BrowserStack included) | the plan strip under the inspector's search, then *Paste from clipboard* or paste in the field |
-| Someone on the web viewer | *No plan* / *Plan x.y* in the header: paste or pick a file |
+| Someone on the web viewer | *No plan* / *Plan x.y* in the header: drop or pick a file, or paste it |
 | An agent with `adb` | write the file below with `run-as`, then restart the app |
 
 To keep the plan across launches, give Snoop a directory; setting it loads the plan stored there:
