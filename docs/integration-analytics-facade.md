@@ -125,6 +125,10 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
   only applies to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
 - `pattern` isn't anchored, as in JSON Schema: `[0-9]+` accepts `"sku-42"` because it finds digits
   somewhere in it. Write `^[0-9]+$` to constrain the whole value.
+- A string over 256 characters isn't run through `pattern`: it gets the issue *Too long to check
+  against the pattern* instead. The check runs on your thread for every event, so this caps the
+  cost of a pattern that backtracks. It can't stop one that backtracks exponentially, such as
+  `(a+)+$`, on shorter values: avoid nesting quantifiers.
 - The check runs on the values you pass to `log`, before redaction, so types are the host's types.
   `sections` are not checked.
 - An event the plan defines carries `planVersion`, the version it was checked against, and

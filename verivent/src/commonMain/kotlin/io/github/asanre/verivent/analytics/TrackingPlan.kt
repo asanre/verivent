@@ -104,6 +104,8 @@ private class PropertySchema(
                 "Expected ${types.joinToString(" or ")}, got $type"
             allowed != null && allowed.none { it.matches(value) } ->
                 "Not an allowed value · expects ${allowed.map { it.content }.joinAsChoice()}"
+            pattern != null && value is String && value.length > MAX_PATTERN_INPUT ->
+                "Too long to check against the pattern · over $MAX_PATTERN_INPUT characters"
             pattern != null && value is String && !pattern.containsMatchIn(value) ->
                 "Doesn't match the pattern ${pattern.pattern}"
             else -> null
@@ -137,6 +139,13 @@ private class PropertySchema(
 private fun List<String>.joinAsChoice(): String =
     if (size < 2) joinToString() else dropLast(1).joinToString(", ") + " or " + last()
 
+/**
+ * Longest value run through a plan's `pattern`. The check runs on the host's thread for every event,
+ * and the plan survives restarts, so a pattern that backtracks badly would stall every launch. The
+ * cap bounds the polynomial cases; an exponential pattern can still stall on a shorter value.
+ */
+private const val MAX_PATTERN_INPUT = 256
+
 private val JSON_TYPES = setOf("string", "integer", "number", "boolean", "null", "object", "array")
 
 /** The JSON Schema type name of a value the host passed, used in messages instead of the value. */
@@ -154,9 +163,11 @@ private fun jsonType(value: Any?): String = when (value) {
 private fun String.satisfies(expected: String, value: Any?): Boolean = when {
     this == expected -> true
     expected == "number" -> this == "integer"
-    expected == "integer" -> value is Number && value.toDouble().let { it.isFinite() && it % 1.0 == 0.0 } && this == "number"
+    expected == "integer" -> this == "number" && value.isWholeNumber()
     else -> false
 }
+
+private fun Any?.isWholeNumber(): Boolean = this is Number && toDouble().let { it.isFinite() && it % 1.0 == 0.0 }
 
 private fun JsonPrimitive.matches(value: Any?): Boolean = when {
     this is JsonNull -> value == null

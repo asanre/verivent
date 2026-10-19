@@ -84,6 +84,16 @@ class TrackingPlanTest {
     }
 
     @Test
+    fun aValueTooLongForThePatternIsFlaggedInsteadOfMatched() {
+        val plan = plan("""{ "properties": { "query": { "pattern": "^a+$" } } }""")
+        assertEquals(emptyList(), plan.issuesFor("search", "firebase", mapOf("query" to "a".repeat(256))))
+        assertEquals(
+            listOf(PlanIssue("query", "Too long to check against the pattern · over 256 characters")),
+            plan.issuesFor("search", "firebase", mapOf("query" to "a".repeat(257))),
+        )
+    }
+
+    @Test
     fun patternOnlyAppliesToStrings() {
         val plan = plan("""{ "properties": { "item_id": { "pattern": "^[0-9]+$" } } }""")
         assertEquals(emptyList(), plan.issuesFor("search", "firebase", mapOf("item_id" to 12)))
