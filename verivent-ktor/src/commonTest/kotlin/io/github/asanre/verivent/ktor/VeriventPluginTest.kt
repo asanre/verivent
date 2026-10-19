@@ -7,11 +7,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponsePipeline
 import io.ktor.client.statement.bodyAsText
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
@@ -296,6 +299,30 @@ class VeriventPluginTest {
         assertFailsWith<RuntimeException> { client.get("https://api.test/u?token=hunter2") }
 
         val error = assertNotNull(transactions().single().error)
+        assertTrue("hunter2" !in error, "unredacted secret in captured error: $error")
+        assertTrue("token=██" in error, "expected the redaction placeholder, got: $error")
+    }
+
+    @Test
+    fun aTimeoutWhileReadingTheResponseIsRecordedNotLogged() = runTest {
+        val timeout = HttpRequestTimeoutException("https://api.test/slow?token=hunter2", 10_000)
+        // The call timed out after its headers arrived: every read of its body fails, Verivent's and the host's.
+        val deadCall = createClientPlugin("DeadCall") {
+            client.responsePipeline.intercept(HttpResponsePipeline.Receive) { throw timeout }
+        }
+        val client = HttpClient(MockEngine) {
+            engine { addHandler { respond("late", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "text/plain")) } }
+            install(deadCall)
+            install(Verivent)
+        }
+        assertFailsWith<HttpRequestTimeoutException> {
+            client.get("https://api.test/slow?token=hunter2").bodyAsText()
+        }
+
+        // The host's own call reports the timeout; the timeline shows it too instead of a pending call.
+        val txn = transactions().single()
+        assertEquals(NetworkState.Failed, txn.state)
+        val error = assertNotNull(txn.error)
         assertTrue("hunter2" !in error, "unredacted secret in captured error: $error")
         assertTrue("token=██" in error, "expected the redaction placeholder, got: $error")
     }

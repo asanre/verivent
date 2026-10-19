@@ -4,6 +4,8 @@ import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.internal.runSafely
 import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.github.asanre.verivent.core.redaction.RedactionEngine
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
@@ -11,6 +13,7 @@ import io.ktor.client.plugins.plugin
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.TimeSource
 
 /**
@@ -34,6 +37,14 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
 
     val callIdKey = AttributeKey<String>("VeriventCallId")
     val startKey = AttributeKey<TimeSource.Monotonic.ValueTimeMark>("VeriventStart")
+
+    // Only Verivent's own recording can be logged here — `cause` belongs to the host.
+    fun recordFailure(callId: String, cause: Throwable) = runSafely("ktor.record-failure") {
+        // Ktor's timeout message embeds the full URL, query string and all, so it has
+        // to go through redaction like any other captured URL would.
+        val message = redaction.redactUrl(cause.message ?: cause::class.simpleName ?: "error")
+        Inspector.updateNetwork(callId) { it.copy(error = message) }
+    }
 
     on(SendingRequest) { request, content ->
         runSafely("ktor.request") {
@@ -69,8 +80,14 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
             val callId = response.call.attributes.getOrNull(callIdKey) ?: return@runSafely
             // Stop the clock before Verivent reads the body, or the host's call looks slower than it was.
             val duration = response.call.attributes.getOrNull(startKey)?.elapsedNow()?.inWholeMilliseconds
-            val body = readResponseBody(response, maxLen)
-                ?.formRedactedBy(redaction, response.contentType())
+            val body = try {
+                readResponseBody(response, maxLen)
+            } catch (cause: Throwable) {
+                if (!cause.isHostFailure()) throw cause
+                // The host's own call fails with this too: show it on the timeline, keep it out of the log.
+                recordFailure(callId, cause)
+                return@runSafely
+            }?.formRedactedBy(redaction, response.contentType())
                 ?.redactedBy(redaction)
             Inspector.updateNetwork(callId) {
                 it.copy(
@@ -92,17 +109,13 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
         try {
             execute(request)
         } catch (cause: Throwable) {
-            val callId = request.attributes.getOrNull(callIdKey)
-            if (callId != null) {
-                // Only Verivent's own recording can be logged here — `cause` belongs to the host.
-                runSafely("ktor.record-failure") {
-                    // Ktor's timeout message embeds the full URL, query string and all, so it has
-                    // to go through redaction like any other captured URL would.
-                    val message = redaction.redactUrl(cause.message ?: cause::class.simpleName ?: "error")
-                    Inspector.updateNetwork(callId) { it.copy(error = message) }
-                }
-            }
+            request.attributes.getOrNull(callIdKey)?.let { recordFailure(it, cause) }
             throw cause
         }
     }
+}
+
+/** A timeout or cancellation of the call itself: the host sees it through its own call, so it isn't Verivent's. */
+private fun Throwable.isHostFailure(): Boolean = generateSequence(this) { it.cause }.any {
+    it is CancellationException || it is HttpRequestTimeoutException || it is SocketTimeoutException
 }
