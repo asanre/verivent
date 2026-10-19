@@ -6,37 +6,40 @@
 
 > Formerly **Snoop**: versions up to 0.7.0 were published as `io.github.asanre:snoop`.
 
-**Verivent** is an on-device inspector for **network traffic and analytics events**, built for Compose
-Multiplatform. Both streams land on one timeline, so you can see a request and the events around it
-without leaving the app — on Android and iOS.
+**Your mobile analytics, verified on the device.** Verivent checks every analytics event your app
+sends against your team's tracking plan, on the phone, with the real values and without uploading
+anything. Built for Kotlin Multiplatform (Android and iOS), with a Swift Package for native iOS apps.
 
-Network inspection in KMP is a solved problem, but nothing unifies network + analytics in one
-Compose surface, and no tool inspects analytics events independently of the vendor SDK. Verivent does
-both.
+A broken event shows up wherever you are testing: in the app, in a desktop browser, in the console
+or in a CI test. Issues name the property and what the plan expected, never the value sent:
+`items[*].quantity · Expected integer, got string · 1 of 2`.
 
 ## Features
 
-- **Unified timeline** — network calls and analytics events interleaved, filterable by type and
-  channel, searchable, and collapsible into per-screen groups opened by the analytics event of your
-  choice (`screen_view` by default).
-- **Rich detail** — headers, pretty-printed JSON bodies, timing, cURL export; event parameters with
-  channel and annotations.
-- **Redaction at capture** — headers, query parameters and form-body fields are replaced with a
-  visible `██` before anything reaches the store; raw secrets never land in memory.
-- **Web viewer** — an embedded HTTP server streams the same timeline to a desktop browser over SSE.
-- **Live notification** — a persistent notification lists the latest captures and reopens the
-  inspector (Android and iOS).
-- **No-op mirrors** — release builds swap in API-identical stubs that capture nothing and drop the
-  UI/retention overhead.
+- **Tracking plan on the device** — a JSON Schema subset per event and channel, nested as deep as
+  your values: `type`, `enum`, `const`, `pattern`, `required`, `additionalProperties`, `items`,
+  `minItems` and `contains`. Checked at capture, on the values your code passed.
+- **Vendor-agnostic** — your analytics facade calls `log`; Verivent never talks to an analytics SDK.
+- **Everywhere you look** — the on-device inspector, the web viewer on your Mac, one JSON line per
+  event in the console, and one export format shared by all of them.
+- **Tests** — compare a session with a recorded [baseline](testing.md#baseline), or ask the device
+  [over HTTP](testing.md#over-http) whether any event broke the plan.
+- **The same validator in the browser** — an [npm package](validator-npm.md) with the device's
+  rules and messages.
+- **Network on the same timeline** — Ktor calls (and `URLSession` on native iOS) next to the events
+  they should have produced, with headers, bodies, timing and cURL export.
+- **Redaction at capture** — sensitive values are replaced with a visible `██` before anything
+  reaches the store; a redacted property keeps its type, and the plan only checks that.
+- **No-op mirrors** — release builds swap in API-identical stubs that capture nothing.
 
 ## Modules
 
-`verivent` carries the core and the analytics sink; add `verivent-ui` for the on-device inspector and one
-adapter per HTTP client.
+`verivent` carries the analytics sink, the tracking plan, the baseline and the web viewer; add
+`verivent-ui` for the on-device inspector and one adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `verivent` | Models, store, redaction, the web viewer and the `log(name, channel, properties, sections)` analytics sink |
+| `verivent` | The analytics sink, the tracking plan, the baseline, the web viewer, the store and redaction |
 | `verivent-ui` | Compose Multiplatform inspector UI and the live notifications |
 | `verivent-ktor` | Ktor client plugin that captures traffic |
 | `verivent-*-no-op` | Empty mirrors with the identical API for release builds |

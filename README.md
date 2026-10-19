@@ -6,42 +6,57 @@
 
 > Formerly **Snoop**: versions up to 0.7.0 were published as `io.github.asanre:snoop`.
 
-On-device inspector for **network calls** and **analytics events** in Compose Multiplatform apps.
-One unified timeline, a Ktor plugin, a vendor-agnostic analytics sink, and a Material 3 UI you can
-open while you navigate the host app.
+**Your mobile analytics, verified on the device.** Verivent checks every analytics event your app
+sends against your team's tracking plan, on the phone, with the real values and without uploading
+anything. A broken event shows up wherever you are testing: in the app, in a desktop browser, in
+the console or in a CI test.
+
+![Verivent: the inspector and the web viewer flagging events that break the tracking plan](docs/assets/banner.webp)
 
 📖 **Full documentation: <https://asanre.github.io/verivent/>**
 
-> Network capture is **Ktor**, plus experimental `URLSession` capture on native iOS; analytics
-> capture is vendor-agnostic.
+## How it works
+
+1. **Send your analytics through Verivent.** Verivent never talks to an analytics SDK: your own
+   facade calls `AnalyticsSink.log(name, channel, properties)` next to Firebase, GTM or whatever
+   you use.
+2. **Load the tracking plan.** It's a subset of JSON Schema per event and channel: `type`, `enum`,
+   `const`, `pattern`, `required`, `additionalProperties`, nested `properties`, `items`, `minItems`
+   and `contains`.
+3. **Every event gets its verdict when it's captured**, on the values your code passed and before
+   anything is redacted. Issues name the property and what the plan expected, never the value:
+   `items[*].quantity · Expected integer, got string · 1 of 2`.
+4. **Read it where you are:** the on-device inspector, the web viewer on your Mac, one JSON line
+   per event in Logcat or the unified log, an HTTP endpoint for black-box tests, a baseline diff
+   in your own tests, and the same validator in the browser as an npm package.
+
+Network calls from Ktor (and `URLSession` on native iOS) land on the same timeline, so you see the
+request next to the events it should have produced.
 
 ## Why
 
-Network inspection in KMP is a solved problem, but nothing unifies **network + analytics** in one
-Compose Multiplatform surface, and no tool inspects analytics events independently of the vendor
-SDK. Verivent does both, on one timeline.
+Analytics breaks quietly: a renamed parameter or a number sent as text reaches the dashboard weeks
+later. Tools that validate in their cloud need the events uploaded first; a separate collector has
+to be run and pointed at. Verivent gives the verdict on the device, while you're testing, with
+values that never leave it, and without a vendor SDK in the loop.
 
 ## Modules
 
-`verivent` carries everything that has no UI and no HTTP client: models, ring-buffer store, redaction,
-the vendor-agnostic analytics sink and the embedded web viewer. Add `verivent-ui` for the on-device
-inspector and one adapter per HTTP client.
-
 | Artifact | What it does |
 |---|---|
-| `verivent` | Models, store, redaction, web viewer and the `log(name, channel, properties, sections)` analytics sink |
-| `verivent-ui` | Compose Multiplatform inspector UI and live notifications (brings `verivent`) |
+| `verivent` | The analytics sink, the tracking plan, the baseline, the web viewer, the store and redaction |
+| `verivent-ui` | Compose Multiplatform inspector and live notifications (brings `verivent`) |
 | `verivent-ktor` | Ktor client plugin that captures traffic (brings `verivent`) |
-| `verivent-no-op` | Release mirror of `verivent` — identical API, captures nothing |
-| `verivent-ui-no-op` | Release mirror of the inspector UI — renders nothing |
+| `verivent-no-op` | Release mirror of `verivent`: identical API, captures nothing |
+| `verivent-ui-no-op` | Release mirror of the inspector: renders nothing |
 | `verivent-ktor-no-op` | Release mirror of the Ktor plugin |
 
 `verivent-ui` is the only artifact that depends on Compose. Leave it out if you inspect from the web
-viewer instead of on-device, and Compose never enters your dependency graph.
+viewer, and Compose never enters your dependency graph.
 
 Apps written entirely in Swift, with no shared KMP module, install a separate Swift Package that
-carries the analytics sink, the web viewer and experimental `URLSession` capture. See
-[Native iOS](https://asanre.github.io/verivent/native-ios/).
+carries the analytics sink, the tracking plan, the web viewer and experimental `URLSession`
+capture. See [Native iOS](https://asanre.github.io/verivent/native-ios/).
 
 ## Install
 
@@ -65,7 +80,75 @@ The no-op mirrors declare the exact same classes and functions, so your call sit
 
 ## Quick start
 
-### 1. Capture network traffic
+### 1. Send your analytics through Verivent
+
+Wire your analytics facade to `log`:
+
+```kotlin
+val sink = AnalyticsSink {
+    sanitizeProperty { key -> key in setOf("user_email", "user_id") }   // shown as ██, type kept
+    logTo()                                                              // one JSON line per event
+}
+
+// from your facade, next to the real SDK call:
+sink.log(name = event.name, channel = "firebase", properties = event.properties)
+```
+
+See [Hook your analytics facade](https://asanre.github.io/verivent/integration-analytics-facade/)
+for filters, annotations, extra parameter blocks and screen grouping.
+
+### 2. Load the tracking plan
+
+```kotlin
+Inspector.loadTrackingPlan(
+    """
+    { "version": "1.4.0",
+      "events": [ { "name": "purchase", "channel": "firebase",
+                    "schema": { "required": ["value", "currency", "items"],
+                                "properties": {
+                                  "value":    { "type": "number" },
+                                  "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+                                  "items":    { "type": "array", "minItems": 1,
+                                                "items": { "properties": { "quantity": { "type": "integer" } } } } },
+                                "additionalProperties": false } } ] }
+    """,
+)
+```
+
+Or paste it into the inspector or the web viewer, or keep it across launches with
+`Inspector.configure(storageDir = …)`. Events the plan doesn't define aren't checked.
+
+### 3. See the verdicts
+
+```kotlin
+// Anywhere in your Compose tree:
+InspectorScreen()
+
+// Android: as its own screen, or a live notification that lists the latest captures.
+InspectorLauncher.open(context)
+InspectorLauncher.showNotification(context)   // ongoing; needs POST_NOTIFICATIONS on API 33+
+
+// Or from a desktop browser:
+WebViewer.start()                             // http://localhost:9394/?t=…
+```
+
+### 4. Test it
+
+```kotlin
+// In a test: compare the session with a recorded baseline.
+Baseline.diff(readResource("checkout.baseline.json"), variables = mapOf("order_id" to order.id))
+    ?.let { fail(it) }
+```
+
+```bash
+# From anything that speaks HTTP (Maestro, Appium, a CI script):
+curl -s 'http://localhost:9394/api/assert/all?t=ci'   # {"plan":"1.4.0","total":12,"good":10,"bad":1,"unplanned":1}
+```
+
+See [Testing analytics](https://asanre.github.io/verivent/testing/). A web tool can run the same
+checks in the browser with the [npm package](https://asanre.github.io/verivent/validator-npm/).
+
+### Network capture
 
 ```kotlin
 val client = HttpClient(engine) {
@@ -77,55 +160,7 @@ val client = HttpClient(engine) {
 }
 ```
 
-### 2. Capture analytics events
-
-Verivent never talks to an analytics SDK. Wire your own analytics facade to `log`:
-
-```kotlin
-val sink = AnalyticsSink {
-    filter { event -> !event.name.startsWith("debug_") }
-    sanitizeProperty { key -> key in setOf("user_email", "user_id") }
-    annotate { event -> if (event.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
-}
-
-// from your facade:
-sink.log(name = event.name, channel = "firebase", properties = event.properties)
-```
-
-See [docs/integration-analytics-facade.md](docs/integration-analytics-facade.md) for the facade recipe.
-
-### 3. Show the inspector
-
-```kotlin
-// Anywhere in your Compose tree:
-InspectorScreen()
-
-// Android — as its own screen, or a live notification that lists the latest captures:
-InspectorLauncher.open(context)
-InspectorLauncher.showNotification(context)   // ongoing; needs POST_NOTIFICATIONS on API 33+ (the host requests it)
-
-// iOS — a live notification (asks for alert permission inline, no Context):
-InspectorLauncher.showNotification()
-```
-
-The timeline collapses into per-screen groups opened by an analytics event — Firebase's `screen_view`
-with its `screen_name` parameter by default. Set on the logger, where events are captured, so every
-viewer (inspector, Activity, web page, native iOS) groups the same way:
-
-```kotlin
-val sink = AnalyticsSink { groupBy("page_shown", "page") }
-```
-
 See [Integration](https://asanre.github.io/verivent/integration/) for the full inspector API.
-
-## How capture works
-
-The Ktor plugin assigns a call id on `SendingRequest`, records the request (method, url, headers,
-body) into the shared store, then fills in status/headers/body/duration on `onResponse`, and records
-transport exceptions via an `HttpSend` interceptor. Every capture path is wrapped in try/catch, so
-the debug tooling can never break a real request. Response bodies are read through Ktor 3's saved
-body, so the host still consumes them normally. Sensitive header/property values are replaced with a
-visible `██` placeholder — you see that a field exists, not its value.
 
 ## Web viewer
 
@@ -156,10 +191,20 @@ adb forward tcp:9394 tcp:9394   # Android: then open the URL start() returned
 
 Live timeline over SSE, same filters and detail as the native UI. See [docs/web-viewer.md](docs/web-viewer.md).
 
+## How network capture works
+
+The Ktor plugin assigns a call id on `SendingRequest`, records the request (method, url, headers,
+body) into the shared store, then fills in status/headers/body/duration on `onResponse`, and records
+transport exceptions via an `HttpSend` interceptor. Every capture path is wrapped in try/catch, so
+the debug tooling can never break a real request. Response bodies are read through Ktor 3's saved
+body, so the host still consumes them normally. Sensitive header/property values are replaced with a
+visible `██` placeholder — you see that a field exists, not its value.
+
 ## Samples
 
 `sample/composeApp` is a Compose Multiplatform app (Android + iOS) that generates real Ktor traffic
-and fake analytics events across channels, and opens the inspector embedded and via notification.
+and fake analytics events across channels, loads a tracking plan those events partly break, and
+opens the inspector embedded and via notification.
 
 ```bash
 ./gradlew :sample:composeApp:assembleDebug            # Android APK

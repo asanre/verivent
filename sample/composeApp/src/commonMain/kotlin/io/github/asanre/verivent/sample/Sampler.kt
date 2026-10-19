@@ -58,7 +58,12 @@ class Sampler {
         analytics.log(
             name = "purchase",
             channel = "firebase",
-            properties = mapOf("value" to 42.5, "currency" to "EUR", "user_email" to "demo@verivent.dev"),
+            properties = mapOf(
+                "value" to 42.5,
+                "currency" to "EUR",
+                "user_email" to "demo@verivent.dev",
+                "items" to listOf(mapOf("item_id" to "SN-42", "quantity" to 1), mapOf("item_id" to "SN-7", "quantity" to "2")),
+            ),
             sections = mapOf(
                 "Default parameters" to mapOf("environment" to "demo", "language" to "en"),
                 "User properties" to mapOf("user_logged" to true, "newsletter_subscriber" to "no"),
@@ -72,7 +77,8 @@ class Sampler {
 
     /**
      * A plan these demo events partly break: screen_view sends a screen it doesn't list, purchase
-     * misses transaction_id and sends user_email, the gtm events match, and the rest aren't logged.
+     * misses transaction_id, sends user_email and one item's quantity as text, the gtm events
+     * match, and the rest aren't logged.
      */
     fun loadTrackingPlan() = Inspector.loadTrackingPlan(SAMPLE_PLAN)
 
@@ -98,7 +104,11 @@ private val SAMPLE_PLAN = """
                 "properties": { "screen_name": { "type": "string", "enum": ["search", "catalog", "pdp"] } } } },
   { "name": "purchase", "channel": "firebase",
     "schema": { "required": ["value", "currency", "transaction_id"],
-                "properties": { "value": { "type": "number" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" } },
+                "properties": { "value": { "type": "number" }, "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+                                "items": { "type": "array", "minItems": 1,
+                                           "items": { "type": "object", "required": ["item_id", "quantity"],
+                                                      "properties": { "item_id": { "type": "string", "pattern": "^SN-[0-9]+$" },
+                                                                      "quantity": { "type": "integer" } } } } },
                 "additionalProperties": false } },
   { "name": "add_to_cart", "channel": "gtm",
     "schema": { "required": ["item"], "properties": { "item": { "type": "string", "pattern": "^SN-[0-9]+$" } } } },
