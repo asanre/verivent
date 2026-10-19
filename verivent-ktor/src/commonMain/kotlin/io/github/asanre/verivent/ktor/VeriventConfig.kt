@@ -1,12 +1,12 @@
-package com.snoop.ktor
+package io.github.asanre.verivent.ktor
 
 import io.ktor.client.request.HttpRequestBuilder
 
 /**
- * DSL for `install(Snoop) { ... }`. Everything is a lambda so the host filters and redacts with
+ * DSL for `install(Verivent) { ... }`. Everything is a lambda so the host filters and redacts with
  * plain predicates. All lists are additive across multiple calls.
  */
-class SnoopConfig {
+class VeriventConfig {
 
     /** Bodies larger than this (in bytes/chars) are captured truncated with a "truncated" flag. */
     var maxContentLength: Long = 250_000

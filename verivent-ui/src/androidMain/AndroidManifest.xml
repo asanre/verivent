@@ -3,15 +3,15 @@
 
     <application>
         <activity
-            android:name="com.snoop.ui.SnoopActivity"
+            android:name="io.github.asanre.verivent.ui.InspectorActivity"
             android:exported="false"
-            android:label="Snoop"
+            android:label="Verivent"
             android:launchMode="singleTask"
-            android:theme="@style/Theme.Snoop"
+            android:theme="@style/Theme.Verivent"
             android:windowSoftInputMode="adjustResize" />
 
         <receiver
-            android:name="com.snoop.ui.SnoopClearReceiver"
+            android:name="io.github.asanre.verivent.ui.InspectorClearReceiver"
             android:exported="false" />
     </application>
 

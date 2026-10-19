@@ -1,17 +1,17 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.BodyPreview
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanIssue
-import com.snoop.core.model.SnoopEntry
-import com.snoop.ui.internal.buildCurl
-import com.snoop.ui.internal.entriesToJsonCapped
-import com.snoop.ui.internal.formatBytes
-import com.snoop.ui.internal.formatDuration
-import com.snoop.ui.internal.groupEntries
-import com.snoop.ui.internal.stableKey
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.ui.internal.buildCurl
+import io.github.asanre.verivent.ui.internal.entriesToJsonCapped
+import io.github.asanre.verivent.ui.internal.formatBytes
+import io.github.asanre.verivent.ui.internal.formatDuration
+import io.github.asanre.verivent.ui.internal.groupEntries
+import io.github.asanre.verivent.ui.internal.stableKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -240,7 +240,7 @@ class GroupingTest {
 
     @Test
     fun groupsByStampedEventsNewestFirst() {
-        val entries: List<SnoopEntry> = listOf(
+        val entries: List<TimelineEntry> = listOf(
             event("1", "screen_view", "home"),
             call("2"),
             event("3", "screen_view", "cart"),
@@ -260,7 +260,7 @@ class GroupingTest {
 
     @Test
     fun revisitingTheSameScreenOpensASecondGroup() {
-        val entries: List<SnoopEntry> = listOf(
+        val entries: List<TimelineEntry> = listOf(
             event("1", "screen_view", "home"),
             call("2"),
             event("3", "screen_view", "home"),

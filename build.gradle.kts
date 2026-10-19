@@ -18,5 +18,5 @@ dependencies {
 }
 
 dokka {
-    moduleName.set("Snoop API")
+    moduleName.set("Verivent API")
 }

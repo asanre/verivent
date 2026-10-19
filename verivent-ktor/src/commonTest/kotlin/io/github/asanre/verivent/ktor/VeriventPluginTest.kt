@@ -1,8 +1,8 @@
-package com.snoop.ktor
+package io.github.asanre.verivent.ktor
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -31,13 +31,13 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class SnoopPluginTest {
+class VeriventPluginTest {
 
-    @BeforeTest fun setup() = SnoopCore.reset()
+    @BeforeTest fun setup() = Inspector.reset()
 
-    @AfterTest fun tearDown() = SnoopCore.reset()
+    @AfterTest fun tearDown() = Inspector.reset()
 
-    private fun client(config: SnoopConfig.() -> Unit = {}) = HttpClient(MockEngine) {
+    private fun client(config: VeriventConfig.() -> Unit = {}) = HttpClient(MockEngine) {
         engine {
             addHandler { request ->
                 when (request.url.encodedPath) {
@@ -50,15 +50,15 @@ class SnoopPluginTest {
                 }
             }
         }
-        install(Snoop, config)
+        install(Verivent, config)
     }
 
-    private fun transactions() = SnoopCore.entriesSnapshot.filterIsInstance<NetworkTransaction>()
+    private fun transactions() = Inspector.entriesSnapshot.filterIsInstance<NetworkTransaction>()
 
     @Test
     fun capturesSuccessfulCall() = runTest {
         val response = client().get("https://api.test/users?page=1")
-        // App still reads the body even though Snoop observed it.
+        // App still reads the body even though Verivent observed it.
         assertEquals("response-body", response.bodyAsText())
 
         val txn = transactions().single()
@@ -123,7 +123,7 @@ class SnoopPluginTest {
                     )
                 }
             }
-            install(Snoop)
+            install(Verivent)
         }
         client.post("https://api.test/oauth/token") {
             contentType(ContentType.Application.FormUrlEncoded)
@@ -166,7 +166,7 @@ class SnoopPluginTest {
                     respond("ok", HttpStatusCode.OK)
                 }
             }
-            install(Snoop)
+            install(Verivent)
         }
         client.get("https://api.test/users?token=secret&page=1")
 
@@ -183,7 +183,7 @@ class SnoopPluginTest {
         assertEquals("request-***", txn.requestBody?.text)
         assertEquals("response-body", txn.responseBody?.text)
 
-        SnoopCore.reset()
+        Inspector.reset()
         client { sanitizeBody { it.replace("body", "***") } }.get("https://api.test/users")
         assertEquals("response-***", transactions().single().responseBody?.text)
     }
@@ -200,9 +200,9 @@ class SnoopPluginTest {
                     respond(channel, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
                 }
             }
-            install(Snoop)
+            install(Verivent)
         }
-        // execute {} skips Ktor's SaveBody; Snoop must not consume the host's only channel.
+        // execute {} skips Ktor's SaveBody; Verivent must not consume the host's only channel.
         val received = client.prepareGet("https://api.test/stream").execute { it.bodyAsText() }
         assertEquals("chunk-1chunk-2", received)
         assertEquals("(streaming body — not captured)", transactions().single().responseBody?.text)
@@ -242,7 +242,7 @@ class SnoopPluginTest {
                 )
             }
         }
-        install(Snoop)
+        install(Verivent)
     }
 
     @Test
@@ -253,7 +253,7 @@ class SnoopPluginTest {
                     respond("PNG-BYTES", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/octet-stream"))
                 }
             }
-            install(Snoop)
+            install(Verivent)
         }
         client.get("https://api.test/image")
         assertEquals(
@@ -291,7 +291,7 @@ class SnoopPluginTest {
                 // Ktor's own timeout message has this shape: the failing URL, query string and all.
                 addHandler { throw RuntimeException("Request timeout [url=https://api.test/u?token=hunter2]") }
             }
-            install(Snoop)
+            install(Verivent)
         }
         assertFailsWith<RuntimeException> { client.get("https://api.test/u?token=hunter2") }
 
@@ -324,11 +324,11 @@ class SnoopPluginTest {
     fun disabledCoreSkipsResponseCaptureEntirely() = runTest {
         val client = client()
         client.get("https://api.test/users")
-        SnoopCore.enabled = false
+        Inspector.enabled = false
         try {
             assertEquals("response-body", client.get("https://api.test/users").bodyAsText())
         } finally {
-            SnoopCore.enabled = true
+            Inspector.enabled = true
         }
         // The disabled call is neither recorded nor patched onto the earlier one.
         assertEquals(1, transactions().size)
@@ -353,7 +353,7 @@ class SnoopPluginTest {
                 retryOnServerErrors(maxRetries = 1)
                 constantDelay(millis = 1, randomizationMs = 0)
             }
-            install(Snoop)
+            install(Verivent)
         }
         assertEquals("ok", client.get("https://api.test/flaky").bodyAsText())
 

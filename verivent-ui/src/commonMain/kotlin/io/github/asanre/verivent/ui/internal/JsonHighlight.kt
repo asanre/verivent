@@ -1,4 +1,4 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
 internal enum class JsonTokenType { Key, StringValue, Number, Keyword, Punctuation }
 

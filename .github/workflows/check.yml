@@ -32,7 +32,7 @@ jobs:
       - name: Assemble the XCFramework
         # The local Package.swift links it by path, and SwiftPM resolves the graph before anything
         # else runs — without this the package does not even resolve.
-        run: ./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework --no-configuration-cache
+        run: ./gradlew :verivent-native:assembleVeriventKitReleaseXCFramework --no-configuration-cache
       - name: Pick a simulator
         id: sim
         # Resolved rather than pinned: `-destination 'name=iPhone 16'` fails outright unless the OS
@@ -44,4 +44,4 @@ jobs:
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
       - name: Run the bridge tests
         working-directory: swift
-        run: xcodebuild test -scheme Snoop -destination "id=${{ steps.sim.outputs.udid }}"
+        run: xcodebuild test -scheme Verivent -destination "id=${{ steps.sim.outputs.udid }}"

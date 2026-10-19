@@ -1,6 +1,6 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
-import com.snoop.core.model.KeyValue
+import io.github.asanre.verivent.core.model.KeyValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject

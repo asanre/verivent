@@ -1,9 +1,9 @@
-package com.snoop.sample
+package io.github.asanre.verivent.sample
 
-import com.snoop.analytics.SnoopAnalytics
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.Annotation
-import com.snoop.ktor.Snoop
+import io.github.asanre.verivent.analytics.AnalyticsSink
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.Annotation
+import io.github.asanre.verivent.ktor.Verivent
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -13,18 +13,18 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
-/** Wires a real Ktor client (with Snoop installed) and a Snoop analytics logger for the demo. */
+/** Wires a real Ktor client (with Verivent installed) and a Verivent analytics logger for the demo. */
 class Sampler {
 
     private val client = HttpClient(sampleEngine()) {
-        install(Snoop) {
+        install(Verivent) {
             maxContentLength = 200_000
             sanitizeHeader { it == HttpHeaders.Authorization }
         }
     }
 
     private val ecommerce = setOf("purchase", "add_to_cart")
-    private val analytics = SnoopAnalytics {
+    private val analytics = AnalyticsSink {
         filter { !it.name.startsWith("debug_") }
         sanitizeProperty { it == "user_email" }
         annotate { if (it.name in ecommerce) listOf(Annotation.Ecommerce) else emptyList() }
@@ -42,12 +42,12 @@ class Sampler {
     suspend fun postOrder() {
         client.post("https://jsonplaceholder.typicode.com/posts") {
             contentType(ContentType.Application.Json)
-            setBody("""{"title":"snoop","body":"demo","userId":1}""")
+            setBody("""{"title":"verivent","body":"demo","userId":1}""")
         }.bodyAsText()
     }
 
     suspend fun triggerError() {
-        client.get("https://snoop.invalid.host.example/timeout").bodyAsText()
+        client.get("https://verivent.invalid.host.example/timeout").bodyAsText()
     }
 
     fun logScreenView(screen: String) {
@@ -58,7 +58,7 @@ class Sampler {
         analytics.log(
             name = "purchase",
             channel = "firebase",
-            properties = mapOf("value" to 42.5, "currency" to "EUR", "user_email" to "demo@snoop.dev"),
+            properties = mapOf("value" to 42.5, "currency" to "EUR", "user_email" to "demo@verivent.dev"),
             sections = mapOf(
                 "Default parameters" to mapOf("environment" to "demo", "language" to "en"),
                 "User properties" to mapOf("user_logged" to true, "newsletter_subscriber" to "no"),
@@ -74,7 +74,7 @@ class Sampler {
      * A plan these demo events partly break: screen_view sends a screen it doesn't list, purchase
      * misses transaction_id and sends user_email, the gtm events match, and the rest aren't logged.
      */
-    fun loadTrackingPlan() = SnoopCore.loadTrackingPlan(SAMPLE_PLAN)
+    fun loadTrackingPlan() = Inspector.loadTrackingPlan(SAMPLE_PLAN)
 
     /**
      * Log a batch of events and immediately flush them to a collector endpoint — the shape a

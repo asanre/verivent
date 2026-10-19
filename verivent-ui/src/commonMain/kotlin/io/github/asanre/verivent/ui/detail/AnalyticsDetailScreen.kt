@@ -1,4 +1,4 @@
-package com.snoop.ui.detail
+package io.github.asanre.verivent.ui.detail
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,22 +24,22 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.Annotation
-import com.snoop.core.model.PlanIssue
-import com.snoop.core.model.PlanSummary
-import com.snoop.ui.component.CopyIconButton
-import com.snoop.ui.component.DetailScaffold
-import com.snoop.ui.component.Pill
-import com.snoop.ui.component.PropertiesView
-import com.snoop.ui.component.SectionLabel
-import com.snoop.ui.component.SnoopIcons
-import com.snoop.ui.component.dashedBorder
-import com.snoop.ui.internal.checkedBy
-import com.snoop.ui.internal.formatClock
-import com.snoop.ui.internal.problemCount
-import com.snoop.ui.internal.propertiesToJson
-import com.snoop.ui.theme.LocalSnoopColors
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.Annotation
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.ui.component.CopyIconButton
+import io.github.asanre.verivent.ui.component.DetailScaffold
+import io.github.asanre.verivent.ui.component.Pill
+import io.github.asanre.verivent.ui.component.PropertiesView
+import io.github.asanre.verivent.ui.component.SectionLabel
+import io.github.asanre.verivent.ui.component.InspectorIcons
+import io.github.asanre.verivent.ui.component.dashedBorder
+import io.github.asanre.verivent.ui.internal.checkedBy
+import io.github.asanre.verivent.ui.internal.formatClock
+import io.github.asanre.verivent.ui.internal.problemCount
+import io.github.asanre.verivent.ui.internal.propertiesToJson
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 
 @Composable
 internal fun AnalyticsDetailScreen(
@@ -57,7 +57,7 @@ internal fun AnalyticsDetailScreen(
         },
     ) { modifier, _ ->
         Column(modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            val colors = LocalSnoopColors.current
+            val colors = LocalInspectorColors.current
             val tint = colors.channelTint(entry.channel)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -110,7 +110,7 @@ private fun CheckedAtCaptureNote() {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(SnoopIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Icon(InspectorIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         Text(
             "Checked when it was captured. Clearing or replacing the plan hides this verdict, and events captured before a plan is loaded aren't checked.",
             style = MaterialTheme.typography.bodySmall,
@@ -121,7 +121,7 @@ private fun CheckedAtCaptureNote() {
 
 @Composable
 private fun PlanVerdictCard(planVersion: String, issues: List<PlanIssue>) {
-    val verdict = if (issues.isEmpty()) LocalSnoopColors.current.planMatches else LocalSnoopColors.current.planBreaks
+    val verdict = if (issues.isEmpty()) LocalInspectorColors.current.planMatches else LocalInspectorColors.current.planBreaks
     Surface(
         color = verdict.card.container,
         border = BorderStroke(1.dp, verdict.border),
@@ -134,7 +134,7 @@ private fun PlanVerdictCard(planVersion: String, issues: List<PlanIssue>) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(
-                    if (issues.isEmpty()) SnoopIcons.MatchesCircle else SnoopIcons.BreaksCircle,
+                    if (issues.isEmpty()) InspectorIcons.MatchesCircle else InspectorIcons.BreaksCircle,
                     contentDescription = null,
                     tint = verdict.pill.content,
                     modifier = Modifier.size(22.dp),

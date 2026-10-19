@@ -1,4 +1,4 @@
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 import java.io.File
 

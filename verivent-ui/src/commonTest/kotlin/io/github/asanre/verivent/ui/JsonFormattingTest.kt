@@ -1,8 +1,8 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.ui.internal.compactPrintJson
-import com.snoop.ui.internal.nestingTooDeep
-import com.snoop.ui.internal.prettyPrintJson
+import io.github.asanre.verivent.ui.internal.compactPrintJson
+import io.github.asanre.verivent.ui.internal.nestingTooDeep
+import io.github.asanre.verivent.ui.internal.prettyPrintJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

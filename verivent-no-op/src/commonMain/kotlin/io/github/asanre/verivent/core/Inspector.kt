@@ -1,22 +1,22 @@
-package com.snoop.core
+package io.github.asanre.verivent.core
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanSummary
-import com.snoop.core.model.SnoopEntry
-import com.snoop.core.store.SnoopStore
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.core.store.TimelineStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.time.Instant
 
-/** No-op mirror of `SnoopCore` for release builds: records nothing, stores nothing. */
-object SnoopCore {
+/** No-op mirror of `Inspector` for release builds: records nothing, stores nothing. */
+object Inspector {
 
-    val store: SnoopStore = SnoopStore()
+    val store: TimelineStore = TimelineStore()
 
     var enabled: Boolean = false
 
-    var title: String = "Snoop"
+    var title: String = "Verivent"
         private set
 
     var storageDir: String? = null
@@ -47,5 +47,5 @@ object SnoopCore {
 
     fun reset() = Unit
 
-    val entriesSnapshot: List<SnoopEntry> get() = emptyList()
+    val entriesSnapshot: List<TimelineEntry> get() = emptyList()
 }

@@ -1,4 +1,4 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
 /**
  * Splits one captured entry's JSON into console lines that fit the platform's per-message limit.
@@ -38,7 +38,7 @@ internal fun consoleLines(id: String, json: String, maxBytes: Int): List<String>
 
 private fun String.utf8Size(): Int = encodeToByteArray().size
 
-/** Writes one line to the platform console under the `SnoopEvent` tag. */
+/** Writes one line to the platform console under the `VeriventEvent` tag. */
 internal expect fun platformConsole(line: String)
 
 /** Largest console message, in UTF-8 bytes, that the platform shows without truncating. */

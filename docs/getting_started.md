@@ -10,21 +10,21 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:snoop:0.7.0")
-    releaseImplementation("io.github.asanre:snoop-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent:0.7.0")
+    releaseImplementation("io.github.asanre:verivent-no-op:0.7.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:snoop-ui:0.7.0")
-    releaseImplementation("io.github.asanre:snoop-ui-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent-ui:0.7.0")
+    releaseImplementation("io.github.asanre:verivent-ui-no-op:0.7.0")
 
     // network capture for Ktor clients:
-    debugImplementation("io.github.asanre:snoop-ktor:0.7.0")
-    releaseImplementation("io.github.asanre:snoop-ktor-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent-ktor:0.7.0")
+    releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.7.0")
 }
 ```
 
-`snoop` holds the models, store, redaction, the analytics sink and the web viewer; `snoop-ui` and
-`snoop-ktor` bring it along, so declare it yourself only when you call its API directly. The no-op
+`verivent` holds the models, store, redaction, the analytics sink and the web viewer; `verivent-ui` and
+`verivent-ktor` bring it along, so declare it yourself only when you call its API directly. The no-op
 mirrors declare the exact same classes and functions, so your call sites compile unchanged.
 
 !!! note "Upgrading from 0.6"
@@ -33,12 +33,12 @@ mirrors declare the exact same classes and functions, so your call sites compile
     [extra parameter blocks](integration-analytics-facade.md#extra-parameter-blocks).
 
 !!! note "Upgrading from 0.5"
-    `snoop-core` and `snoop-analytics` merged into `snoop` (and their no-ops into `snoop-no-op`).
-    Replace those coordinates with `snoop` / `snoop-no-op`; packages and APIs are unchanged, so no
+    `verivent-core` and `verivent-analytics` merged into `verivent` (and their no-ops into `verivent-no-op`).
+    Replace those coordinates with `verivent` / `verivent-no-op`; packages and APIs are unchanged, so no
     source edits are needed.
 
-!!! tip "Skipping `snoop-ui`"
-    `snoop-ui` is the only artifact that pulls in Compose. Leave it out if you inspect from the
+!!! tip "Skipping `verivent-ui`"
+    `verivent-ui` is the only artifact that pulls in Compose. Leave it out if you inspect from the
     [web viewer](web-viewer.md) instead of on-device — everything else keeps working, and Compose
     never enters your dependency graph.
 
@@ -48,7 +48,7 @@ Install the plugin on your Ktor client:
 
 ```kotlin
 val client = HttpClient(engine) {
-    install(Snoop) {
+    install(Verivent) {
         maxContentLength = 250_000                              // truncate bodies larger than this
         sanitizeHeader { it == HttpHeaders.Authorization }      // Authorization/Cookie/Set-Cookie are redacted by default
         sanitizeQueryParameter { it == "token" }               // common secret params are redacted by default
@@ -63,17 +63,17 @@ for the full list.
 
 ## Capture analytics events
 
-Snoop never talks to an analytics SDK. Wire your own analytics facade to `log`:
+Verivent never talks to an analytics SDK. Wire your own analytics facade to `log`:
 
 ```kotlin
-val snoop = SnoopAnalytics {
+val verivent = AnalyticsSink {
     filter { event -> !event.name.startsWith("debug_") }
     sanitizeProperty { key -> key in setOf("user_email", "user_id") }
     annotate { event -> if (event.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
 }
 
 // from your facade, alongside the real SDK call:
-snoop.log("purchase", channel = "firebase", properties = mapOf("value" to 42.5))
+verivent.log("purchase", channel = "firebase", properties = mapOf("value" to 42.5))
 ```
 
 See [Hook your analytics facade](integration-analytics-facade.md) for the pattern.
@@ -85,7 +85,7 @@ bytes. Defaults are **500 entries** and **20 MB**. Reconfigure before traffic st
 store; the `StateFlow` survives, so an already-open inspector keeps working):
 
 ```kotlin
-SnoopCore.configure(capacity = 1_000, maxTotalBytes = 40_000_000)
+Inspector.configure(capacity = 1_000, maxTotalBytes = 40_000_000)
 ```
 
 The same call renames the tool. `title` reaches every viewer — the inspector's header, the Android
@@ -93,10 +93,10 @@ and iOS notifications, and the web page's tab and header — so a host that woul
 name sets it once:
 
 ```kotlin
-SnoopCore.configure(title = "Patata Inspector")
+Inspector.configure(title = "Patata Inspector")
 ```
 
-Unlike the limits, changing the title leaves the store alone. That covers every surface Snoop draws;
+Unlike the limits, changing the title leaves the store alone. That covers every surface Verivent draws;
 the one name it cannot set is Android's task label, which is normally your app's anyway — see
 [Where the Activity lands](integration.md#where-the-activity-lands-and-its-label).
 

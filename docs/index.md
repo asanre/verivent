@@ -1,17 +1,17 @@
-# Snoop
+# Verivent
 
-![Snoop — network and analytics inspector for Compose Multiplatform](assets/banner.webp)
+![Verivent — network and analytics inspector for Compose Multiplatform](assets/banner.webp)
 
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/snoop)](https://central.sonatype.com/namespace/io.github.asanre)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/verivent)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
 
-**Snoop** is an on-device inspector for **network traffic and analytics events**, built for Compose
+**Verivent** is an on-device inspector for **network traffic and analytics events**, built for Compose
 Multiplatform. Both streams land on one timeline, so you can see a request and the events around it
 without leaving the app — on Android and iOS.
 
 Network inspection in KMP is a solved problem, but nothing unifies network + analytics in one
-Compose surface, and no tool inspects analytics events independently of the vendor SDK. Snoop does
+Compose surface, and no tool inspects analytics events independently of the vendor SDK. Verivent does
 both.
 
 ## Features
@@ -31,17 +31,17 @@ both.
 
 ## Modules
 
-`snoop` carries the core and the analytics sink; add `snoop-ui` for the on-device inspector and one
+`verivent` carries the core and the analytics sink; add `verivent-ui` for the on-device inspector and one
 adapter per HTTP client.
 
 | Artifact | What it does |
 |---|---|
-| `snoop` | Models, store, redaction, the web viewer and the `log(name, channel, properties, sections)` analytics sink |
-| `snoop-ui` | Compose Multiplatform inspector UI and the live notifications |
-| `snoop-ktor` | Ktor client plugin that captures traffic |
-| `snoop-*-no-op` | Empty mirrors with the identical API for release builds |
+| `verivent` | Models, store, redaction, the web viewer and the `log(name, channel, properties, sections)` analytics sink |
+| `verivent-ui` | Compose Multiplatform inspector UI and the live notifications |
+| `verivent-ktor` | Ktor client plugin that captures traffic |
+| `verivent-*-no-op` | Empty mirrors with the identical API for release builds |
 
-`snoop-ui` is the only artifact that depends on Compose — leave it out and you get the web viewer
+`verivent-ui` is the only artifact that depends on Compose — leave it out and you get the web viewer
 with no Compose in your graph.
 
 See [Getting started](getting_started.md) to install, then [Integration](integration.md) to open the

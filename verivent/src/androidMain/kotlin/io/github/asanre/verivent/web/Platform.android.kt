@@ -1,6 +1,6 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
-import com.snoop.core.internal.SnoopLog
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.security.SecureRandom
@@ -12,7 +12,7 @@ internal actual fun localHostAddress(): String? = runCatching {
         .filterIsInstance<Inet4Address>()
         .firstOrNull { it.isSiteLocalAddress }
         ?.hostAddress
-}.onFailure { SnoopLog.warn("web", "could not read the LAN address", it) }.getOrNull()
+}.onFailure { DiagnosticLog.warn("web", "could not read the LAN address", it) }.getOrNull()
 
 internal actual fun secureRandomBytes(size: Int): ByteArray =
     ByteArray(size).also { SecureRandom().nextBytes(it) }

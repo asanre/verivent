@@ -1,25 +1,25 @@
-package com.snoop.ios
+package io.github.asanre.verivent.ios
 
-import com.snoop.web.SnoopBind
+import io.github.asanre.verivent.web.WebViewerBind
 
 /**
- * Where the viewer listens. Mirrors `SnoopBind` so the bridge keeps snoop out of its exported
+ * Where the viewer listens. Mirrors `WebViewerBind` so the bridge keeps verivent out of its exported
  * surface; [Lan] and [Host] are reachable off-device and are always token-gated.
  */
-sealed interface SnoopViewerBind {
+sealed interface NativeViewerBind {
     /** Loopback only (`127.0.0.1`); open. Reachable from the iOS simulator as `localhost`. */
-    data object Local : SnoopViewerBind
+    data object Local : NativeViewerBind
 
     /** Every interface (`0.0.0.0`), reachable across the LAN. */
-    data object Lan : SnoopViewerBind
+    data object Lan : NativeViewerBind
 
     /** A specific bind address you choose. Gated like [Lan]. */
-    data class Host(val address: String) : SnoopViewerBind
+    data class Host(val address: String) : NativeViewerBind
 }
 
-internal val SnoopViewerBind.core: SnoopBind
+internal val NativeViewerBind.core: WebViewerBind
     get() = when (this) {
-        SnoopViewerBind.Local -> SnoopBind.Local
-        SnoopViewerBind.Lan -> SnoopBind.Lan
-        is SnoopViewerBind.Host -> SnoopBind.Host(address)
+        NativeViewerBind.Local -> WebViewerBind.Local
+        NativeViewerBind.Lan -> WebViewerBind.Lan
+        is NativeViewerBind.Host -> WebViewerBind.Host(address)
     }

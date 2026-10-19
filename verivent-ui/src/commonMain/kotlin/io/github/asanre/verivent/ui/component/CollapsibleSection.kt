@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
@@ -39,7 +39,7 @@ internal fun CollapsibleSection(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Icon(
-            imageVector = SnoopIcons.ChevronRight,
+            imageVector = InspectorIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp).rotate(rotation),

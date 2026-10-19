@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 import kotlin.time.Instant
 
@@ -22,7 +22,7 @@ data class NetworkTransaction(
     val protocol: String? = null,
     val durationMillis: Long? = null,
     val error: String? = null,
-) : SnoopEntry {
+) : TimelineEntry {
     val state: NetworkState
         get() = when {
             error != null -> NetworkState.Failed

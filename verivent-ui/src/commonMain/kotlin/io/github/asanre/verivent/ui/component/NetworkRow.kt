@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,14 +15,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.ui.internal.formatDuration
-import com.snoop.ui.theme.LocalSnoopColors
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.ui.internal.formatDuration
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 
 @Composable
 internal fun NetworkRow(transaction: NetworkTransaction, onClick: () -> Unit) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()

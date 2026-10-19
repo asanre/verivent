@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -8,14 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import com.snoop.ui.internal.JsonTokenType
-import com.snoop.ui.internal.jsonSpans
-import com.snoop.ui.theme.LocalSnoopColors
+import io.github.asanre.verivent.ui.internal.JsonTokenType
+import io.github.asanre.verivent.ui.internal.jsonSpans
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 
 /** Monospace JSON with syntax colors. Expects already-formatted text (see [prettyPrintJson]). */
 @Composable
 internal fun JsonSyntaxText(pretty: String, modifier: Modifier = Modifier) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     val annotated = remember(pretty, colors) {
         buildAnnotatedString {
             append(pretty)

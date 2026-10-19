@@ -1,10 +1,10 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
 /**
- * No-op mirror of the analytics sink in `snoop` with the identical public API for release builds. Create with
- * the [SnoopAnalytics] factory.
+ * No-op mirror of the analytics sink in `verivent` with the identical public API for release builds. Create with
+ * the [AnalyticsSink] factory.
  */
-class SnoopAnalytics internal constructor(@Suppress("UNUSED_PARAMETER") config: SnoopAnalyticsConfig) {
+class AnalyticsSink internal constructor(@Suppress("UNUSED_PARAMETER") config: AnalyticsSinkConfig) {
     fun log(
         name: String,
         channel: String,
@@ -13,5 +13,5 @@ class SnoopAnalytics internal constructor(@Suppress("UNUSED_PARAMETER") config: 
     ) = Unit
 }
 
-fun SnoopAnalytics(configure: SnoopAnalyticsConfig.() -> Unit = {}): SnoopAnalytics =
-    SnoopAnalytics(SnoopAnalyticsConfig().apply(configure))
+fun AnalyticsSink(configure: AnalyticsSinkConfig.() -> Unit = {}): AnalyticsSink =
+    AnalyticsSink(AnalyticsSinkConfig().apply(configure))

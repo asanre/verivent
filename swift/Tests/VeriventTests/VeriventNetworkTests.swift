@@ -1,14 +1,14 @@
 import XCTest
-@testable import Snoop
+@testable import Verivent
 
 /// Covers the `URLSession` capture path end to end on a simulator: a real request goes through
-/// `SnoopURLProtocol`, into the Kotlin bridge, and comes back out of the embedded viewer's
+/// `VeriventURLProtocol`, into the Kotlin bridge, and comes back out of the embedded viewer's
 /// `/api/entries` as a network entry.
 ///
 /// The traffic is aimed at the viewer's own server — it is a real localhost HTTP endpoint, so no
 /// outside network is needed in CI. Unknown paths answer 404, which conveniently gives each test a
 /// private path to scope its assertions to: the store is a process-wide singleton.
-final class SnoopNetworkTests: XCTestCase {
+final class VeriventNetworkTests: XCTestCase {
 
     private var viewer: URLComponents!
 
@@ -18,7 +18,7 @@ final class SnoopNetworkTests: XCTestCase {
     }
 
     override func tearDown() {
-        Snoop.stopWebViewer()
+        Verivent.stopWebViewer()
         super.tearDown()
     }
 
@@ -54,7 +54,7 @@ final class SnoopNetworkTests: XCTestCase {
         let entries = try await networkEntries(path: path)
         let entry = try XCTUnwrap(entries.first)
 
-        // The built-in query-parameter list is snoop's, not a Swift reimplementation.
+        // The built-in query-parameter list is verivent's, not a Swift reimplementation.
         let url = try XCTUnwrap(entry["url"] as? String)
         XCTAssertTrue(url.contains("api_key=██"), "expected a redacted api_key in \(url)")
         XCTAssertFalse(url.contains("supersecret"), "the secret must never reach the store")
@@ -155,10 +155,10 @@ final class SnoopNetworkTests: XCTestCase {
 
     private func makeSession(
         redactHeader: ((String) -> Bool)? = nil,
-        keepRequest: ((Snoop.Request) -> Bool)? = nil
+        keepRequest: ((Verivent.Request) -> Bool)? = nil
     ) -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
-        Snoop.installNetworkInterceptor(
+        Verivent.installNetworkInterceptor(
             on: configuration,
             redactHeader: redactHeader,
             keepRequest: keepRequest
@@ -170,8 +170,8 @@ final class SnoopNetworkTests: XCTestCase {
     /// left running would squat 9394. The bind is asynchronous, so a served response is the only
     /// trustworthy readiness signal.
     private func startViewer() async throws -> URLComponents {
-        Snoop.stopWebViewer()
-        let base = Snoop.startWebViewer(.local, port: 9395)
+        Verivent.stopWebViewer()
+        let base = Verivent.startWebViewer(.local, port: 9395)
         let components = try XCTUnwrap(URLComponents(string: base))
         var probe = components
         probe.path = "/api/entries"

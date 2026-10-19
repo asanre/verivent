@@ -1,10 +1,10 @@
-site_name: Snoop
+site_name: Verivent
 site_description: On-device network + analytics inspector for Compose Multiplatform and native iOS
-site_url: https://asanre.github.io/snoop/
+site_url: https://asanre.github.io/verivent/
 site_author: Antoni Sanchez
 
-repo_url: https://github.com/asanre/snoop
-repo_name: asanre/snoop
+repo_url: https://github.com/asanre/verivent
+repo_name: asanre/verivent
 
 docs_dir: docs
 site_dir: build/mkdocs
@@ -57,4 +57,4 @@ nav:
       - Analytics facade: integration-analytics-facade.md
       - Web viewer: web-viewer.md
   - Contributing: contributing.md
-  - API reference: https://asanre.github.io/snoop/api/
+  - API reference: https://asanre.github.io/verivent/api/

@@ -1,7 +1,7 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
@@ -41,91 +41,91 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class SnoopWebServerTest {
+class WebViewerTest {
 
     @AfterTest
     fun tearDown() {
-        SnoopWebServer.stop()
-        SnoopCore.reset()
+        WebViewer.stop()
+        Inspector.reset()
     }
 
     private fun seedEntry() {
-        SnoopCore.recordAnalytics(AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "event", "firebase"))
+        Inspector.recordAnalytics(AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "event", "firebase"))
     }
 
     @Test
     fun bindsLoopbackOnly() {
-        val server = SnoopWebServer.createServer(9377)
+        val server = WebViewer.createServer(9377)
         assertEquals("127.0.0.1", server.engineConfig.connectors.single().host)
     }
 
     @Test
     fun clearWithoutHeaderIsRejected() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/clear")
         assertEquals(HttpStatusCode.Forbidden, response.status)
-        assertEquals(1, SnoopCore.store.entries.value.size)
+        assertEquals(1, Inspector.store.entries.value.size)
     }
 
     @Test
     fun clearWithForeignOriginIsRejected() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/clear") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             header(HttpHeaders.Origin, "http://evil.example")
         }
         assertEquals(HttpStatusCode.Forbidden, response.status)
-        assertEquals(1, SnoopCore.store.entries.value.size)
+        assertEquals(1, Inspector.store.entries.value.size)
     }
 
     @Test
     fun clearWithHeaderAndLocalOriginClears() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/clear") {
-            header("X-Snoop", "1")
-            header(HttpHeaders.Host, "localhost:${SnoopWebServer.DEFAULT_PORT}")
-            header(HttpHeaders.Origin, "http://localhost:${SnoopWebServer.DEFAULT_PORT}")
+            header("X-Verivent", "1")
+            header(HttpHeaders.Host, "localhost:${WebViewer.DEFAULT_PORT}")
+            header(HttpHeaders.Origin, "http://localhost:${WebViewer.DEFAULT_PORT}")
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(SnoopCore.store.entries.value.isEmpty())
+        assertTrue(Inspector.store.entries.value.isEmpty())
     }
 
     @Test
     fun clearWithLanSameOriginClears() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/clear") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             header(HttpHeaders.Host, "192.168.1.10:9394")
             header(HttpHeaders.Origin, "http://192.168.1.10:9394")
         }
         assertEquals(HttpStatusCode.OK, response.status)
-        assertTrue(SnoopCore.store.entries.value.isEmpty())
+        assertTrue(Inspector.store.entries.value.isEmpty())
     }
 
     private val plan = """{ "version": "4.2.0", "events": [ { "name": "search", "channel": "firebase", "schema": {} } ] }"""
 
     @Test
     fun loadingAPlanNeedsTheSameGuardAsClear() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         assertEquals(HttpStatusCode.Forbidden, client.post("/api/tracking-plan") { setBody(plan) }.status)
         val foreign = client.post("/api/tracking-plan") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             header(HttpHeaders.Origin, "http://evil.example")
             setBody(plan)
         }
         assertEquals(HttpStatusCode.Forbidden, foreign.status)
-        assertNull(SnoopCore.trackingPlan.value)
+        assertNull(Inspector.trackingPlan.value)
     }
 
     @Test
     fun aValidPlanLoadsAndReportsItsVersionAndEventsAndClearRemovesIt() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         val loaded = client.post("/api/tracking-plan") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             setBody(plan)
         }
         assertEquals(HttpStatusCode.OK, loaded.status)
@@ -136,15 +136,15 @@ class SnoopWebServerTest {
         assertEquals("search", event.getValue("name").jsonPrimitive.content)
         assertEquals("firebase", event.getValue("channel").jsonPrimitive.content)
 
-        client.post("/api/tracking-plan/clear") { header("X-Snoop", "1") }
-        assertNull(SnoopCore.trackingPlan.value)
+        client.post("/api/tracking-plan/clear") { header("X-Verivent", "1") }
+        assertNull(Inspector.trackingPlan.value)
     }
 
     @Test
     fun anInvalidPlanIsRejectedWithTheReason() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/tracking-plan") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             setBody("""{ "version": "1" }""")
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
@@ -153,9 +153,9 @@ class SnoopWebServerTest {
 
     @Test
     fun anOversizedPlanIsRejected() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.post("/api/tracking-plan") {
-            header("X-Snoop", "1")
+            header("X-Verivent", "1")
             setBody("x".repeat(2 * 1024 * 1024 + 1))
         }
         assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
@@ -163,26 +163,26 @@ class SnoopWebServerTest {
 
     @Test
     fun entriesOpenWhenNoTokenConfigured() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         assertEquals(HttpStatusCode.OK, client.get("/api/entries").status)
     }
 
     @Test
     fun entriesRejectedWithoutOrWithWrongToken() = testApplication {
-        application { snoopModule(token = "secret") }
+        application { webViewerModule(token = "secret") }
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries?t=nope").status)
     }
 
     @Test
     fun entriesAllowedWithMatchingToken() = testApplication {
-        application { snoopModule(token = "secret") }
+        application { webViewerModule(token = "secret") }
         assertEquals(HttpStatusCode.OK, client.get("/api/entries?t=secret").status)
     }
 
     @Test
     fun sseStreamConflatesBursts() = testApplication {
-        application { snoopModule() }
+        application { webViewerModule() }
         val frames = mutableListOf<String>()
         // Single-threaded dispatcher: real time (no virtual-clock skew) and confined list access.
         withContext(Dispatchers.Default.limitedParallelism(1)) {
@@ -197,7 +197,7 @@ class SnoopWebServerTest {
             }
             withTimeout(10_000) { while (frames.isEmpty()) delay(20) }
             repeat(50) { n ->
-                SnoopCore.recordAnalytics(
+                Inspector.recordAnalytics(
                     AnalyticsEntry("e$n", Instant.fromEpochMilliseconds(n.toLong()), "ev$n", "ch"),
                 )
             }
@@ -211,7 +211,7 @@ class SnoopWebServerTest {
     @Test
     fun sseSecondFrameCarriesOnlyTheDelta() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val frames = mutableListOf<String>()
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             val reader = launch {
@@ -224,7 +224,7 @@ class SnoopWebServerTest {
                 }
             }
             withTimeout(10_000) { while (frames.isEmpty()) delay(20) }
-            SnoopCore.recordAnalytics(AnalyticsEntry("2", Instant.fromEpochMilliseconds(1), "second", "ch"))
+            Inspector.recordAnalytics(AnalyticsEntry("2", Instant.fromEpochMilliseconds(1), "second", "ch"))
             withTimeout(10_000) { while (frames.size < 2) delay(20) }
             reader.cancel()
         }
@@ -238,7 +238,7 @@ class SnoopWebServerTest {
     @Test
     fun sseResendsAnEntryWhenItChanges() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val frames = mutableListOf<String>()
         withContext(Dispatchers.Default.limitedParallelism(1)) {
             val reader = launch {
@@ -251,7 +251,7 @@ class SnoopWebServerTest {
                 }
             }
             withTimeout(10_000) { while (frames.isEmpty()) delay(20) }
-            SnoopCore.store.update("1") { (it as AnalyticsEntry).copy(name = "renamed") }
+            Inspector.store.update("1") { (it as AnalyticsEntry).copy(name = "renamed") }
             withTimeout(10_000) { while (frames.size < 2) delay(20) }
             reader.cancel()
         }
@@ -263,24 +263,24 @@ class SnoopWebServerTest {
     @Test
     fun concurrentStartYieldsOneServer() = runTest {
         val port = 9378
-        val urls = (1..8).map { async(Dispatchers.Default) { SnoopWebServer.start(port = port) } }.awaitAll()
-        val token = assertNotNull(SnoopWebServer.token)
+        val urls = (1..8).map { async(Dispatchers.Default) { WebViewer.start(port = port) } }.awaitAll()
+        val token = assertNotNull(WebViewer.token)
         assertTrue(urls.all { it == "http://localhost:$port/?t=$token" }, "got $urls")
-        assertTrue(SnoopWebServer.isRunning)
+        assertTrue(WebViewer.isRunning)
     }
 
     @Test
     fun startOnATakenPortLeavesTheServerStopped() = runTest {
         val port = 9377
-        val squatter = SnoopWebServer.createServer(port)
+        val squatter = WebViewer.createServer(port)
         squatter.start(wait = false)
         try {
             // CIO binds on a coroutine, so the EADDRINUSE never reaches start()'s caller. Unhandled
             // it reaches the default handler, which on Kotlin/Native takes the host process down.
             withContext(Dispatchers.Default) { delay(300) }
-            SnoopWebServer.start(port = port)
+            WebViewer.start(port = port)
             withContext(Dispatchers.Default) { delay(500) }
-            assertFalse(SnoopWebServer.isRunning, "a failed bind must not leave the server marked running")
+            assertFalse(WebViewer.isRunning, "a failed bind must not leave the server marked running")
         } finally {
             squatter.stop(gracePeriodMillis = 0, timeoutMillis = 0)
         }
@@ -288,19 +288,19 @@ class SnoopWebServerTest {
 
     @Test
     fun startGatesLocalBindsToo() = runTest {
-        val url = SnoopWebServer.start(SnoopBind.Local, port = 9379)
-        val token = assertNotNull(SnoopWebServer.token, "loopback must be gated as well")
+        val url = WebViewer.start(WebViewerBind.Local, port = 9379)
+        val token = assertNotNull(WebViewer.token, "loopback must be gated as well")
         assertEquals("http://localhost:9379/?t=$token", url)
     }
 
     @Test
     fun stopThenStartOnSamePortWorks() = runTest {
         val port = 9380
-        SnoopWebServer.start(port = port)
-        SnoopWebServer.stop()
-        assertFalse(SnoopWebServer.isRunning, "stop() must not return before the engine is down")
-        assertTrue(SnoopWebServer.start(port = port).endsWith("t=${SnoopWebServer.token}"))
-        assertTrue(SnoopWebServer.isRunning)
+        WebViewer.start(port = port)
+        WebViewer.stop()
+        assertFalse(WebViewer.isRunning, "stop() must not return before the engine is down")
+        assertTrue(WebViewer.start(port = port).endsWith("t=${WebViewer.token}"))
+        assertTrue(WebViewer.isRunning)
     }
 
     @Test
@@ -311,14 +311,14 @@ class SnoopWebServerTest {
                 // Twice: the first round sets the trap, the second one walks into it.
                 repeat(2) { round ->
                     // The URL carries the token, and survives a start that fails after returning.
-                    val url = SnoopWebServer.start(port = port)
+                    val url = WebViewer.start(port = port)
                     assertTrue(serves(client, url), "round $round: the viewer never served a response")
                     // The viewer page holds an SSE stream open for as long as it is on screen, so
                     // stop() closes a live connection rather than an idle one.
                     val opened = CompletableDeferred<Unit>()
                     val stream = launch { runCatching { readStream(client, url, opened) } }
                     withTimeout(10_000) { opened.await() }
-                    SnoopWebServer.stop()
+                    WebViewer.stop()
                     stream.cancelAndJoin()
                 }
             }
@@ -348,14 +348,14 @@ class SnoopWebServerTest {
 
     @Test
     fun streamWithoutTokenIsRejectedOutright() = testApplication {
-        application { snoopModule(token = "secret") }
+        application { webViewerModule(token = "secret") }
         // A silently-closed stream would leave EventSource reconnecting forever instead of failing.
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/stream").status)
     }
 
     @Test
     fun everyRouteIsBehindTheSameGate() = testApplication {
-        application { snoopModule(token = "secret") }
+        application { webViewerModule(token = "secret") }
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
@@ -363,20 +363,20 @@ class SnoopWebServerTest {
 
     @Test
     fun thePageCarriesTheConfiguredTitleEscaped() = testApplication {
-        application { snoopModule() }
-        assertTrue("<title>Snoop</title>" in client.get("/").bodyAsText())
+        application { webViewerModule() }
+        assertTrue("<title>Verivent</title>" in client.get("/").bodyAsText())
 
-        SnoopCore.configure(title = "Patata <script>alert(1)</script>")
+        Inspector.configure(title = "Patata <script>alert(1)</script>")
         val page = client.get("/").bodyAsText()
         assertTrue("Patata &lt;script&gt;alert(1)&lt;/script&gt;" in page)
         assertTrue("<script>alert(1)</script>" !in page, "host title must not reach the page as markup")
-        assertTrue("@SNOOP_TITLE@" !in page, "every placeholder must be substituted")
+        assertTrue("@VERIVENT_TITLE@" !in page, "every placeholder must be substituted")
     }
 
     @Test
     fun foreignHostHeaderIsRejected() = testApplication {
         seedEntry()
-        application { snoopModule() }
+        application { webViewerModule() }
         val response = client.get("/api/entries") { header(HttpHeaders.Host, "evil.example:9394") }
         assertEquals(HttpStatusCode.Forbidden, response.status)
     }
@@ -389,7 +389,7 @@ class SnoopWebServerTest {
         assertTrue(hostHeaderAllowed("[::1]:9394"))
         assertTrue(hostHeaderAllowed(null))
         assertFalse(hostHeaderAllowed("evil.example:9394"))
-        assertFalse(hostHeaderAllowed("snoop.local"))
+        assertFalse(hostHeaderAllowed("verivent.local"))
     }
 
     @Test
@@ -403,9 +403,9 @@ class SnoopWebServerTest {
 
     @Test
     fun bindAddressMapsEachMode() {
-        assertEquals("127.0.0.1", SnoopBind.Local.bindAddress)
-        assertEquals("0.0.0.0", SnoopBind.Lan.bindAddress)
-        assertEquals("192.168.1.5", SnoopBind.Host("192.168.1.5").bindAddress)
+        assertEquals("127.0.0.1", WebViewerBind.Local.bindAddress)
+        assertEquals("0.0.0.0", WebViewerBind.Lan.bindAddress)
+        assertEquals("192.168.1.5", WebViewerBind.Host("192.168.1.5").bindAddress)
     }
 
     @Test
@@ -420,23 +420,23 @@ class SnoopWebServerTest {
 
     @Test
     fun derivedUrlsFallBackWhenNotRunning() {
-        assertEquals("http://localhost:${SnoopWebServer.DEFAULT_PORT}", urlOf(null))
+        assertEquals("http://localhost:${WebViewer.DEFAULT_PORT}", urlOf(null))
         assertNull(lanUrlOf(null, "192.168.1.10"))
-        assertNull(lanUrlOf(running(SnoopBind.Local), "192.168.1.10"))
-        assertNull(lanUrlOf(running(SnoopBind.Lan), null))
-        assertEquals("http://192.168.1.10:9394/?t=abc", lanUrlOf(running(SnoopBind.Lan), "192.168.1.10"))
+        assertNull(lanUrlOf(running(WebViewerBind.Local), "192.168.1.10"))
+        assertNull(lanUrlOf(running(WebViewerBind.Lan), null))
+        assertEquals("http://192.168.1.10:9394/?t=abc", lanUrlOf(running(WebViewerBind.Lan), "192.168.1.10"))
     }
 
     @Test
     fun localUrlCarriesTheToken() {
-        assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Local)))
-        assertEquals("http://localhost:9394/?t=abc", urlOf(running(SnoopBind.Lan)))
+        assertEquals("http://localhost:9394/?t=abc", urlOf(running(WebViewerBind.Local)))
+        assertEquals("http://localhost:9394/?t=abc", urlOf(running(WebViewerBind.Lan)))
     }
 
-    private fun running(bind: SnoopBind, token: String = "abc"): Running {
+    private fun running(bind: WebViewerBind, token: String = "abc"): Running {
         val scope = CoroutineScope(SupervisorJob())
         return Running(
-            server = SnoopWebServer.createServer(9394, bind.bindAddress, token, scope),
+            server = WebViewer.createServer(9394, bind.bindAddress, token, scope),
             scope = scope,
             port = 9394,
             bind = bind,

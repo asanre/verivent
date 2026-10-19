@@ -1,5 +1,5 @@
 import Foundation
-import Snoop
+import Verivent
 
 /// The calls the Network section fires, aimed at the same endpoints as the Compose sample's
 /// `Sampler` so both demos tell the same story.
@@ -48,7 +48,7 @@ enum SampleCall: String, CaseIterable, Identifiable {
             var request = URLRequest(url: URL(string: "https://jsonplaceholder.typicode.com/posts")!)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = Data(#"{"title":"snoop","body":"hello","userId":1}"#.utf8)
+            request.httpBody = Data(#"{"title":"verivent","body":"hello","userId":1}"#.utf8)
             return request
         case .formLogin:
             var request = URLRequest(url: URL(string: "https://jsonplaceholder.typicode.com/posts")!)
@@ -64,12 +64,12 @@ enum SampleCall: String, CaseIterable, Identifiable {
             request.setValue("also-secret", forHTTPHeaderField: "X-Api-Key")
             return request
         case .unreachable:
-            return URLRequest(url: URL(string: "https://snoop.invalid.host.example/timeout")!)
+            return URLRequest(url: URL(string: "https://verivent.invalid.host.example/timeout")!)
         }
     }
 }
 
-/// One `URLSession` with Snoop's interceptor installed on its configuration — the integration point
+/// One `URLSession` with Verivent's interceptor installed on its configuration — the integration point
 /// a real app has, and the only thing network capture needs.
 final class SampleNetwork {
 
@@ -79,9 +79,9 @@ final class SampleNetwork {
 
     private init() {
         let configuration = URLSessionConfiguration.default
-        // The same shape as the Compose sample's `install(Snoop) { … }`: a header rule on top of the
+        // The same shape as the Compose sample's `install(Verivent) { … }`: a header rule on top of the
         // built-in ones, and a filter that keeps health checks out of the timeline.
-        Snoop.installNetworkInterceptor(
+        Verivent.installNetworkInterceptor(
             on: configuration,
             redactHeader: { $0.lowercased() == "x-api-key" },
             keepRequest: { $0.path != "/health" }

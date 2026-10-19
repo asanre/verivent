@@ -1,4 +1,4 @@
-package com.snoop.sample
+package io.github.asanre.verivent.sample
 
 import androidx.compose.ui.window.ComposeUIViewController
 import platform.UIKit.UIViewController

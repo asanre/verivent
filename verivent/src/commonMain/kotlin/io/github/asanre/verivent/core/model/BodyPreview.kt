@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 /** A captured request/response body, possibly truncated to the configured limit. */
 data class BodyPreview(

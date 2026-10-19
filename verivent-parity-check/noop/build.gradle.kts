@@ -1,6 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
-// Compiles ../src (Android) and ../src-ios against the NO-OP mirrors; :snoop-parity-check:real
+// Compiles ../src (Android) and ../src-ios against the NO-OP mirrors; :verivent-parity-check:real
 // compiles the same sources against the real modules. Either compilation failing in `check` means
 // the APIs drifted. One simulator target is enough for the iOS half — the source is arch-agnostic.
 plugins {
@@ -44,7 +44,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.snoop.paritycheck.noop"
+    namespace = "io.github.asanre.verivent.paritycheck.noop"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

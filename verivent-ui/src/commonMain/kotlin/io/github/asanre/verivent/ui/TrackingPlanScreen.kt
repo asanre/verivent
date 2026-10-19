@@ -1,4 +1,4 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -46,20 +46,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.PlanSummary
-import com.snoop.core.model.SnoopEntry
-import com.snoop.ui.component.DetailScaffold
-import com.snoop.ui.component.SectionCard
-import com.snoop.ui.component.SectionLabel
-import com.snoop.ui.component.SnoopIcons
-import com.snoop.ui.internal.EventCoverage
-import com.snoop.ui.internal.PlanVerdict
-import com.snoop.ui.internal.plainText
-import com.snoop.ui.internal.planCoverage
-import com.snoop.ui.theme.LocalSnoopColors
-import com.snoop.ui.theme.VerdictColors
-import com.snoop.ui.theme.codeTextStyle
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.ui.component.DetailScaffold
+import io.github.asanre.verivent.ui.component.SectionCard
+import io.github.asanre.verivent.ui.component.SectionLabel
+import io.github.asanre.verivent.ui.component.InspectorIcons
+import io.github.asanre.verivent.ui.internal.EventCoverage
+import io.github.asanre.verivent.ui.internal.PlanVerdict
+import io.github.asanre.verivent.ui.internal.plainText
+import io.github.asanre.verivent.ui.internal.planCoverage
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
+import io.github.asanre.verivent.ui.theme.VerdictColors
+import io.github.asanre.verivent.ui.theme.codeTextStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,8 +67,8 @@ import kotlinx.coroutines.withContext
 /** Where the tracking plan is loaded, replaced or cleared, and where the session is held against it. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-internal fun TrackingPlanScreen(entries: List<SnoopEntry>, onBack: () -> Unit) {
-    val plan by SnoopCore.trackingPlan.collectAsState()
+internal fun TrackingPlanScreen(entries: List<TimelineEntry>, onBack: () -> Unit) {
+    val plan by Inspector.trackingPlan.collectAsState()
     var replacing by rememberSaveable { mutableStateOf(false) }
     // Replacing is a step inside this screen, so back returns to the loaded plan before leaving.
     val backToLoaded = replacing && plan != null
@@ -100,7 +100,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
     fun load(text: String) {
         scope.launch {
             val failure = withContext(Dispatchers.Default) {
-                runCatching { SnoopCore.loadTrackingPlan(text) }.exceptionOrNull()
+                runCatching { Inspector.loadTrackingPlan(text) }.exceptionOrNull()
             }
             when (failure) {
                 null -> {
@@ -131,7 +131,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                 ) {
                     Surface(color = scheme.surface, border = BorderStroke(1.dp, scheme.outlineVariant), shape = RoundedCornerShape(18.dp)) {
                         Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
-                            Icon(SnoopIcons.PlanBoard, contentDescription = null, modifier = Modifier.size(32.dp))
+                            Icon(InspectorIcons.PlanBoard, contentDescription = null, modifier = Modifier.size(32.dp))
                         }
                     }
                     Text(
@@ -166,7 +166,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                     colors = inverted,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
                 ) {
-                    Icon(SnoopIcons.Clipboard, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(InspectorIcons.Clipboard, contentDescription = null, modifier = Modifier.size(20.dp))
                     Text(
                         "Paste from clipboard",
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
@@ -183,7 +183,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                     json = it
                     error = null
                 }
-                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = LocalSnoopColors.current.planBreaks.card.content) }
+                error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = LocalInspectorColors.current.planBreaks.card.content) }
                 if (json.isNotBlank() || current != null) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                         if (current != null) TextButton(onClick = onCancel) { Text("Cancel", color = scheme.onSurface) }
@@ -209,7 +209,7 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
             }
         }
         Text(
-            if (SnoopCore.storageDir != null) "The plan stays on this device until you clear it." else "The plan lasts until the app restarts.",
+            if (Inspector.storageDir != null) "The plan stays on this device until you clear it." else "The plan lasts until the app restarts.",
             style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
             color = scheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -240,8 +240,8 @@ private fun PlanJsonField(json: String, isError: Boolean, onChange: (String) -> 
 }
 
 @Composable
-private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: () -> Unit) {
-    val colors = LocalSnoopColors.current
+private fun LoadedPlan(plan: PlanSummary, entries: List<TimelineEntry>, onReplace: () -> Unit) {
+    val colors = LocalInspectorColors.current
     val scheme = MaterialTheme.colorScheme
     val coverage = remember(plan, entries) { planCoverage(entries, plan) }
     val byVerdict = coverage.groupBy { it.verdict }
@@ -258,7 +258,7 @@ private fun LoadedPlan(plan: PlanSummary, entries: List<SnoopEntry>, onReplace: 
                 Text("${plan.events.size} events", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
             }
             SmallOutlinedButton("Replace", scheme.onSurface, scheme.outline, onReplace)
-            SmallOutlinedButton("Clear", colors.planBreaks.pill.content, colors.planBreaks.border) { SnoopCore.clearTrackingPlan() }
+            SmallOutlinedButton("Clear", colors.planBreaks.pill.content, colors.planBreaks.border) { Inspector.clearTrackingPlan() }
         }
     }
 

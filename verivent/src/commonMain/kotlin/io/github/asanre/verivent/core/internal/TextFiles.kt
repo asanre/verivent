@@ -1,4 +1,4 @@
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 /** The file's text, or null when it doesn't exist. */
 internal expect fun readTextFile(path: String): String?

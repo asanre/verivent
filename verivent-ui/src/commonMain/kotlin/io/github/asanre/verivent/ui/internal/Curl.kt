@@ -1,6 +1,6 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
-import com.snoop.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.NetworkTransaction
 
 /**
  * Render a request as a copy-pasteable `curl` command. Redacted headers keep their `██` placeholder

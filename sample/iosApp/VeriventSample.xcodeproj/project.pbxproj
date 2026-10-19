@@ -7,15 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1A0000000000000000000012 /* Snoop in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000011 /* Snoop */; };
+		1A0000000000000000000012 /* Verivent in Frameworks */ = {isa = PBXBuildFile; productRef = 1A0000000000000000000011 /* Verivent */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1A0000000000000000000004 /* SnoopSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnoopSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A0000000000000000000004 /* VeriventSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VeriventSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1A0000000000000000000005 /* SnoopSample */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = SnoopSample; sourceTree = "<group>"; };
+		1A0000000000000000000005 /* VeriventSample */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = VeriventSample; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -23,7 +23,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A0000000000000000000012 /* Snoop in Frameworks */,
+				1A0000000000000000000012 /* Verivent in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,7 +33,7 @@
 		1A0000000000000000000002 = {
 			isa = PBXGroup;
 			children = (
-				1A0000000000000000000005 /* SnoopSample */,
+				1A0000000000000000000005 /* VeriventSample */,
 				1A0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,7 +41,7 @@
 		1A0000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1A0000000000000000000004 /* SnoopSample.app */,
+				1A0000000000000000000004 /* VeriventSample.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -49,9 +49,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		1A0000000000000000000006 /* SnoopSample */ = {
+		1A0000000000000000000006 /* VeriventSample */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 1A000000000000000000000B /* Build configuration list for PBXNativeTarget "SnoopSample" */;
+			buildConfigurationList = 1A000000000000000000000B /* Build configuration list for PBXNativeTarget "VeriventSample" */;
 			buildPhases = (
 				1A0000000000000000000007 /* Sources */,
 				1A0000000000000000000008 /* Frameworks */,
@@ -62,14 +62,14 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				1A0000000000000000000005 /* SnoopSample */,
+				1A0000000000000000000005 /* VeriventSample */,
 			);
-			name = SnoopSample;
+			name = VeriventSample;
 			packageProductDependencies = (
-				1A0000000000000000000011 /* Snoop */,
+				1A0000000000000000000011 /* Verivent */,
 			);
-			productName = SnoopSample;
-			productReference = 1A0000000000000000000004 /* SnoopSample.app */;
+			productName = VeriventSample;
+			productReference = 1A0000000000000000000004 /* VeriventSample.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -87,7 +87,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 1A000000000000000000000A /* Build configuration list for PBXProject "SnoopSample" */;
+			buildConfigurationList = 1A000000000000000000000A /* Build configuration list for PBXProject "VeriventSample" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -104,7 +104,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				1A0000000000000000000006 /* SnoopSample */,
+				1A0000000000000000000006 /* VeriventSample */,
 			);
 		};
 /* End PBXProject section */
@@ -191,7 +191,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snoop.sample.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.asanre.verivent.sample.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -214,7 +214,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snoop.sample.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.asanre.verivent.sample.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -225,7 +225,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A000000000000000000000A /* Build configuration list for PBXProject "SnoopSample" */ = {
+		1A000000000000000000000A /* Build configuration list for PBXProject "VeriventSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000000000000000000000C /* Debug */,
@@ -234,7 +234,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1A000000000000000000000B /* Build configuration list for PBXNativeTarget "SnoopSample" */ = {
+		1A000000000000000000000B /* Build configuration list for PBXNativeTarget "VeriventSample" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A000000000000000000000E /* Debug */,
@@ -253,9 +253,9 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		1A0000000000000000000011 /* Snoop */ = {
+		1A0000000000000000000011 /* Verivent */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Snoop;
+			productName = Verivent;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

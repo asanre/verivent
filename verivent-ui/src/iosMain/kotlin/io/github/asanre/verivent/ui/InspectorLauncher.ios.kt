@@ -1,9 +1,9 @@
 @file:OptIn(ExperimentalForeignApi::class)
 
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.internal.SnoopLog
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,15 +28,15 @@ import platform.UserNotifications.UNUserNotificationCenter
 import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 
-private const val IDENTIFIER = "snoop_inspector"
+private const val IDENTIFIER = "verivent_inspector"
 
 /**
- * iOS entry points mirroring the Android [Snoop] object, minus the `Context`. [showNotification]
+ * iOS entry points mirroring the Android [Verivent] object, minus the `Context`. [showNotification]
  * asks for alert permission inline (idempotent; a denial is a silent no-op), then keeps one
  * notification in sync with the store — each capture replaces the previous banner. Tapping it, or
  * calling [open], presents the inspector as a page sheet.
  */
-object Snoop {
+object InspectorLauncher {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var job: Job? = null
@@ -48,7 +48,7 @@ object Snoop {
     fun showNotification() {
         val center = UNUserNotificationCenter.currentNotificationCenter()
         center.requestAuthorizationWithOptions(UNAuthorizationOptionAlert) { granted, error: NSError? ->
-            if (error != null) SnoopLog.warn(TAG, "notification authorization failed: ${error.localizedDescription}")
+            if (error != null) DiagnosticLog.warn(TAG, "notification authorization failed: ${error.localizedDescription}")
             if (granted) scope.launch { start(center) }
         }
     }
@@ -69,7 +69,7 @@ object Snoop {
         }
         job?.cancel()
         job = scope.launch {
-            SnoopCore.store.entries
+            Inspector.store.entries
                 .map { notificationLines(it) }
                 .distinctUntilChanged()
                 .conflate()
@@ -82,9 +82,9 @@ object Snoop {
     }
 
     private fun publish(lines: List<String>) {
-        val count = SnoopCore.store.entries.value.size
+        val count = Inspector.store.entries.value.size
         val content = UNMutableNotificationContent().apply {
-            setTitle(SnoopCore.title)
+            setTitle(Inspector.title)
             setBody(
                 if (lines.isEmpty()) {
                     "$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect"
@@ -96,7 +96,7 @@ object Snoop {
         // Fixed identifier: each request replaces the previously delivered notification.
         val request = UNNotificationRequest.requestWithIdentifier(IDENTIFIER, content, null)
         UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(request) { error: NSError? ->
-            if (error != null) SnoopLog.warn(TAG, "could not post the notification: ${error.localizedDescription}")
+            if (error != null) DiagnosticLog.warn(TAG, "could not post the notification: ${error.localizedDescription}")
         }
     }
 

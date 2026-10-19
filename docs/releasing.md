@@ -1,13 +1,13 @@
 # Releasing
 
-Snoop publishes to Maven Central under `io.github.asanre` via
+Verivent publishes to Maven Central under `io.github.asanre` via
 [com.vanniktech.maven.publish](https://vanniktech.github.io/gradle-maven-publish-plugin/). The
 `publish` workflow runs on every published GitHub Release; signing and Central credentials come from
 repo secrets. Signing is key-driven, so `./gradlew publishToMavenLocal` runs unsigned for local
 checks.
 
 The same workflow also cuts the **Swift Package** for native iOS hosts: it assembles
-`SnoopKit.xcframework`, attaches the zip to the release, and regenerates `asanre/snoop-swift` from
+`VeriventKit.xcframework`, attaches the zip to the release, and regenerates `asanre/verivent-swift` from
 `swift/`. See [Native iOS](native-ios.md) for what that package contains.
 
 ## One-time setup (manual, outside the repo)
@@ -37,8 +37,8 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
      never touches disk: `gpg --armor --export-secret-keys <KEY_ID> | gh secret set ORG_GRADLE_PROJECT_signingInMemoryKey`
    - `ORG_GRADLE_PROJECT_signingInMemoryKeyPassword` — that key's passphrase.
 6. **Swift Package distribution** — Apple has no package registry, so the SPM channel is a second
-   repository. Create an empty `asanre/snoop-swift`, then add a fifth secret:
-   - `SNOOP_SWIFT_TOKEN` — a fine-grained PAT scoped to `asanre/snoop-swift` with
+   repository. Create an empty `asanre/verivent-swift`, then add a fifth secret:
+   - `VERIVENT_SWIFT_TOKEN` — a fine-grained PAT scoped to `asanre/verivent-swift` with
      **Contents: read and write**. Not `Administration`, which sorts first in the dropdown and is
      the easy mis-pick: it grants deleting the repo but not pushing to it. The confirmation dialog
      should list exactly `Contents: Read and write` plus the mandatory `Metadata: Read-only`. The
@@ -75,18 +75,18 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
    ```bash
-   curl -sI https://repo1.maven.org/maven2/io/github/asanre/snoop/0.7.0/snoop-0.7.0.pom.asc
+   curl -sI https://repo1.maven.org/maven2/io/github/asanre/verivent/0.7.0/verivent-0.7.0.pom.asc
    ```
 7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
    compare the published manifest against the asset it points at:
    ```bash
-   gh release download v0.1.0 -p SnoopKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/SnoopKit.xcframework.zip
+   gh release download v0.1.0 -p VeriventKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/VeriventKit.xcframework.zip
    ```
    ```bash
-   curl -s https://raw.githubusercontent.com/asanre/snoop-swift/0.1.0/Package.swift | grep checksum
+   curl -s https://raw.githubusercontent.com/asanre/verivent-swift/0.1.0/Package.swift | grep checksum
    ```
-   The two must match. The tag on `snoop-swift` is the version **without** the `v` prefix, so
-   consumers write `.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.1.0")`.
+   The two must match. The tag on `verivent-swift` is the version **without** the `v` prefix, so
+   consumers write `.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.1.0")`.
 
 ## If the Swift step fails after Central published
 
@@ -94,16 +94,16 @@ Re-running the workflow is not an option: the Maven step would fail on an alread
 Finish it by hand from a Mac, with `TAG` set to the release tag:
 
 ```bash
-./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework && ditto -c -k --sequesterRsrc --keepParent snoop-native/build/XCFrameworks/release/SnoopKit.xcframework SnoopKit.xcframework.zip
+./gradlew :verivent-native:assembleVeriventKitReleaseXCFramework && ditto -c -k --sequesterRsrc --keepParent verivent-native/build/XCFrameworks/release/VeriventKit.xcframework VeriventKit.xcframework.zip
 ```
 
 ```bash
-swift package compute-checksum SnoopKit.xcframework.zip && gh release upload "$TAG" SnoopKit.xcframework.zip
+swift package compute-checksum VeriventKit.xcframework.zip && gh release upload "$TAG" VeriventKit.xcframework.zip
 ```
 
-Then clone `asanre/snoop-swift`, copy `swift/Sources` over it, render `Package.swift.template` with
+Then clone `asanre/verivent-swift`, copy `swift/Sources` over it, render `Package.swift.template` with
 that URL and checksum, and tag it with the version minus the `v`. Never move an existing
-`snoop-swift` tag: a rebuilt zip hashes differently, and consumers who already resolved would get a
+`verivent-swift` tag: a rebuilt zip hashes differently, and consumers who already resolved would get a
 checksum mismatch. Cut a new patch version instead.
 
 **Released versions are permanent.** A version released to Central cannot be deleted, replaced or
@@ -118,20 +118,20 @@ never publishes, so that version is still free.
 ls ~/.m2/repository/io/github/asanre/
 ```
 
-Six modules are published: `snoop`, `snoop-ui`, `snoop-ktor` and their
+Six modules are published: `verivent`, `verivent-ui`, `verivent-ktor` and their
 `-no-op` mirrors. Those are the six coordinates a consumer declares, but the `ls` lists **24**
 directories, because each Kotlin Multiplatform module publishes a root coordinate plus one per
 target:
 
 ```
-snoop/                          root: POM, Gradle module metadata, common klib
-snoop-android/
-snoop-iosarm64/
-snoop-iossimulatorarm64/
+verivent/                          root: POM, Gradle module metadata, common klib
+verivent-android/
+verivent-iosarm64/
+verivent-iossimulatorarm64/
 ```
 
-Nobody depends on the per-target coordinates directly. Declaring `io.github.asanre:snoop` is
+Nobody depends on the per-target coordinates directly. Declaring `io.github.asanre:verivent` is
 enough — the root's `.module` metadata resolves the right variant for whichever target is compiling.
 
-`snoop-native` is deliberately absent: it carries no `maven-publish` plugin because it is only the
-input to the `SnoopKit.xcframework` consumed by the Swift package, never a Maven coordinate.
+`verivent-native` is deliberately absent: it carries no `maven-publish` plugin because it is only the
+input to the `VeriventKit.xcframework` consumed by the Swift package, never a Maven coordinate.

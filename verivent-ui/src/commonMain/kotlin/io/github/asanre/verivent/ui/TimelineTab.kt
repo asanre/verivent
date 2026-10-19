@@ -1,4 +1,4 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -38,30 +38,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanSummary
-import com.snoop.core.model.SnoopEntry
-import com.snoop.ui.component.AnalyticsRow
-import com.snoop.ui.component.FilterChipBar
-import com.snoop.ui.component.NetworkRow
-import com.snoop.ui.component.PlanStrip
-import com.snoop.ui.component.SearchPill
-import com.snoop.ui.component.SnoopIcons
-import com.snoop.ui.internal.PlanVerdict
-import com.snoop.ui.internal.TimelineFilters
-import com.snoop.ui.internal.TimelineGroup
-import com.snoop.ui.internal.TimelineUiState
-import com.snoop.ui.internal.TypeFilter
-import com.snoop.ui.internal.breaksPlan
-import com.snoop.ui.internal.groupEntries
-import com.snoop.ui.internal.matchesFilters
-import com.snoop.ui.internal.planCoverage
-import com.snoop.ui.internal.stableKey
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.ui.component.AnalyticsRow
+import io.github.asanre.verivent.ui.component.FilterChipBar
+import io.github.asanre.verivent.ui.component.NetworkRow
+import io.github.asanre.verivent.ui.component.PlanStrip
+import io.github.asanre.verivent.ui.component.SearchPill
+import io.github.asanre.verivent.ui.component.InspectorIcons
+import io.github.asanre.verivent.ui.internal.PlanVerdict
+import io.github.asanre.verivent.ui.internal.TimelineFilters
+import io.github.asanre.verivent.ui.internal.TimelineGroup
+import io.github.asanre.verivent.ui.internal.TimelineUiState
+import io.github.asanre.verivent.ui.internal.TypeFilter
+import io.github.asanre.verivent.ui.internal.breaksPlan
+import io.github.asanre.verivent.ui.internal.groupEntries
+import io.github.asanre.verivent.ui.internal.matchesFilters
+import io.github.asanre.verivent.ui.internal.planCoverage
+import io.github.asanre.verivent.ui.internal.stableKey
 
 @Composable
 internal fun TimelineTab(
-    entries: List<SnoopEntry>,
+    entries: List<TimelineEntry>,
     plan: PlanSummary?,
     onOpen: (String) -> Unit,
     onOpenPlan: () -> Unit,
@@ -175,7 +175,7 @@ private fun GroupHeader(group: TimelineGroup, collapsed: Boolean, onToggle: () -
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
-            imageVector = SnoopIcons.ChevronRight,
+            imageVector = InspectorIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp).rotate(rotation),
@@ -211,7 +211,7 @@ private fun EmptyState(nothingCaptured: Boolean) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = SnoopIcons.Search,
+                    imageVector = InspectorIcons.Search,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(28.dp),

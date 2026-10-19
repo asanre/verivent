@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.snoop.ui.theme.TintPair
+import io.github.asanre.verivent.ui.theme.TintPair
 
 /** Small rounded label used for status codes, methods, channels and badges. */
 @Composable

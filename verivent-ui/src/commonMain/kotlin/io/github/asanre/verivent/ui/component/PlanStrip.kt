@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.core.model.PlanSummary
-import com.snoop.ui.theme.LocalSnoopColors
-import com.snoop.ui.theme.TintPair
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
+import io.github.asanre.verivent.ui.theme.TintPair
 
 /** The timeline's way into the plan screen, with how this session's events did against the plan. */
 @Composable
@@ -32,7 +32,7 @@ internal fun PlanStrip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     val scheme = MaterialTheme.colorScheme
     Surface(
         onClick = onClick,
@@ -47,7 +47,7 @@ internal fun PlanStrip(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Icon(
-                SnoopIcons.Plan,
+                InspectorIcons.Plan,
                 contentDescription = null,
                 tint = if (plan != null) scheme.onSurface else scheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
@@ -67,7 +67,7 @@ internal fun PlanStrip(
                 Text("Load", style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp), fontWeight = FontWeight.SemiBold)
             }
             Icon(
-                SnoopIcons.ChevronRight,
+                InspectorIcons.ChevronRight,
                 contentDescription = null,
                 tint = scheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),

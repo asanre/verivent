@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 
 /** Floating toast matching the design's inverted-fill notification style. */
 @Composable
-internal fun SnoopToast(data: SnackbarData) {
+internal fun InspectorToast(data: SnackbarData) {
     Surface(
         color = MaterialTheme.colorScheme.onSurface,
         contentColor = MaterialTheme.colorScheme.background,
@@ -62,7 +62,7 @@ internal fun DetailScaffold(
     val showMessage: (String) -> Unit = { message -> scope.launch { snackbar.showSnackbar(message) } }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        // SnoopScreen's root already applied safeDrawing; Material3's own contentWindowInsets is not
+        // InspectorScreen's root already applied safeDrawing; Material3's own contentWindowInsets is not
         // reliably consumption-aware across versions, so it is zeroed deliberately rather than left
         // to double up. Not dead code — don't "clean it up".
         contentWindowInsets = WindowInsets(0),
@@ -73,7 +73,7 @@ internal fun DetailScaffold(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 IconButton(onClick = onBack, modifier = Modifier.size(44.dp)) {
-                    Icon(SnoopIcons.Back, contentDescription = "Back", modifier = Modifier.size(22.dp))
+                    Icon(InspectorIcons.Back, contentDescription = "Back", modifier = Modifier.size(22.dp))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -96,7 +96,7 @@ internal fun DetailScaffold(
                 actions(showMessage)
             }
         },
-        snackbarHost = { SnackbarHost(snackbar) { SnoopToast(it) } },
+        snackbarHost = { SnackbarHost(snackbar) { InspectorToast(it) } },
     ) { padding ->
         content(Modifier.fillMaxSize().padding(padding), showMessage)
     }

@@ -1,12 +1,12 @@
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 /**
- * Snoop's own diagnostics channel (Logcat on Android, NSLog on iOS). Not API for hosts.
+ * Verivent's own diagnostics channel (Logcat on Android, NSLog on iOS). Not API for hosts.
  *
- * Only failures of Snoop's own code are reported here — never an error raised by the host or by a
+ * Only failures of Verivent's own code are reported here — never an error raised by the host or by a
  * third-party framework, which the host already sees through its own channels.
  */
-object SnoopLog {
+object DiagnosticLog {
 
     fun warn(tag: String, message: String, throwable: Throwable? = null) {
         platformLogWarn("[$tag] $message", throwable)

@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 /** No-op mirror of a captured request/response body preview. */
 data class BodyPreview(

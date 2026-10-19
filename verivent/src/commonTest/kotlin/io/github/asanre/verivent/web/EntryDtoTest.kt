@@ -1,10 +1,10 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.BodyPreview
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanIssue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

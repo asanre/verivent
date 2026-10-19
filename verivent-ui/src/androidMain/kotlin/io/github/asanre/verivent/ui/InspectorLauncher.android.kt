@@ -1,4 +1,4 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -9,9 +9,9 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.snoop.ui.R
-import com.snoop.core.SnoopCore
-import com.snoop.core.internal.SnoopLog
+import io.github.asanre.verivent.ui.R
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,9 +26,9 @@ import kotlinx.coroutines.launch
  * Android entry points: open the inspector as its own Activity, or post a live notification that
  * lists the latest captured entries and reopens the inspector while you navigate the host app.
  */
-object Snoop {
+object InspectorLauncher {
 
-    private const val CHANNEL_ID = "snoop_inspector"
+    private const val CHANNEL_ID = "verivent_inspector"
     private const val NOTIFICATION_ID = 0x50_00
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -40,7 +40,7 @@ object Snoop {
 
     fun open(context: Context) {
         context.startActivity(
-            Intent(context, SnoopActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            Intent(context, InspectorActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         )
     }
 
@@ -55,7 +55,7 @@ object Snoop {
         val app = context.applicationContext
         job?.cancel()
         job = scope.launch {
-            SnoopCore.store.entries
+            Inspector.store.entries
                 .map { notificationLines(it) }
                 .distinctUntilChanged()
                 .conflate()
@@ -80,21 +80,21 @@ object Snoop {
         val open = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, SnoopActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            Intent(context, InspectorActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             flags,
         )
         val clear = PendingIntent.getBroadcast(
             context,
             1,
-            Intent(context, SnoopClearReceiver::class.java),
+            Intent(context, InspectorClearReceiver::class.java),
             flags,
         )
-        val count = SnoopCore.store.entries.value.size
+        val count = Inspector.store.entries.value.size
         val style = NotificationCompat.InboxStyle()
         lines.forEach(style::addLine)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.snoop_ic_logo)
-            .setContentTitle(SnoopCore.title)
+            .setSmallIcon(R.drawable.verivent_ic_logo)
+            .setContentTitle(Inspector.title)
             .setContentText("$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect")
             .setStyle(style)
             .setOnlyAlertOnce(true)
@@ -106,7 +106,7 @@ object Snoop {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
         } catch (cause: SecurityException) {
             // POST_NOTIFICATIONS not granted (API 33+); the host must request it.
-            SnoopLog.warn("notification", "POST_NOTIFICATIONS not granted; nothing posted", cause)
+            DiagnosticLog.warn("notification", "POST_NOTIFICATIONS not granted; nothing posted", cause)
         }
     }
 
@@ -115,7 +115,7 @@ object Snoop {
             val manager = context.getSystemService(NotificationManager::class.java)
             if (manager.getNotificationChannel(CHANNEL_ID) == null) {
                 manager.createNotificationChannel(
-                    NotificationChannel(CHANNEL_ID, "Snoop inspector", NotificationManager.IMPORTANCE_LOW),
+                    NotificationChannel(CHANNEL_ID, "Verivent inspector", NotificationManager.IMPORTANCE_LOW),
                 )
             }
         }

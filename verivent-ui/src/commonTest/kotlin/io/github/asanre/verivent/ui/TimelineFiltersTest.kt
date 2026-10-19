@@ -1,12 +1,12 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanIssue
-import com.snoop.core.model.PlanSummary
-import com.snoop.ui.internal.TimelineFilters
-import com.snoop.ui.internal.TypeFilter
-import com.snoop.ui.internal.matchesFilters
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.ui.internal.TimelineFilters
+import io.github.asanre.verivent.ui.internal.TypeFilter
+import io.github.asanre.verivent.ui.internal.matchesFilters
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

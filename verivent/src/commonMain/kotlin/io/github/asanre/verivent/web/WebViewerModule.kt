@@ -1,7 +1,7 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.TimelineEntry
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -26,7 +26,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-private const val TITLE_PLACEHOLDER = "@SNOOP_TITLE@"
+private const val TITLE_PLACEHOLDER = "@VERIVENT_TITLE@"
 
 private fun escapeHtml(text: String): String = buildString(text.length) {
     for (char in text) {
@@ -45,7 +45,7 @@ private fun escapeHtml(text: String): String = buildString(text.length) {
 private const val MAX_PLAN_BYTES = 2 * 1024 * 1024
 
 private fun planStatus(): String = buildJsonObject {
-    val plan = SnoopCore.trackingPlan.value
+    val plan = Inspector.trackingPlan.value
     put("version", plan?.version)
     putJsonArray("events") {
         plan?.events?.forEach { event ->
@@ -65,10 +65,10 @@ private fun planStatus(): String = buildJsonObject {
 private fun ApplicationCall.mutationAllowed(): Boolean {
     val origin = request.header(HttpHeaders.Origin)
     val host = request.header(HttpHeaders.Host)
-    return request.header("X-Snoop") == "1" && (origin == null || origin == "http://$host")
+    return request.header("X-Verivent") == "1" && (origin == null || origin == "http://$host")
 }
 
-internal fun Application.snoopModule(token: String? = null) {
+internal fun Application.webViewerModule(token: String? = null) {
     install(SSE)
     // One gate in front of routing, so a route added later can't ship unguarded.
     intercept(ApplicationCallPipeline.Plugins) {
@@ -85,14 +85,14 @@ internal fun Application.snoopModule(token: String? = null) {
         get("/") {
             // Substituted here rather than at build time: the title is runtime config, and it is
             // host-supplied text landing in markup, so it is escaped rather than trusted.
-            call.respondText(INDEX_HTML.replace(TITLE_PLACEHOLDER, escapeHtml(SnoopCore.title)), ContentType.Text.Html)
+            call.respondText(INDEX_HTML.replace(TITLE_PLACEHOLDER, escapeHtml(Inspector.title)), ContentType.Text.Html)
         }
         get("/api/entries") {
-            call.respondText(encodeEntries(SnoopCore.store.entries.value), ContentType.Application.Json)
+            call.respondText(encodeEntries(Inspector.store.entries.value), ContentType.Application.Json)
         }
         post("/api/clear") {
             if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
-            SnoopCore.store.clear()
+            Inspector.store.clear()
             call.respondText("ok")
         }
         get("/api/tracking-plan") {
@@ -104,7 +104,7 @@ internal fun Application.snoopModule(token: String? = null) {
             val json = (if (fits) call.receiveText() else null)?.takeIf { it.length <= MAX_PLAN_BYTES }
                 ?: return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
             try {
-                SnoopCore.loadTrackingPlan(json)
+                Inspector.loadTrackingPlan(json)
             } catch (invalid: IllegalArgumentException) {
                 return@post call.respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
             }
@@ -112,20 +112,20 @@ internal fun Application.snoopModule(token: String? = null) {
         }
         post("/api/tracking-plan/clear") {
             if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
-            SnoopCore.clearTrackingPlan()
+            Inspector.clearTrackingPlan()
             call.respondText(planStatus(), ContentType.Application.Json)
         }
         sse("/api/stream") {
             // Deltas, tracked per connection: the store holds up to 20 MB and re-encoding all of it
-            // on every mutation is the host's bill to pay. `SnoopStore.update` replaces only the
+            // on every mutation is the host's bill to pay. `TimelineStore.update` replaces only the
             // entry it touches, so reference identity is enough to tell what the client is missing.
-            val last = HashMap<String, SnoopEntry>()
+            val last = HashMap<String, TimelineEntry>()
             // StateFlow collection is conflated by design: during the delay intermediate bursts
             // collapse and the collector resumes on the latest state, so encoding is capped at
             // ~4 frames/s and the final state is always delivered.
-            SnoopCore.store.entries.collect { entries ->
+            Inspector.store.entries.collect { entries ->
                 val ids = ArrayList<String>(entries.size)
-                val changed = ArrayList<SnoopEntry>()
+                val changed = ArrayList<TimelineEntry>()
                 for (entry in entries) {
                     ids += entry.id
                     if (last.put(entry.id, entry) !== entry) changed += entry

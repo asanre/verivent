@@ -1,7 +1,7 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant

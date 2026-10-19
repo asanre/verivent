@@ -133,7 +133,7 @@ function emptyStateHtml(title,sub){
   return "<div class='empty'><div class='emptyicon'>"+icon('search',28)+"</div><div class='emptytitle'>"+esc(title)+"</div><div class='emptysub'>"+esc(sub)+"</div></div>";
 }
 function emptyHtml(){
-  if(unreachable)return emptyStateHtml("Can't reach Snoop",'The app may have stopped, or this URL is missing its access token. The page reconnects on its own.');
+  if(unreachable)return emptyStateHtml("Can't reach Verivent",'The app may have stopped, or this URL is missing its access token. The page reconnects on its own.');
   if(entries.length===0)return emptyStateHtml('Nothing captured yet','Network calls and analytics events will show up here as they happen.');
   return emptyStateHtml('No matches','Try a different filter or search.');
 }
@@ -371,7 +371,7 @@ function readPlanFile(file){
   reader.readAsText(file);
 }
 function planRequest(path,body){
-  return fetch(apiUrl(path),{method:'POST',headers:{'X-Snoop':'1','Content-Type':'application/json'},body:body}).then(function(r){
+  return fetch(apiUrl(path),{method:'POST',headers:{'X-Verivent':'1','Content-Type':'application/json'},body:body}).then(function(r){
     return r.text().then(function(t){if(!r.ok)throw new Error(t||('rejected: '+r.status));return JSON.parse(t);});
   });
 }
@@ -387,7 +387,7 @@ function clearPlan(){
 }
 function clearAll(){
   // No local reseed: the post-clear stream frame prunes everything, without racing new captures.
-  fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Snoop':'1'}}).then(function(r){
+  fetch(apiUrl('/api/clear'),{method:'POST',headers:{'X-Verivent':'1'}}).then(function(r){
     if(!r.ok)throw new Error('clear rejected: '+r.status);
     selectedId=null;toast('Cleared');render();
   }).catch(function(){toast('Clear failed');});
@@ -397,7 +397,7 @@ function exportJson(){
   var blob=new Blob([data],{type:'application/json'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
-  a.href=url;a.download='snoop-export.json';
+  a.href=url;a.download='verivent-export.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Exported '+entries.length+' entries');

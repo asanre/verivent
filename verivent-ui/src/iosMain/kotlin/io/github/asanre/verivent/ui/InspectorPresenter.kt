@@ -1,9 +1,9 @@
 @file:OptIn(ExperimentalNativeApi::class)
 
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import androidx.compose.ui.window.ComposeUIViewController
-import com.snoop.core.internal.SnoopLog
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import kotlin.experimental.ExperimentalNativeApi
 import kotlin.native.ref.WeakReference
 import platform.UIKit.UIApplication
@@ -18,12 +18,12 @@ private var presented: WeakReference<UIViewController>? = null
 
 /**
  * Presents the inspector as a page sheet over whatever is on top of the foreground window — the
- * iOS counterpart of launching `SnoopActivity`. A no-op when the inspector is already on top.
+ * iOS counterpart of launching `InspectorActivity`. A no-op when the inspector is already on top.
  */
 internal fun presentInspector() {
     val top = topViewController()
     if (top == null) {
-        SnoopLog.warn("inspector", "no foreground window to present the inspector from")
+        DiagnosticLog.warn("inspector", "no foreground window to present the inspector from")
         return
     }
     if (top === presented?.get()) return
@@ -31,7 +31,7 @@ internal fun presentInspector() {
     // A host whose own UI is SwiftUI may never have set CADisableMinimumFrameDurationOnPhone, and
     // the strict check would crash it the first time the inspector opens.
     val inspector = ComposeUIViewController(configure = { enforceStrictPlistSanityCheck = false }) {
-        SnoopScreen(onClose = { presented?.get()?.dismissViewControllerAnimated(true, completion = null) })
+        InspectorScreen(onClose = { presented?.get()?.dismissViewControllerAnimated(true, completion = null) })
     }
     inspector.modalPresentationStyle = UIModalPresentationPageSheet
     presented = WeakReference(inspector)

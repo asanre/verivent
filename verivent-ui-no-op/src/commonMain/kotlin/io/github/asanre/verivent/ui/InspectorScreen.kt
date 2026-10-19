@@ -1,8 +1,8 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
-/** No-op mirror of `snoop-ui` for release builds: the inspector renders nothing. */
+/** No-op mirror of `verivent-ui` for release builds: the inspector renders nothing. */
 @Composable
-fun SnoopScreen(modifier: Modifier = Modifier, onClose: (() -> Unit)? = null) = Unit
+fun InspectorScreen(modifier: Modifier = Modifier, onClose: (() -> Unit)? = null) = Unit

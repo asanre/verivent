@@ -1,4 +1,4 @@
-package com.snoop.ui.theme
+package io.github.asanre.verivent.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,7 +44,7 @@ private val DarkScheme = darkColorScheme(
     outlineVariant = Color(0xFF26262F),
 )
 
-private val SnoopShapes = Shapes(
+private val InspectorShapes = Shapes(
     small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(12.dp),
     large = RoundedCornerShape(16.dp),
@@ -55,14 +55,14 @@ internal val codeTextStyle: TextStyle
     @Composable get() = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 13.sp)
 
 @Composable
-fun SnoopTheme(content: @Composable () -> Unit) {
+fun InspectorTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     MaterialTheme(
         colorScheme = if (dark) DarkScheme else LightScheme,
-        shapes = SnoopShapes,
+        shapes = InspectorShapes,
     ) {
         CompositionLocalProvider(
-            LocalSnoopColors provides if (dark) SnoopDarkColors else SnoopLightColors,
+            LocalInspectorColors provides if (dark) InspectorDarkColors else InspectorLightColors,
             content = content,
         )
     }

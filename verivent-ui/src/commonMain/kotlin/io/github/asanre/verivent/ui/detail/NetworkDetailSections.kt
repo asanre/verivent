@@ -1,4 +1,4 @@
-package com.snoop.ui.detail
+package io.github.asanre.verivent.ui.detail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,14 +13,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.ui.component.CollapsibleSection
-import com.snoop.ui.component.CopyIconButton
-import com.snoop.ui.component.KeyValueRow
-import com.snoop.ui.component.NetworkBodyView
-import com.snoop.ui.component.SectionCard
-import com.snoop.ui.component.SectionLabel
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.ui.component.CollapsibleSection
+import io.github.asanre.verivent.ui.component.CopyIconButton
+import io.github.asanre.verivent.ui.component.KeyValueRow
+import io.github.asanre.verivent.ui.component.NetworkBodyView
+import io.github.asanre.verivent.ui.component.SectionCard
+import io.github.asanre.verivent.ui.component.SectionLabel
 
 @Composable
 internal fun Overview(transaction: NetworkTransaction) {

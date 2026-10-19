@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 import kotlin.time.Instant
 
@@ -14,4 +14,4 @@ data class AnalyticsEntry(
     val sections: Map<String, List<KeyValue>> = emptyMap(),
     val planVersion: String? = null,
     val issues: List<PlanIssue> = emptyList(),
-) : SnoopEntry
+) : TimelineEntry

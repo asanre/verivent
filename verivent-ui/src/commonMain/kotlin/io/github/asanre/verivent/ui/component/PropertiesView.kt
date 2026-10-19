@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -27,12 +27,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.PlanIssue
-import com.snoop.ui.internal.prettyPrintJson
-import com.snoop.ui.internal.propertiesToJson
-import com.snoop.ui.theme.LocalSnoopColors
-import com.snoop.ui.theme.codeTextStyle
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.ui.internal.prettyPrintJson
+import io.github.asanre.verivent.ui.internal.propertiesToJson
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
+import io.github.asanre.verivent.ui.theme.codeTextStyle
 
 /**
  * Analytics parameters viewer. Pretty = one row per top-level property (nested values stay as
@@ -62,7 +62,7 @@ internal fun PropertiesView(
             if (collapsible) {
                 val rotation by animateFloatAsState(if (expanded) 90f else 0f)
                 Icon(
-                    SnoopIcons.ChevronRight,
+                    InspectorIcons.ChevronRight,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(14.dp).rotate(rotation),
@@ -111,7 +111,7 @@ internal fun PropertiesView(
 
 @Composable
 private fun PropertyRow(property: KeyValue, issue: String?) {
-    val breaks = LocalSnoopColors.current.planBreaks
+    val breaks = LocalInspectorColors.current.planBreaks
     Column(
         Modifier
             .fillMaxWidth()
@@ -150,12 +150,12 @@ private fun PropertyRow(property: KeyValue, issue: String?) {
 /** A property the tracking plan requires but the event didn't send. */
 @Composable
 private fun MissingPropertyRow(name: String) {
-    val breaks = LocalSnoopColors.current.planBreaks
+    val breaks = LocalInspectorColors.current.planBreaks
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(6.dp)
-            .dashedBorder(LocalSnoopColors.current.error.content.copy(alpha = 0.7f), 8.dp)
+            .dashedBorder(LocalInspectorColors.current.error.content.copy(alpha = 0.7f), 8.dp)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -174,6 +174,6 @@ private fun MissingPropertyRow(name: String) {
 private fun IssueDot() {
     Box(
         Modifier.padding(end = 6.dp).size(6.dp).clip(CircleShape)
-            .background(LocalSnoopColors.current.error.content),
+            .background(LocalInspectorColors.current.error.content),
     )
 }

@@ -1,8 +1,8 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
-import com.snoop.core.model.PlanEvent
-import com.snoop.core.model.PlanIssue
-import com.snoop.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.PlanEvent
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.PlanSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

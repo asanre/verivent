@@ -1,9 +1,9 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
-import com.snoop.core.model.Annotation
+import io.github.asanre.verivent.core.model.Annotation
 
 /** No-op mirror of the analytics sink's config DSL: every hook is inert. */
-class SnoopAnalyticsConfig {
+class AnalyticsSinkConfig {
     fun filter(predicate: (AnalyticsEvent) -> Boolean) = Unit
     fun sanitizeProperty(predicate: (String) -> Boolean) = Unit
     fun annotate(block: (AnalyticsEvent) -> List<Annotation>) = Unit

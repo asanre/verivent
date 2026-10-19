@@ -1,4 +1,4 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

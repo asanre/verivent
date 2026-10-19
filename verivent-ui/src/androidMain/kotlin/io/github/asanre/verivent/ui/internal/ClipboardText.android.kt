@@ -1,4 +1,4 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
 import androidx.compose.ui.platform.ClipEntry
 

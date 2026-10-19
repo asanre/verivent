@@ -1,9 +1,9 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.PlanEvent
-import com.snoop.core.model.PlanSummary
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.PlanEvent
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.TimelineEntry
 
 /**
  * Whether [plan], the one loaded now, is the one that checked this event. A verdict stamped by a plan
@@ -15,7 +15,7 @@ internal fun AnalyticsEntry.breaksPlan(plan: PlanSummary?): Boolean = checkedBy(
 
 internal fun AnalyticsEntry.matchesPlan(plan: PlanSummary?): Boolean = checkedBy(plan) && issues.isEmpty()
 
-internal fun SnoopEntry.breaksPlan(plan: PlanSummary?): Boolean = this is AnalyticsEntry && breaksPlan(plan)
+internal fun TimelineEntry.breaksPlan(plan: PlanSummary?): Boolean = this is AnalyticsEntry && breaksPlan(plan)
 
 internal fun problemCount(count: Int): String = if (count == 1) "1 problem" else "$count problems"
 
@@ -32,7 +32,7 @@ internal data class EventCoverage(val event: PlanEvent, val captured: Int, val b
 }
 
 /** Every event [plan] defines, against the captures it checked. Ordered breaks, matches, not seen, then plan order. */
-internal fun planCoverage(entries: List<SnoopEntry>, plan: PlanSummary): List<EventCoverage> {
+internal fun planCoverage(entries: List<TimelineEntry>, plan: PlanSummary): List<EventCoverage> {
     val checked = entries.filterIsInstance<AnalyticsEntry>()
         .filter { it.checkedBy(plan) }
         .groupBy { PlanEvent(it.name, it.channel) }

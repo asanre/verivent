@@ -45,7 +45,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.snoop.ui"
+    namespace = "io.github.asanre.verivent.ui"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

@@ -1,4 +1,4 @@
-package com.snoop.ui.detail
+package io.github.asanre.verivent.ui.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

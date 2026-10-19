@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -30,6 +30,6 @@ internal fun CopyIconButton(
         },
         modifier = Modifier.size(44.dp),
     ) {
-        Icon(SnoopIcons.Copy, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
+        Icon(InspectorIcons.Copy, contentDescription = contentDescription, modifier = Modifier.size(20.dp))
     }
 }

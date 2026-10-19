@@ -1,5 +1,5 @@
 import XCTest
-@testable import Snoop
+@testable import Verivent
 
 /// Phase 0.3 of the native-iOS plan: proves the two assumptions the rest of the work rests on —
 /// that the XCFramework is consumable as an SPM binaryTarget, and that `[String: Any]` survives the
@@ -7,16 +7,16 @@ import XCTest
 ///
 /// The store is a process-wide singleton, so assertions are scoped to each test's own event names
 /// rather than to the whole timeline.
-final class SnoopBridgeTests: XCTestCase {
+final class VeriventBridgeTests: XCTestCase {
 
     override func tearDown() {
-        Snoop.stopWebViewer()
+        Verivent.stopWebViewer()
         super.tearDown()
     }
 
     func testMixedPropertyTypesSurviveTheBridge() async throws {
-        Snoop.configure(redactProperty: { $0 == "token" })
-        Snoop.log("purchase", channel: "firebase", properties: [
+        Verivent.configure(redactProperty: { $0 == "token" })
+        Verivent.log("purchase", channel: "firebase", properties: [
             "sku": "SKU-9",
             "value": 42.5,
             "count": 3,
@@ -46,9 +46,9 @@ final class SnoopBridgeTests: XCTestCase {
     }
 
     func testFilterRejectsEvents() async throws {
-        Snoop.configure(keepEvent: { !$0.name.hasPrefix("debug_") })
-        Snoop.log("debug_ping", channel: "internal")
-        Snoop.log("checkout", channel: "amplitude")
+        Verivent.configure(keepEvent: { !$0.name.hasPrefix("debug_") })
+        Verivent.log("debug_ping", channel: "internal")
+        Verivent.log("checkout", channel: "amplitude")
 
         let names = try await fetchEntries().compactMap { $0["name"] as? String }
         XCTAssertTrue(names.contains("checkout"), "an allowed event should be captured")
@@ -56,18 +56,18 @@ final class SnoopBridgeTests: XCTestCase {
     }
 
     func testTrackingPlanStampsIssuesAndRejectsAnInvalidPlan() async throws {
-        Snoop.configure()
-        try Snoop.loadTrackingPlan("""
+        Verivent.configure()
+        try Verivent.loadTrackingPlan("""
         { "version": "1.0.0", "events": [ { "name": "plan_search", "channel": "firebase",
           "schema": { "required": ["search_term"] } } ] }
         """)
-        defer { Snoop.clearTrackingPlan() }
-        XCTAssertEqual(Snoop.trackingPlanVersion, "1.0.0")
-        XCTAssertThrowsError(try Snoop.loadTrackingPlan("{}"))
-        XCTAssertEqual(Snoop.trackingPlanVersion, "1.0.0", "a rejected plan leaves the current one in place")
+        defer { Verivent.clearTrackingPlan() }
+        XCTAssertEqual(Verivent.trackingPlanVersion, "1.0.0")
+        XCTAssertThrowsError(try Verivent.loadTrackingPlan("{}"))
+        XCTAssertEqual(Verivent.trackingPlanVersion, "1.0.0", "a rejected plan leaves the current one in place")
 
-        Snoop.log("plan_search", channel: "firebase")
-        Snoop.log("plan_undefined", channel: "firebase")
+        Verivent.log("plan_search", channel: "firebase")
+        Verivent.log("plan_undefined", channel: "firebase")
 
         let search = try await fetchEntry(named: "plan_search")
         XCTAssertEqual(search["planVersion"] as? String, "1.0.0")
@@ -80,15 +80,15 @@ final class SnoopBridgeTests: XCTestCase {
     /// Types are only checked on the values Kotlin receives, so this pins how Swift numbers and
     /// booleans arrive across the bridge.
     func testSwiftValueTypesSatisfyTheirJsonSchemaTypes() async throws {
-        Snoop.configure()
-        try Snoop.loadTrackingPlan("""
+        Verivent.configure()
+        try Verivent.loadTrackingPlan("""
         { "version": "1.0.0", "events": [ { "name": "plan_types", "channel": "firebase",
           "schema": { "properties": { "count": { "type": "integer" }, "value": { "type": "number" },
                                       "first": { "type": "boolean" }, "sku": { "type": "string" } } } } ] }
         """)
-        defer { Snoop.clearTrackingPlan() }
+        defer { Verivent.clearTrackingPlan() }
 
-        Snoop.log("plan_types", channel: "firebase", properties: ["count": 3, "value": 42.5, "first": true, "sku": "SKU-9"])
+        Verivent.log("plan_types", channel: "firebase", properties: ["count": 3, "value": 42.5, "first": true, "sku": "SKU-9"])
 
         let entry = try await fetchEntry(named: "plan_types")
         XCTAssertNil(entry["issues"], "unexpected issues: \(entry["issues"] ?? "")")
@@ -108,8 +108,8 @@ final class SnoopBridgeTests: XCTestCase {
     /// host loopback, so a sample app left running would squat it. `start` still reports bind
     /// failures asynchronously, so a served response stays the only trustworthy readiness signal.
     private func fetchEntries() async throws -> [[String: Any]] {
-        Snoop.stopWebViewer()
-        let base = Snoop.startWebViewer(.local, port: 9395)
+        Verivent.stopWebViewer()
+        let base = Verivent.startWebViewer(.local, port: 9395)
         // The URL carries the access token as `?t=`, so the path has to be swapped in rather
         // than appended — every bind is gated, loopback included.
         var components = try XCTUnwrap(URLComponents(string: base))

@@ -1,8 +1,8 @@
 # Hook your analytics facade
 
-Snoop can't see analytics events by inspecting network traffic — vendor SDKs like Firebase send over
+Verivent can't see analytics events by inspecting network traffic — vendor SDKs like Firebase send over
 their own opaque transport. The one place every event is visible is your app's **analytics facade**,
-the single function all events flow through before they fan out to vendors. Wire Snoop there.
+the single function all events flow through before they fan out to vendors. Wire Verivent there.
 
 ## The idea
 
@@ -22,19 +22,19 @@ class BaseAnalyticsHelper(
 }
 ```
 
-wrap it with a decorator that also forwards to Snoop, gated to internal/debug builds:
+wrap it with a decorator that also forwards to Verivent, gated to internal/debug builds:
 
 ```kotlin
-class SnoopAnalyticsHelper(
+class VeriventAnalyticsHelper(
     private val delegate: AnalyticsHelper,
-    private val snoop: SnoopAnalytics = SnoopAnalytics {
+    private val verivent: AnalyticsSink = AnalyticsSink {
         sanitizeProperty { it in setOf("user_email", "user_id") }
         annotate { if (it.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
     },
 ) : AnalyticsHelper {
     override fun log(event: AnalyticsEvent) {
         delegate.log(event)
-        snoop.log(
+        verivent.log(
             name = event.name,
             channel = event.channelLabel(),      // map your sealed event type -> "firebase" / "gtm" / ...
             properties = event.properties,
@@ -43,8 +43,8 @@ class SnoopAnalyticsHelper(
 }
 ```
 
-Bind `SnoopAnalyticsHelper` in place of `BaseAnalyticsHelper` only in the internal build variant; the
-production variant binds the plain helper and pulls the `snoop-no-op` artifact, so this
+Bind `VeriventAnalyticsHelper` in place of `BaseAnalyticsHelper` only in the internal build variant; the
+production variant binds the plain helper and pulls the `verivent-no-op` artifact, so this
 decorator can stay in shared code and compile to nothing in release.
 
 ## Channels
@@ -65,11 +65,11 @@ private fun AnalyticsEvent.channelLabel() = when (this) {
 Providers attach more than the event's own parameters to every hit: Firebase adds the default event
 parameters and the current user properties, and DebugView shows them next to each event. Pass them
 as `sections`, a map from block title to parameters, and the event detail shows one block per entry
-below *Parameters*, in the order you give. Empty blocks are dropped. Snoop keeps no state of its
+below *Parameters*, in the order you give. Empty blocks are dropped. Verivent keeps no state of its
 own, so take the snapshot where the event is sent:
 
 ```kotlin
-snoop.log(
+verivent.log(
     name = event.name,
     channel = "firebase",
     properties = event.properties,
@@ -89,16 +89,16 @@ Turn on `logTo` and every captured event is also written as one JSON line, so wh
 the inspector (an agent driving the app, a CI log) still sees what was sent:
 
 ```kotlin
-val snoop = SnoopAnalytics {
+val verivent = AnalyticsSink {
     sanitizeProperty { it == "user_email" }
-    logTo()                                   // Logcat (tag SnoopEvent) / unified log on iOS
-    // logTo { Timber.tag("SnoopEvent").i(it) } to go through your own logging
+    logTo()                                   // Logcat (tag VeriventEvent) / unified log on iOS
+    // logTo { Timber.tag("VeriventEvent").i(it) } to go through your own logging
 }
 ```
 
 ```text
-adb logcat -s SnoopEvent
-SnoopEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…]}
+adb logcat -s VeriventEvent
+VeriventEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…]}
 ```
 
 The line is the captured entry, the same JSON the web viewer receives, so redacted values stay
@@ -107,7 +107,7 @@ split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON
 
 ## Tracking plan
 
-Load the analytics team's tracking plan and Snoop checks every event captured from then on against
+Load the analytics team's tracking plan and Verivent checks every event captured from then on against
 it. The plan defines each event per channel with a JSON Schema subset over its properties:
 
 ```json
@@ -142,21 +142,21 @@ Load it whichever way suits who is testing:
 
 | Who | How |
 |---|---|
-| Host code, tests | `SnoopCore.loadTrackingPlan(json)` / `clearTrackingPlan()`; throws `IllegalArgumentException` on an invalid plan and keeps the current one |
+| Host code, tests | `Inspector.loadTrackingPlan(json)` / `clearTrackingPlan()`; throws `IllegalArgumentException` on an invalid plan and keeps the current one |
 | Someone on the device (BrowserStack included) | the plan strip under the inspector's search, then *Paste from clipboard* or paste in the field |
 | Someone on the web viewer | *No plan* / *Plan x.y* in the header: drop or pick a file, or paste it |
 | An agent with `adb` | write the file below with `run-as`, then restart the app |
 
-To keep the plan across launches, give Snoop a directory; setting it loads the plan stored there:
+To keep the plan across launches, give Verivent a directory; setting it loads the plan stored there:
 
 ```kotlin
-SnoopCore.configure(storageDir = "${context.filesDir}/snoop")
+Inspector.configure(storageDir = "${context.filesDir}/verivent")
 ```
 
 ```text
-adb shell "run-as <your.package> sh -c 'mkdir -p files/snoop && cat > files/snoop/tracking-plan.json'" < plan.json
+adb shell "run-as <your.package> sh -c 'mkdir -p files/verivent && cat > files/verivent/tracking-plan.json'" < plan.json
 ```
 
-`SnoopCore.trackingPlan` is a `StateFlow` of the loaded plan's version and the events it defines,
+`Inspector.trackingPlan` is a `StateFlow` of the loaded plan's version and the events it defines,
 null when none.
 

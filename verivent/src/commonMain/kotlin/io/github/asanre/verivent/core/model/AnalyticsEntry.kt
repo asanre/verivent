@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 import kotlin.time.Instant
 
@@ -29,7 +29,7 @@ data class AnalyticsEntry(
     val planVersion: String? = null,
     /** What breaks the plan in this event's properties, stamped at capture alongside [planVersion]. */
     val issues: List<PlanIssue> = emptyList(),
-) : SnoopEntry {
+) : TimelineEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
     internal val approxBytes: Long by lazy(LazyThreadSafetyMode.PUBLICATION) {

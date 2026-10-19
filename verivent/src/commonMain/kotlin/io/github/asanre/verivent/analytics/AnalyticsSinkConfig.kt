@@ -1,9 +1,9 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
-import com.snoop.core.model.Annotation
+import io.github.asanre.verivent.core.model.Annotation
 
-/** DSL for configuring a [SnoopAnalytics] logger — filtering, redaction, annotation and grouping. */
-class SnoopAnalyticsConfig {
+/** DSL for configuring a [AnalyticsSink] logger — filtering, redaction, annotation and grouping. */
+class AnalyticsSinkConfig {
 
     internal val filters = mutableListOf<(AnalyticsEvent) -> Boolean>()
     internal val propertyRedactors = mutableListOf<(String) -> Boolean>()
@@ -48,7 +48,7 @@ class SnoopAnalyticsConfig {
 
     /**
      * Also write every captured event as one JSON line, so whoever reads the console (a developer,
-     * an agent driving `adb logcat -s SnoopEvent`) sees what was sent. Off unless called; with no
+     * an agent driving `adb logcat -s VeriventEvent`) sees what was sent. Off unless called; with no
      * argument it writes to Logcat on Android and the unified log on iOS. Pass [logger] to route
      * the lines through the host's own logging.
      *

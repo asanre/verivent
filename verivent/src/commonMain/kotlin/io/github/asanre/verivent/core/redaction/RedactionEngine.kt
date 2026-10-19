@@ -1,7 +1,7 @@
-package com.snoop.core.redaction
+package io.github.asanre.verivent.core.redaction
 
-import com.snoop.core.internal.SnoopLog
-import com.snoop.core.model.KeyValue
+import io.github.asanre.verivent.core.internal.DiagnosticLog
+import io.github.asanre.verivent.core.model.KeyValue
 
 /**
  * Replaces sensitive header/property values with a visible [placeholder] so the reader can see that
@@ -79,7 +79,7 @@ class RedactionEngine(
      */
     fun redactBody(text: String): String = bodyTransforms.fold(text) { acc, transform ->
         runCatching { transform(acc) }
-            .onFailure { SnoopLog.warn(TAG, "body sanitizer threw; dropping the body", it) }
+            .onFailure { DiagnosticLog.warn(TAG, "body sanitizer threw; dropping the body", it) }
             .getOrDefault(BODY_FAILURE_PLACEHOLDER)
     }
 
@@ -87,7 +87,7 @@ class RedactionEngine(
         val folded = name.lowercase()
         return any { predicate ->
             runCatching { predicate(name) || (folded != name && predicate(folded)) }
-                .onFailure { SnoopLog.warn(TAG, "redaction predicate threw on '$name'; redacting", it) }
+                .onFailure { DiagnosticLog.warn(TAG, "redaction predicate threw on '$name'; redacting", it) }
                 .getOrDefault(true)
         }
     }

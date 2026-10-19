@@ -1,15 +1,15 @@
-package com.snoop.core
+package io.github.asanre.verivent.core
 
-import com.snoop.analytics.TrackingPlan
-import com.snoop.core.internal.SnoopLog
-import com.snoop.core.internal.deleteFile
-import com.snoop.core.internal.readTextFile
-import com.snoop.core.internal.writeTextFile
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.PlanSummary
-import com.snoop.core.model.SnoopEntry
-import com.snoop.core.store.SnoopStore
+import io.github.asanre.verivent.analytics.TrackingPlan
+import io.github.asanre.verivent.core.internal.DiagnosticLog
+import io.github.asanre.verivent.core.internal.deleteFile
+import io.github.asanre.verivent.core.internal.readTextFile
+import io.github.asanre.verivent.core.internal.writeTextFile
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.core.store.TimelineStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,15 +22,15 @@ import kotlin.time.Instant
 
 /**
  * Central, DI-agnostic entry point that the capture adapters (Ktor, analytics) write to and the UI
- * reads from. Holds the single shared [SnoopStore]. Adapters never reference the UI or each other —
+ * reads from. Holds the single shared [TimelineStore]. Adapters never reference the UI or each other —
  * they only talk to this bridge, keeping capture, storage and UI fully decoupled.
  */
 @OptIn(ExperimentalAtomicApi::class)
-object SnoopCore {
+object Inspector {
 
     private val idCounter = AtomicLong(0)
 
-    val store: SnoopStore = SnoopStore()
+    val store: TimelineStore = TimelineStore()
 
     /**
      * Master switch; when false, adapters drop everything (used by no-op / release gating).
@@ -48,7 +48,7 @@ object SnoopCore {
         private set
 
     /**
-     * Directory where Snoop keeps what must survive a restart (today, the tracking plan). Null keeps
+     * Directory where Verivent keeps what must survive a restart (today, the tracking plan). Null keeps
      * everything in memory for the life of the process.
      */
     var storageDir: String? = null
@@ -121,7 +121,7 @@ object SnoopCore {
         install(plan)
         planFile()?.let { path ->
             runCatching { writeTextFile(path, json) }
-                .onFailure { SnoopLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
+                .onFailure { DiagnosticLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
         }
     }
 
@@ -141,7 +141,7 @@ object SnoopCore {
         val json = planFile()?.let { path -> runCatching { readTextFile(path) }.getOrNull() } ?: return
         runCatching { TrackingPlan.parse(json) }
             .onSuccess(::install)
-            .onFailure { failure -> SnoopLog.warn(TAG, "ignoring the stored tracking plan", failure) }
+            .onFailure { failure -> DiagnosticLog.warn(TAG, "ignoring the stored tracking plan", failure) }
     }
 
     private fun planFile(): String? = storageDir?.let { "${it.trimEnd('/')}/$PLAN_FILE" }
@@ -156,9 +156,9 @@ object SnoopCore {
         install(null)
     }
 
-    private const val DEFAULT_TITLE = "Snoop"
+    private const val DEFAULT_TITLE = "Verivent"
     private const val PLAN_FILE = "tracking-plan.json"
     private const val TAG = "core"
 
-    val entriesSnapshot: List<SnoopEntry> get() = store.entries.value
+    val entriesSnapshot: List<TimelineEntry> get() = store.entries.value
 }

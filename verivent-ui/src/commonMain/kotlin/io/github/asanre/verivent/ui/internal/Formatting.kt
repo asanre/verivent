@@ -1,4 +1,4 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

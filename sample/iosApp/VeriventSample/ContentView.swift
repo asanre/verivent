@@ -1,5 +1,5 @@
 import SafariServices
-import Snoop
+import Verivent
 import SwiftUI
 
 /// Analytics, network capture and the viewer — the same three halves the Compose sample shows.
@@ -13,11 +13,11 @@ struct ContentView: View {
             List {
                 Section(header: Text("Analytics")) {
                     Button("Log screen_view") {
-                        Snoop.log("screen_view", channel: "firebase", properties: ["screen_name": "home"])
+                        Verivent.log("screen_view", channel: "firebase", properties: ["screen_name": "home"])
                         note("screen_view — opens the group “home”")
                     }
                     Button("Log purchase") {
-                        Snoop.log("purchase", channel: "firebase", properties: [
+                        Verivent.log("purchase", channel: "firebase", properties: [
                             "sku": "SKU-9",
                             "value": 42.5,
                             "quantity": 3,
@@ -27,7 +27,7 @@ struct ContentView: View {
                         note("purchase — user_email comes back redacted")
                     }
                     Button("Log debug_ping") {
-                        Snoop.log("debug_ping", channel: "internal")
+                        Verivent.log("debug_ping", channel: "internal")
                         note("debug_ping — dropped by the filter, never stored")
                     }
                 }
@@ -50,18 +50,18 @@ struct ContentView: View {
                             URL(string: url).map { UIApplication.shared.open($0) }
                         }
                         Button("Stop web viewer") {
-                            Snoop.stopWebViewer()
+                            Verivent.stopWebViewer()
                             viewerUrl = nil
                             note("viewer stopped")
                         }
                     } else {
                         Button("Start web viewer") {
-                            let url = Snoop.startWebViewer(.local)
+                            let url = Verivent.startWebViewer(.local)
                             // The bind is asynchronous, so the returned URL is not proof the port
                             // was free — a restart loses to the socket the last one left behind.
                             // Read the flag back instead of offering a link that answers nothing.
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                guard Snoop.isWebViewerRunning else {
+                                guard Verivent.isWebViewerRunning else {
                                     note("viewer failed to bind — check the device console")
                                     return
                                 }
@@ -83,7 +83,7 @@ struct ContentView: View {
                 }
             }
             .listStyle(GroupedListStyle())
-            .navigationTitle("Snoop sample")
+            .navigationTitle("Verivent sample")
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .sheet(isPresented: $showingViewer) {

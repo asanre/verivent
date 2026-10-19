@@ -1,9 +1,9 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.Annotation
-import com.snoop.core.model.PlanIssue
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.Annotation
+import io.github.asanre.verivent.core.model.PlanIssue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -15,17 +15,17 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SnoopAnalyticsTest {
+class AnalyticsSinkTest {
 
-    @BeforeTest fun setup() = SnoopCore.reset()
+    @BeforeTest fun setup() = Inspector.reset()
 
-    @AfterTest fun tearDown() = SnoopCore.reset()
+    @AfterTest fun tearDown() = Inspector.reset()
 
-    private fun entries() = SnoopCore.entriesSnapshot.filterIsInstance<AnalyticsEntry>()
+    private fun entries() = Inspector.entriesSnapshot.filterIsInstance<AnalyticsEntry>()
 
     @Test
     fun logsEventWithChannelAndProperties() {
-        SnoopAnalytics().log("screen_view", "firebase", mapOf("screen" to "home"))
+        AnalyticsSink().log("screen_view", "firebase", mapOf("screen" to "home"))
         val entry = entries().single()
         assertEquals("screen_view", entry.name)
         assertEquals("firebase", entry.channel)
@@ -34,16 +34,16 @@ class SnoopAnalyticsTest {
 
     @Test
     fun filterDropsMatchingEvents() {
-        val snoop = SnoopAnalytics { filter { !it.name.startsWith("debug_") } }
-        snoop.log("debug_ping", "firebase")
-        snoop.log("purchase", "firebase")
+        val verivent = AnalyticsSink { filter { !it.name.startsWith("debug_") } }
+        verivent.log("debug_ping", "firebase")
+        verivent.log("purchase", "firebase")
         assertEquals(listOf("purchase"), entries().map { it.name })
     }
 
     @Test
     fun redactsSensitiveProperties() {
-        val snoop = SnoopAnalytics { sanitizeProperty { it == "user_email" } }
-        snoop.log("login", "firebase", mapOf("user_email" to "a@b.com", "method" to "google"))
+        val verivent = AnalyticsSink { sanitizeProperty { it == "user_email" } }
+        verivent.log("login", "firebase", mapOf("user_email" to "a@b.com", "method" to "google"))
         val entry = entries().single()
         assertTrue(entry.properties.single { it.name == "user_email" }.redacted)
         assertEquals("google", entry.properties.single { it.name == "method" }.value)
@@ -51,8 +51,8 @@ class SnoopAnalyticsTest {
 
     @Test
     fun recordsSectionsApartInOrderRedactedAndWithoutEmptyOnes() {
-        val snoop = SnoopAnalytics { sanitizeProperty { it == "user_id" } }
-        snoop.log(
+        val verivent = AnalyticsSink { sanitizeProperty { it == "user_id" } }
+        verivent.log(
             "search",
             "firebase",
             properties = mapOf("search_term" to "shoes"),
@@ -72,14 +72,14 @@ class SnoopAnalyticsTest {
 
     @Test
     fun throwingLambdasNeverReachTheCaller() {
-        val snoop = SnoopAnalytics {
+        val verivent = AnalyticsSink {
             filter { error("broken filter") }
             annotate { error("broken annotator") }
             sanitizeProperty { error("broken sanitizer") }
         }
         // Must not throw; filter fails open (event visible), annotator falls back to no badges,
         // sanitizer fails closed (property redacted).
-        snoop.log("purchase", "firebase", mapOf("value" to 9.99))
+        verivent.log("purchase", "firebase", mapOf("value" to 9.99))
         val entry = entries().single()
         assertEquals("purchase", entry.name)
         assertTrue(entry.annotations.isEmpty())
@@ -89,10 +89,10 @@ class SnoopAnalyticsTest {
     @Test
     fun annotatesEvents() {
         val ecommerce = setOf("purchase", "add_to_cart")
-        val snoop = SnoopAnalytics {
+        val verivent = AnalyticsSink {
             annotate { if (it.name in ecommerce) listOf(Annotation.Ecommerce) else emptyList() }
         }
-        snoop.log("purchase", "firebase", mapOf("value" to 9.99))
+        verivent.log("purchase", "firebase", mapOf("value" to 9.99))
         val entry = entries().single()
         assertEquals(listOf(Annotation.Ecommerce), entry.annotations)
         assertEquals("9.99", entry.properties.single { it.name == "value" }.value)
@@ -100,27 +100,27 @@ class SnoopAnalyticsTest {
 
     @Test
     fun stampsTheGroupLabelOnlyOnTheOpeningEvent() {
-        val snoop = SnoopAnalytics()
-        snoop.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
-        snoop.log("purchase", "firebase", mapOf("screen_name" to "Home"))
+        val verivent = AnalyticsSink()
+        verivent.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        verivent.log("purchase", "firebase", mapOf("screen_name" to "Home"))
         assertEquals(listOf("Home", null), entries().map { it.groupLabel })
     }
 
     @Test
     fun theLabelFallsBackToTheEventNameWhenThePropertyIsMissing() {
-        val snoop = SnoopAnalytics()
-        snoop.log("screen_view", "firebase")
+        val verivent = AnalyticsSink()
+        verivent.log("screen_view", "firebase")
         assertEquals("screen_view", entries().single().groupLabel)
 
-        SnoopCore.reset()
-        SnoopAnalytics { groupBy("screen_view") }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        Inspector.reset()
+        AnalyticsSink { groupBy("screen_view") }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
         assertEquals("screen_view", entries().single().groupLabel)
     }
 
     @Test
     fun theLabelHonoursRedaction() {
-        val snoop = SnoopAnalytics { sanitizeProperty { it == "screen_name" } }
-        snoop.log("screen_view", "firebase", mapOf("screen_name" to "Checkout"))
+        val verivent = AnalyticsSink { sanitizeProperty { it == "screen_name" } }
+        verivent.log("screen_view", "firebase", mapOf("screen_name" to "Checkout"))
         val entry = entries().single()
         assertEquals(entry.properties.single { it.name == "screen_name" }.value, entry.groupLabel)
         assertTrue("Checkout" !in entry.groupLabel.orEmpty())
@@ -128,23 +128,23 @@ class SnoopAnalyticsTest {
 
     @Test
     fun groupByRetargetsTheOpeningEventAndNullTurnsGroupingOff() {
-        SnoopAnalytics { groupBy("page_shown", "page") }
+        AnalyticsSink { groupBy("page_shown", "page") }
             .log("page_shown", "gtm", mapOf("page" to "Checkout"))
         assertEquals("Checkout", entries().single().groupLabel)
 
-        SnoopCore.reset()
-        SnoopAnalytics { groupBy(event = null) }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
+        Inspector.reset()
+        AnalyticsSink { groupBy(event = null) }.log("screen_view", "firebase", mapOf("screen_name" to "Home"))
         assertNull(entries().single().groupLabel)
     }
 
     @Test
     fun logToWritesTheCapturedEntryAsOneJsonLineWithRedactedValues() {
         val lines = mutableListOf<String>()
-        val snoop = SnoopAnalytics {
+        val verivent = AnalyticsSink {
             sanitizeProperty { it == "user_id" }
             logTo { lines += it }
         }
-        snoop.log("search", "firebase", mapOf("search_term" to "shoes", "user_id" to "42"))
+        verivent.log("search", "firebase", mapOf("search_term" to "shoes", "user_id" to "42"))
 
         val line = Json.parseToJsonElement(lines.single()).jsonObject
         assertEquals("search", line["name"]?.jsonPrimitive?.content)
@@ -155,15 +155,15 @@ class SnoopAnalyticsTest {
 
     @Test
     fun aThrowingLoggerKeepsTheEvent() {
-        SnoopAnalytics { logTo { error("boom") } }.log("purchase", "firebase")
+        AnalyticsSink { logTo { error("boom") } }.log("purchase", "firebase")
         assertEquals(listOf("purchase"), entries().map { it.name })
     }
 
     @Test
     fun aDisabledCoreWritesNoLine() {
         val lines = mutableListOf<String>()
-        SnoopCore.enabled = false
-        SnoopAnalytics { logTo { lines += it } }.log("search", "firebase")
+        Inspector.enabled = false
+        AnalyticsSink { logTo { lines += it } }.log("search", "firebase")
         assertTrue(lines.isEmpty())
     }
 
@@ -174,10 +174,10 @@ class SnoopAnalyticsTest {
 
     @Test
     fun aLoadedPlanStampsItsVersionAndIssuesBeforeRedactionOnlyOnEventsItDefines() {
-        SnoopCore.loadTrackingPlan(searchPlan)
-        val snoop = SnoopAnalytics { sanitizeProperty { it == "user_id" } }
-        snoop.log("search", "firebase", mapOf("user_id" to 42))
-        snoop.log("purchase", "firebase")
+        Inspector.loadTrackingPlan(searchPlan)
+        val verivent = AnalyticsSink { sanitizeProperty { it == "user_id" } }
+        verivent.log("search", "firebase", mapOf("user_id" to 42))
+        verivent.log("purchase", "firebase")
 
         val (search, purchase) = entries()
         assertEquals("2.1.0", search.planVersion)
@@ -188,7 +188,7 @@ class SnoopAnalyticsTest {
 
     @Test
     fun withoutAPlanNothingIsStamped() {
-        SnoopAnalytics().log("search", "firebase")
+        AnalyticsSink().log("search", "firebase")
         val entry = entries().single()
         assertNull(entry.planVersion)
         assertEquals(emptyList(), entry.issues)
@@ -196,21 +196,21 @@ class SnoopAnalyticsTest {
 
     @Test
     fun clearingThePlanStopsValidationButKeepsEarlierVerdicts() {
-        SnoopCore.loadTrackingPlan(searchPlan)
-        assertEquals("2.1.0", SnoopCore.trackingPlan.value?.version)
-        val snoop = SnoopAnalytics()
-        snoop.log("search", "firebase")
-        SnoopCore.clearTrackingPlan()
-        snoop.log("search", "firebase")
+        Inspector.loadTrackingPlan(searchPlan)
+        assertEquals("2.1.0", Inspector.trackingPlan.value?.version)
+        val verivent = AnalyticsSink()
+        verivent.log("search", "firebase")
+        Inspector.clearTrackingPlan()
+        verivent.log("search", "firebase")
 
-        assertNull(SnoopCore.trackingPlan.value)
+        assertNull(Inspector.trackingPlan.value)
         assertEquals(listOf(1, 0), entries().map { it.issues.size })
     }
 
     @Test
     fun anInvalidPlanThrowsAndLeavesTheCurrentOneInPlace() {
-        SnoopCore.loadTrackingPlan(searchPlan)
-        assertFailsWith<IllegalArgumentException> { SnoopCore.loadTrackingPlan("{}") }
-        assertEquals("2.1.0", SnoopCore.trackingPlan.value?.version)
+        Inspector.loadTrackingPlan(searchPlan)
+        assertFailsWith<IllegalArgumentException> { Inspector.loadTrackingPlan("{}") }
+        assertEquals("2.1.0", Inspector.trackingPlan.value?.version)
     }
 }

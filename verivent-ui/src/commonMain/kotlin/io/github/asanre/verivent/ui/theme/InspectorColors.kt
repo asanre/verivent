@@ -1,10 +1,10 @@
-package com.snoop.ui.theme
+package io.github.asanre.verivent.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
 
 /** A tinted background plus the foreground that stays legible on it, per color mode. */
 @Immutable
@@ -23,7 +23,7 @@ internal data class VerdictColors(val pill: TintPair, val card: TintPair, val bo
  * in dark mode.
  */
 @Immutable
-internal data class SnoopColors(
+internal data class InspectorColors(
     val success: TintPair,
     val info: TintPair,
     val warn: TintPair,
@@ -67,7 +67,7 @@ internal data class SnoopColors(
         channelPalette[channel.hashCode().mod(channelPalette.size)]
 }
 
-internal val SnoopLightColors = SnoopColors(
+internal val InspectorLightColors = InspectorColors(
     success = TintPair(Color(0xFFDCFCE7), Color(0xFF16A34A)),
     info = TintPair(Color(0xFFDBEAFE), Color(0xFF2563EB)),
     warn = TintPair(Color(0xFFFEF3C7), Color(0xFFB45309)),
@@ -110,7 +110,7 @@ internal val SnoopLightColors = SnoopColors(
     ),
 )
 
-internal val SnoopDarkColors = SnoopColors(
+internal val InspectorDarkColors = InspectorColors(
     success = TintPair(Color(0xFF16321F), Color(0xFF4ADE80)),
     info = TintPair(Color(0xFF16243D), Color(0xFF60A5FA)),
     warn = TintPair(Color(0xFF33270F), Color(0xFFFBBF24)),
@@ -153,4 +153,4 @@ internal val SnoopDarkColors = SnoopColors(
     ),
 )
 
-internal val LocalSnoopColors = staticCompositionLocalOf { SnoopLightColors }
+internal val LocalInspectorColors = staticCompositionLocalOf { InspectorLightColors }

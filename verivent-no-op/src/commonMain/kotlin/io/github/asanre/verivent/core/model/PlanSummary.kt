@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 /** No-op mirror of the loaded tracking plan's summary. */
 data class PlanSummary(val version: String, val events: List<PlanEvent>)

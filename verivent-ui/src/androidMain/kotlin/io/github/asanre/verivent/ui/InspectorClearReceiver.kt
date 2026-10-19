@@ -1,14 +1,14 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.snoop.core.SnoopCore
+import io.github.asanre.verivent.core.Inspector
 
 /** Backs the notification's "Clear" action. */
-class SnoopClearReceiver : BroadcastReceiver() {
+class InspectorClearReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        SnoopCore.store.clear()
-        Snoop.showNotification(context)
+        Inspector.store.clear()
+        InspectorLauncher.showNotification(context)
     }
 }

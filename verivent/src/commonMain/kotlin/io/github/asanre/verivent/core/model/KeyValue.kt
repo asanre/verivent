@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 /** A captured header or analytics property, with [redacted] flagging that [value] is a placeholder. */
 data class KeyValue(

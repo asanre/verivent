@@ -1,4 +1,4 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
 /**
  * Every bind is gated, loopback included: on Android the loopback interface is shared by every

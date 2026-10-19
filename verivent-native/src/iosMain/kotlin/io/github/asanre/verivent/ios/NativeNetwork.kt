@@ -1,12 +1,12 @@
-package com.snoop.ios
+package io.github.asanre.verivent.ios
 
-import com.snoop.core.SnoopCore
-import com.snoop.core.capture.BodyCapture
-import com.snoop.core.internal.runSafely
-import com.snoop.core.model.BodyPreview
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.redaction.RedactionEngine
+import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.capture.BodyCapture
+import io.github.asanre.verivent.core.internal.runSafely
+import io.github.asanre.verivent.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.redaction.RedactionEngine
 import kotlin.concurrent.Volatile
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
@@ -15,21 +15,21 @@ import platform.Foundation.NSData
 import platform.posix.memcpy
 
 /**
- * **Experimental.** Network ingestion for native iOS hosts, fed by the Swift `SnoopURLProtocol`.
+ * **Experimental.** Network ingestion for native iOS hosts, fed by the Swift `VeriventURLProtocol`.
  * The shape of this surface may still change in a minor release.
  *
  * The three capture calls mirror the Ktor plugin exactly — [begin] records a pending transaction,
  * [complete] or [fail] patches it by id — so a call looks the same in the viewer whichever adapter
- * captured it. Redaction runs on snoop's own engine, so the defaults (`Authorization`,
+ * captured it. Redaction runs on verivent's own engine, so the defaults (`Authorization`,
  * `Cookie`, the secret-ish query parameters, the `██` placeholder, fail-closed predicates) are the
  * ones Android already gets.
  */
-object SnoopNetwork {
+object NativeNetwork {
 
     private class Config(
         val maxContentLength: Long,
         val redaction: RedactionEngine,
-        val keepRequest: ((SnoopRequest) -> Boolean)?,
+        val keepRequest: ((NativeRequest) -> Boolean)?,
     )
 
     /**
@@ -59,7 +59,7 @@ object SnoopNetwork {
         redactHeader: ((String) -> Boolean)?,
         redactQueryParameter: ((String) -> Boolean)?,
         redactBody: ((String) -> String)?,
-        keepRequest: ((SnoopRequest) -> Boolean)?,
+        keepRequest: ((NativeRequest) -> Boolean)?,
     ) {
         config = Config(
             maxContentLength = maxContentLength,
@@ -74,7 +74,7 @@ object SnoopNetwork {
 
     /**
      * Record a request on its way out and return the id its response must be reported under, or
-     * null when it isn't being captured — Snoop disabled, or a filter said no. A null id means the
+     * null when it isn't being captured — Verivent disabled, or a filter said no. A null id means the
      * caller skips [complete] and [fail] entirely.
      *
      * @param bodyByteCount size of the whole body, which may exceed [body] when the caller only
@@ -96,15 +96,15 @@ object SnoopNetwork {
         var id: String? = null
         runSafely("ios.network.request") {
             val current = config
-            if (!SnoopCore.enabled) return@runSafely
-            if (current.keepRequest?.invoke(SnoopRequest(method, url, host, path, headers)) == false) {
+            if (!Inspector.enabled) return@runSafely
+            if (current.keepRequest?.invoke(NativeRequest(method, url, host, path, headers)) == false) {
                 return@runSafely
             }
-            val callId = SnoopCore.nextId()
-            SnoopCore.recordNetwork(
+            val callId = Inspector.nextId()
+            Inspector.recordNetwork(
                 NetworkTransaction(
                     id = callId,
-                    timestamp = SnoopCore.now(),
+                    timestamp = Inspector.now(),
                     method = method,
                     url = current.redaction.redactUrl(url),
                     host = host,
@@ -132,7 +132,7 @@ object SnoopNetwork {
     ) {
         runSafely("ios.network.response") {
             val current = config
-            SnoopCore.updateNetwork(id) {
+            Inspector.updateNetwork(id) {
                 it.copy(
                     status = status,
                     protocol = protocol,
@@ -156,7 +156,7 @@ object SnoopNetwork {
     fun fail(id: String, message: String, durationMillis: Long) {
         runSafely("ios.network.record-failure") {
             val current = config
-            SnoopCore.updateNetwork(id) {
+            Inspector.updateNetwork(id) {
                 it.copy(error = current.redaction.redactUrl(message), durationMillis = durationMillis)
             }
         }

@@ -1,22 +1,22 @@
 // swift-tools-version: 5.9
 //
-// Rendered by the `publish` workflow into asanre/snoop-swift — the placeholders become the release
+// Rendered by the `publish` workflow into asanre/verivent-swift — the placeholders become the release
 // asset's URL and checksum. Never edit the rendered copy: this file and Sources/ are the source of
 // truth, and the generated repo is overwritten on every release.
 import PackageDescription
 
 let package = Package(
-    name: "Snoop",
+    name: "Verivent",
     platforms: [.iOS(.v14)],
     products: [
-        .library(name: "Snoop", targets: ["Snoop"]),
+        .library(name: "Verivent", targets: ["Verivent"]),
     ],
     targets: [
         .binaryTarget(
-            name: "SnoopKit",
-            url: "@SNOOP_XCFRAMEWORK_URL@",
-            checksum: "@SNOOP_XCFRAMEWORK_CHECKSUM@"
+            name: "VeriventKit",
+            url: "@VERIVENT_XCFRAMEWORK_URL@",
+            checksum: "@VERIVENT_XCFRAMEWORK_CHECKSUM@"
         ),
-        .target(name: "Snoop", dependencies: ["SnoopKit"]),
+        .target(name: "Verivent", dependencies: ["VeriventKit"]),
     ]
 )

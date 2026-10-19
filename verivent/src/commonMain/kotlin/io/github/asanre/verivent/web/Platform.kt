@@ -1,4 +1,4 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
 /** This device's LAN IPv4 address (Wi-Fi), or null if none is available. */
 internal expect fun localHostAddress(): String?

@@ -1,4 +1,4 @@
-package com.snoop.ui.detail
+package io.github.asanre.verivent.ui.detail
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -15,15 +15,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.ui.component.CopyIconButton
-import com.snoop.ui.component.DetailScaffold
-import com.snoop.ui.component.Pill
-import com.snoop.ui.internal.buildCurl
-import com.snoop.ui.internal.formatBytes
-import com.snoop.ui.internal.formatDuration
-import com.snoop.ui.theme.LocalSnoopColors
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.ui.component.CopyIconButton
+import io.github.asanre.verivent.ui.component.DetailScaffold
+import io.github.asanre.verivent.ui.component.Pill
+import io.github.asanre.verivent.ui.internal.buildCurl
+import io.github.asanre.verivent.ui.internal.formatBytes
+import io.github.asanre.verivent.ui.internal.formatDuration
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 
 @Composable
 internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> Unit) {
@@ -37,7 +37,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, onBack: () -> 
     ) { modifier, showMessage ->
         Column(modifier) {
             var tab by remember { mutableStateOf(NetworkDetailTab.Overview) }
-            val colors = LocalSnoopColors.current
+            val colors = LocalInspectorColors.current
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 10.dp),

@@ -1,9 +1,9 @@
-package com.snoop.ktor
+package io.github.asanre.verivent.ktor
 
-import com.snoop.core.capture.BodyCapture
-import com.snoop.core.model.BodyPreview
-import com.snoop.core.model.KeyValue
-import com.snoop.core.redaction.RedactionEngine
+import io.github.asanre.verivent.core.capture.BodyCapture
+import io.github.asanre.verivent.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.redaction.RedactionEngine
 import io.ktor.client.plugins.isSaved
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse

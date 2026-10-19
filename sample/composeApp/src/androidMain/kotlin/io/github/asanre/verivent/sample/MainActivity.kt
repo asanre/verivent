@@ -1,14 +1,14 @@
-package com.snoop.sample
+package io.github.asanre.verivent.sample
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.snoop.core.SnoopCore
+import io.github.asanre.verivent.core.Inspector
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        SnoopCore.configure(storageDir = "$filesDir/snoop")
+        Inspector.configure(storageDir = "$filesDir/verivent")
         setContent { SampleApp() }
     }
 }

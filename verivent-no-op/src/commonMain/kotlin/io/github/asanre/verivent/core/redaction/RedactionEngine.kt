@@ -1,6 +1,6 @@
-package com.snoop.core.redaction
+package io.github.asanre.verivent.core.redaction
 
-import com.snoop.core.model.KeyValue
+import io.github.asanre.verivent.core.model.KeyValue
 
 /** No-op mirror: nothing is ever captured, so nothing needs redacting — pure pass-through. */
 class RedactionEngine(

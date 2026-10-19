@@ -1,4 +1,4 @@
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 /** No-op mirror: same contract (never throws), without the diagnostics. */
 inline fun runSafely(tag: String, block: () -> Unit) {

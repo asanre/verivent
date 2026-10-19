@@ -1,11 +1,11 @@
-package com.snoop.core
+package io.github.asanre.verivent.core
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.BodyPreview
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.redaction.RedactionEngine
-import com.snoop.core.store.SnoopStore
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.redaction.RedactionEngine
+import io.github.asanre.verivent.core.store.TimelineStore
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -17,11 +17,11 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Instant
 
-class SnoopStoreTest {
+class TimelineStoreTest {
 
     @Test
     fun ringBufferDropsOldestBeyondCapacity() {
-        val store = SnoopStore(capacity = 3)
+        val store = TimelineStore(capacity = 3)
         repeat(5) { store.record(txn(it.toString())) }
 
         val ids = store.entries.value.map { it.id }
@@ -30,7 +30,7 @@ class SnoopStoreTest {
 
     @Test
     fun updateReplacesById() {
-        val store = SnoopStore()
+        val store = TimelineStore()
         store.record(txn("a"))
         store.update("a") { (it as NetworkTransaction).copy(status = 200) }
 
@@ -41,7 +41,7 @@ class SnoopStoreTest {
 
     @Test
     fun clearEmptiesStore() {
-        val store = SnoopStore()
+        val store = TimelineStore()
         store.record(txn("a"))
         store.clear()
         assertTrue(store.entries.value.isEmpty())
@@ -49,7 +49,7 @@ class SnoopStoreTest {
 
     @Test
     fun reconfigureKeepsTheSameStateFlow() {
-        val store = SnoopStore()
+        val store = TimelineStore()
         val flow = store.entries
         store.record(txn("a"))
         store.reconfigure(capacity = 2)
@@ -60,7 +60,7 @@ class SnoopStoreTest {
 
     @Test
     fun reconfigureWithoutClearTrimsToNewCapacity() {
-        val store = SnoopStore()
+        val store = TimelineStore()
         repeat(5) { store.record(txn(it.toString())) }
         store.reconfigure(capacity = 2, clear = false)
         assertEquals(listOf("3", "4"), store.entries.value.map { it.id })
@@ -68,13 +68,13 @@ class SnoopStoreTest {
 
     @Test
     fun zeroOrNegativeCapacityThrows() {
-        assertFailsWith<IllegalArgumentException> { SnoopStore(capacity = 0) }
-        assertFailsWith<IllegalArgumentException> { SnoopStore().reconfigure(capacity = -1) }
+        assertFailsWith<IllegalArgumentException> { TimelineStore(capacity = 0) }
+        assertFailsWith<IllegalArgumentException> { TimelineStore().reconfigure(capacity = -1) }
     }
 
     @Test
     fun byteBudgetEvictsOldestOnRecord() {
-        val store = SnoopStore(capacity = 100, maxTotalBytes = 2_000)
+        val store = TimelineStore(capacity = 100, maxTotalBytes = 2_000)
         repeat(10) { store.record(bigTxn(it.toString(), bodyChars = 700)) }
         val ids = store.entries.value.map { it.id }
         assertTrue(ids.size < 10, "expected byte-budget eviction, kept $ids")
@@ -84,7 +84,7 @@ class SnoopStoreTest {
 
     @Test
     fun newestSurvivesEvenWhenItAloneExceedsTheBudget() {
-        val store = SnoopStore(capacity = 100, maxTotalBytes = 1_000)
+        val store = TimelineStore(capacity = 100, maxTotalBytes = 1_000)
         store.record(txn("a"))
         store.record(bigTxn("b", bodyChars = 5_000))
         assertEquals(listOf("b"), store.entries.value.map { it.id })
@@ -92,7 +92,7 @@ class SnoopStoreTest {
 
     @Test
     fun byteBudgetEvictsOldestOnGrowingUpdate() {
-        val store = SnoopStore(capacity = 100, maxTotalBytes = 2_000)
+        val store = TimelineStore(capacity = 100, maxTotalBytes = 2_000)
         store.record(txn("a"))
         store.record(txn("b"))
         store.update("b") {
@@ -103,40 +103,40 @@ class SnoopStoreTest {
     }
 }
 
-class SnoopCoreConfigureTest {
+class InspectorConfigureTest {
 
     @BeforeTest
-    fun setup() = SnoopCore.reset()
+    fun setup() = Inspector.reset()
 
     @AfterTest
     fun tearDown() {
-        SnoopCore.store.reconfigure(SnoopStore.DEFAULT_CAPACITY, SnoopStore.DEFAULT_MAX_TOTAL_BYTES)
-        SnoopCore.reset()
+        Inspector.store.reconfigure(TimelineStore.DEFAULT_CAPACITY, TimelineStore.DEFAULT_MAX_TOTAL_BYTES)
+        Inspector.reset()
     }
 
     @Test
-    fun titleDefaultsToSnoopAndConfigureRoundTripsIt() {
-        assertEquals("Snoop", SnoopCore.title)
+    fun titleDefaultsToVeriventAndConfigureRoundTripsIt() {
+        assertEquals("Verivent", Inspector.title)
 
-        SnoopCore.configure(title = "Patata Inspector")
-        assertEquals("Patata Inspector", SnoopCore.title)
+        Inspector.configure(title = "Patata Inspector")
+        assertEquals("Patata Inspector", Inspector.title)
 
         // Touching only the limits must not silently rename the viewers back.
-        SnoopCore.configure(capacity = 10)
-        assertEquals("Patata Inspector", SnoopCore.title)
+        Inspector.configure(capacity = 10)
+        assertEquals("Patata Inspector", Inspector.title)
 
-        SnoopCore.reset()
-        assertEquals("Snoop", SnoopCore.title)
+        Inspector.reset()
+        assertEquals("Verivent", Inspector.title)
     }
 
     @Test
     fun configureKeepsStoreAndFlowIdentityAndStillEmits() {
-        val store = SnoopCore.store
+        val store = Inspector.store
         val flow = store.entries
-        SnoopCore.configure(capacity = 10)
-        SnoopCore.recordNetwork(txn("a"))
-        assertSame(store, SnoopCore.store)
-        assertSame(flow, SnoopCore.store.entries)
+        Inspector.configure(capacity = 10)
+        Inspector.recordNetwork(txn("a"))
+        assertSame(store, Inspector.store)
+        assertSame(flow, Inspector.store.entries)
         assertEquals(listOf("a"), flow.value.map { it.id })
     }
 }
@@ -260,24 +260,24 @@ class RedactionEngineTest {
     }
 }
 
-class SnoopCoreTest {
+class InspectorTest {
 
     @BeforeTest
-    fun setup() = SnoopCore.reset()
+    fun setup() = Inspector.reset()
 
     @AfterTest
-    fun tearDown() = SnoopCore.reset()
+    fun tearDown() = Inspector.reset()
 
     @Test
     fun disabledCoreDropsEntries() {
-        SnoopCore.enabled = false
-        SnoopCore.recordAnalytics(event("e1", SnoopCore.now()))
-        assertTrue(SnoopCore.entriesSnapshot.isEmpty())
+        Inspector.enabled = false
+        Inspector.recordAnalytics(event("e1", Inspector.now()))
+        assertTrue(Inspector.entriesSnapshot.isEmpty())
     }
 
     @Test
     fun idsAreUnique() {
-        val ids = List(1000) { SnoopCore.nextId() }
+        val ids = List(1000) { Inspector.nextId() }
         assertEquals(1000, ids.toSet().size)
         assertNull(ids.groupingBy { it }.eachCount().entries.firstOrNull { it.value > 1 })
     }

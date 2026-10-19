@@ -6,7 +6,7 @@ import Network
 final class LocalRedirectServer {
 
     private let listener: NWListener
-    private let queue = DispatchQueue(label: "com.snoop.tests.redirect")
+    private let queue = DispatchQueue(label: "io.github.asanre.verivent.tests.redirect")
     private let location: String
 
     init(location: String, port: UInt16) throws {

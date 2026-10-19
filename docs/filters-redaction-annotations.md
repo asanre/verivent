@@ -2,7 +2,7 @@
 
 All configuration is plain Kotlin predicates — no annotations, no codegen.
 
-## Network (`install(Snoop) { ... }`)
+## Network (`install(Verivent) { ... }`)
 
 | Option | Type | Effect |
 |---|---|---|
@@ -13,14 +13,14 @@ All configuration is plain Kotlin predicates — no annotations, no codegen.
 | `filter { request -> Bool }` | additive | Keep a request only if **every** filter returns true. A `false` skips capture entirely. |
 
 ```kotlin
-install(Snoop) {
+install(Verivent) {
     maxContentLength = 500_000
     sanitizeHeader { it.equals("X-Api-Key", ignoreCase = true) }
     filter { it.url.encodedPath != "/health" }
 }
 ```
 
-## Network — native iOS (`Snoop.installNetworkInterceptor`)
+## Network — native iOS (`Verivent.installNetworkInterceptor`)
 
 The `URLSession` counterpart of the table above, for hosts on the Swift Package. Same engine, same
 defaults; the differences are that every rule is a single closure rather than an additive list, and
@@ -32,11 +32,11 @@ that **each call replaces the previous configuration** instead of adding to it.
 | `redactHeader` | `((String) -> Bool)?` | `sanitizeHeader` |
 | `redactQueryParameter` | `((String) -> Bool)?` | `sanitizeQueryParameter` |
 | `redactBody` | `((String) -> String)?` | `sanitizeBody` |
-| `keepRequest` | `((Snoop.Request) -> Bool)?` | `filter` |
+| `keepRequest` | `((Verivent.Request) -> Bool)?` | `filter` |
 
 ```swift
 let configuration = URLSessionConfiguration.default
-Snoop.installNetworkInterceptor(
+Verivent.installNetworkInterceptor(
     on: configuration,
     redactHeader: { $0.lowercased() == "x-api-key" },
     keepRequest: { $0.path != "/health" }
@@ -46,7 +46,7 @@ Snoop.installNetworkInterceptor(
 Experimental, and partial by nature — see [Native iOS](native-ios.md#capture-network-traffic) for
 what `URLProtocol` cannot reach.
 
-## Analytics (`SnoopAnalytics { ... }`)
+## Analytics (`AnalyticsSink { ... }`)
 
 | Option | Type | Effect |
 |---|---|---|
@@ -58,7 +58,7 @@ what `URLProtocol` cannot reach.
 `Annotation` values: `Ecommerce`, `Conversion`, `Consent`, `ScreenView`.
 
 ```kotlin
-val snoop = SnoopAnalytics {
+val verivent = AnalyticsSink {
     filter { !it.name.startsWith("debug_") }
     sanitizeProperty { it in setOf("user_email", "user_id") }
     annotate {
@@ -79,7 +79,7 @@ is Firebase's manual screen event — `screen_view`, labelled with `screen_name`
 without calling `groupBy` at all. When the event doesn't carry the property, the group takes the
 event's own name; when the property is redacted, the label is the `██` placeholder.
 
-The decision is made **once, as the event is captured**, and every viewer (embedded `SnoopScreen`,
+The decision is made **once, as the event is captured**, and every viewer (embedded `InspectorScreen`,
 the Android Activity, the web page, the native iOS hosts) groups by that stamp. Two consequences
 worth knowing:
 
@@ -117,5 +117,5 @@ The store keeps the most recent entries (default 500) in a ring buffer. Change i
 starts:
 
 ```kotlin
-SnoopCore.configure(capacity = 1000)
+Inspector.configure(capacity = 1000)
 ```

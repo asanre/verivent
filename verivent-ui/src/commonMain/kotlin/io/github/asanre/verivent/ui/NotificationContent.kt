@@ -1,9 +1,9 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkState
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkState
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.TimelineEntry
 
 /** How many recent entries the live notification lists. */
 internal const val NOTIFICATION_MAX_LINES = 5
@@ -13,10 +13,10 @@ internal const val NOTIFICATION_MAX_LINES = 5
  * `InboxStyle` notification and the iOS notification body. Pure so both platforms and a test agree
  * on the exact text.
  */
-internal fun notificationLines(entries: List<SnoopEntry>, max: Int = NOTIFICATION_MAX_LINES): List<String> =
+internal fun notificationLines(entries: List<TimelineEntry>, max: Int = NOTIFICATION_MAX_LINES): List<String> =
     entries.asReversed().take(max).map { it.toNotificationLine() }
 
-private fun SnoopEntry.toNotificationLine(): String = when (this) {
+private fun TimelineEntry.toNotificationLine(): String = when (this) {
     is NetworkTransaction -> when (state) {
         NetworkState.Complete -> "$status $method $path"
         NetworkState.Pending -> "⏳ $method $path"

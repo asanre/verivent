@@ -1,9 +1,9 @@
-package com.snoop.web
+package io.github.asanre.verivent.web
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -63,7 +63,7 @@ internal data class StreamFrameDto(val ids: List<String>, val entries: List<Entr
 
 private fun KeyValue.toDto() = KvDto(name, value, redacted)
 
-internal fun SnoopEntry.toDto(): EntryDto = when (this) {
+internal fun TimelineEntry.toDto(): EntryDto = when (this) {
     is NetworkTransaction -> EntryDto(
         type = "network",
         id = id,
@@ -106,10 +106,10 @@ internal fun SnoopEntry.toDto(): EntryDto = when (this) {
 
 private val webJson = Json { encodeDefaults = false }
 
-internal fun encodeEntries(entries: List<SnoopEntry>): String =
+internal fun encodeEntries(entries: List<TimelineEntry>): String =
     webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
 
-internal fun encodeEntry(entry: SnoopEntry): String = webJson.encodeToString(EntryDto.serializer(), entry.toDto())
+internal fun encodeEntry(entry: TimelineEntry): String = webJson.encodeToString(EntryDto.serializer(), entry.toDto())
 
-internal fun encodeFrame(ids: List<String>, changed: List<SnoopEntry>): String =
+internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))

@@ -1,4 +1,4 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 /**
  * One way an event breaks the loaded tracking plan. [message] states the plan's expectation for

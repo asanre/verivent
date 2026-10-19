@@ -1,4 +1,4 @@
-package com.snoop.core
+package io.github.asanre.verivent.core
 
 import java.io.File
 import java.nio.file.Files
@@ -11,39 +11,39 @@ import kotlin.test.assertNull
 
 class TrackingPlanStorageTest {
 
-    private val dir: File = Files.createTempDirectory("snoop").toFile()
+    private val dir: File = Files.createTempDirectory("verivent").toFile()
     private val plan = """{ "version": "3.0.0", "events": [] }"""
 
-    @BeforeTest fun setup() = SnoopCore.reset()
+    @BeforeTest fun setup() = Inspector.reset()
 
     @AfterTest fun tearDown() {
-        SnoopCore.reset()
+        Inspector.reset()
         dir.deleteRecursively()
     }
 
     @Test
     fun aLoadedPlanIsRestoredByTheNextProcessThatSetsTheSameDirectory() {
-        SnoopCore.configure(storageDir = "$dir/snoop")
-        SnoopCore.loadTrackingPlan(plan)
+        Inspector.configure(storageDir = "$dir/verivent")
+        Inspector.loadTrackingPlan(plan)
 
-        SnoopCore.reset() // what a restart leaves behind: nothing in memory
-        assertNull(SnoopCore.trackingPlan.value)
-        SnoopCore.configure(storageDir = "$dir/snoop")
-        assertEquals("3.0.0", SnoopCore.trackingPlan.value?.version)
+        Inspector.reset() // what a restart leaves behind: nothing in memory
+        assertNull(Inspector.trackingPlan.value)
+        Inspector.configure(storageDir = "$dir/verivent")
+        assertEquals("3.0.0", Inspector.trackingPlan.value?.version)
     }
 
     @Test
     fun clearingForgetsTheStoredPlan() {
-        SnoopCore.configure(storageDir = dir.path)
-        SnoopCore.loadTrackingPlan(plan)
-        SnoopCore.clearTrackingPlan()
+        Inspector.configure(storageDir = dir.path)
+        Inspector.loadTrackingPlan(plan)
+        Inspector.clearTrackingPlan()
         assertFalse(File(dir, "tracking-plan.json").exists())
     }
 
     @Test
     fun aCorruptStoredPlanIsIgnored() {
         File(dir, "tracking-plan.json").writeText("{")
-        SnoopCore.configure(storageDir = dir.path)
-        assertNull(SnoopCore.trackingPlan.value)
+        Inspector.configure(storageDir = dir.path)
+        assertNull(Inspector.trackingPlan.value)
     }
 }

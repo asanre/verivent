@@ -1,8 +1,8 @@
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 import android.util.Log
 
-private const val LOGCAT_TAG = "Snoop"
+private const val LOGCAT_TAG = "Verivent"
 
 // android.util.Log is an unimplemented stub on a plain JVM, so it throws inside the host's unit
 // tests unless they opt into returnDefaultValues. Diagnostics must never be the thing that breaks

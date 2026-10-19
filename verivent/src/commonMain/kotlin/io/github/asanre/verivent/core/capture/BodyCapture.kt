@@ -1,6 +1,6 @@
-package com.snoop.core.capture
+package io.github.asanre.verivent.core.capture
 
-import com.snoop.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.BodyPreview
 import io.ktor.http.ContentType
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
@@ -13,8 +13,8 @@ import kotlinx.io.write
  * Turns captured bytes into the text preview the viewers show, shared by every capture adapter —
  * the Ktor plugin and the native iOS bridge alike, so a truncated body reads the same on both.
  *
- * Content types cross as `String?` rather than Ktor's [ContentType] on purpose: `snoop-native` gets
- * `snoop` as `implementation`, so Ktor is not on its compile classpath, and the no-op mirror
+ * Content types cross as `String?` rather than Ktor's [ContentType] on purpose: `verivent-native` gets
+ * `verivent` as `implementation`, so Ktor is not on its compile classpath, and the no-op mirror
  * would have to grow a Ktor dependency it exists to avoid. Parsing happens here, where Ktor is
  * already available.
  */

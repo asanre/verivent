@@ -1,19 +1,19 @@
-package com.snoop.ios
+package io.github.asanre.verivent.ios
 
-import com.snoop.analytics.SnoopAnalytics
-import com.snoop.core.SnoopCore
+import io.github.asanre.verivent.analytics.AnalyticsSink
+import io.github.asanre.verivent.core.Inspector
 
 /**
  * Analytics ingestion for native iOS hosts: wire your own analytics facade to [log], the same way a
- * Compose Multiplatform host wires `SnoopAnalytics`.
+ * Compose Multiplatform host wires `AnalyticsSink`.
  *
- * Exists because the Kotlin DSL doesn't survive the trip to Objective-C: the `SnoopAnalytics {}`
+ * Exists because the Kotlin DSL doesn't survive the trip to Objective-C: the `AnalyticsSink {}`
  * factory takes a lambda with receiver, which Swift sees as an opaque block over an exported config
  * class. Here the same options are plain closures.
  */
-object SnoopEvents {
+object NativeEvents {
 
-    private var logger = SnoopAnalytics()
+    private var logger = AnalyticsSink()
 
     /**
      * Current grouping, so the Swift facade's defaults can preserve it across a reconfigure. Held
@@ -29,13 +29,13 @@ object SnoopEvents {
 
     /** Overload keeping the pre-grouping selector alive for direct Objective-C/Swift callers. */
     fun configure(
-        keepEvent: ((SnoopEvent) -> Boolean)?,
+        keepEvent: ((NativeEvent) -> Boolean)?,
         redactProperty: ((String) -> Boolean)?,
     ) = configure(keepEvent, redactProperty, groupByEvent, groupLabelProperty)
 
     /** Overload keeping the pre-console selector alive for direct Objective-C/Swift callers. */
     fun configure(
-        keepEvent: ((SnoopEvent) -> Boolean)?,
+        keepEvent: ((NativeEvent) -> Boolean)?,
         redactProperty: ((String) -> Boolean)?,
         groupByEvent: String?,
         groupLabelProperty: String?,
@@ -52,7 +52,7 @@ object SnoopEvents {
      * @param logToConsole also write each captured event as one JSON line to the unified log.
      */
     fun configure(
-        keepEvent: ((SnoopEvent) -> Boolean)?,
+        keepEvent: ((NativeEvent) -> Boolean)?,
         redactProperty: ((String) -> Boolean)?,
         groupByEvent: String?,
         groupLabelProperty: String?,
@@ -61,9 +61,9 @@ object SnoopEvents {
         this.groupByEvent = groupByEvent
         this.groupLabelProperty = groupLabelProperty
         this.logToConsole = logToConsole
-        logger = SnoopAnalytics {
+        logger = AnalyticsSink {
             keepEvent?.let { predicate ->
-                filter { predicate(SnoopEvent(it.name, it.channel, it.properties)) }
+                filter { predicate(NativeEvent(it.name, it.channel, it.properties)) }
             }
             redactProperty?.let { predicate -> sanitizeProperty(predicate) }
             groupBy(groupByEvent, groupLabelProperty)
@@ -73,17 +73,17 @@ object SnoopEvents {
 
     /** Where the loaded tracking plan is kept across launches; null keeps it in memory only. */
     var storageDir: String?
-        get() = SnoopCore.storageDir
-        set(value) = SnoopCore.configure(storageDir = value)
+        get() = Inspector.storageDir
+        set(value) = Inspector.configure(storageDir = value)
 
     /** Version of the loaded tracking plan, or null when none is loaded. */
-    val trackingPlanVersion: String? get() = SnoopCore.trackingPlan.value?.version
+    val trackingPlanVersion: String? get() = Inspector.trackingPlan.value?.version
 
-    /** Validate events captured from now on against [json]; see `SnoopCore.loadTrackingPlan`. */
+    /** Validate events captured from now on against [json]; see `Inspector.loadTrackingPlan`. */
     @Throws(IllegalArgumentException::class)
-    fun loadTrackingPlan(json: String) = SnoopCore.loadTrackingPlan(json)
+    fun loadTrackingPlan(json: String) = Inspector.loadTrackingPlan(json)
 
-    fun clearTrackingPlan() = SnoopCore.clearTrackingPlan()
+    fun clearTrackingPlan() = Inspector.clearTrackingPlan()
 
     /** Record one event. Never throws — capture failures can't break the host's analytics call. */
     fun log(name: String, channel: String, properties: Map<String, Any?>) {

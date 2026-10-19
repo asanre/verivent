@@ -1,4 +1,4 @@
-package com.snoop.sample
+package io.github.asanre.verivent.sample
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,9 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.snoop.ui.SnoopScreen
-import com.snoop.web.SnoopBind
-import com.snoop.web.SnoopWebServer
+import io.github.asanre.verivent.ui.InspectorScreen
+import io.github.asanre.verivent.web.WebViewerBind
+import io.github.asanre.verivent.web.WebViewer
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -38,7 +38,7 @@ fun SampleApp() {
 
     if (showInspector) {
         BackHandler { showInspector = false }
-        SnoopScreen(Modifier.fillMaxSize())
+        InspectorScreen(Modifier.fillMaxSize())
         return
     }
 
@@ -49,7 +49,7 @@ fun SampleApp() {
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Snoop sample", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("Verivent sample", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Text("Generate traffic and events, then open the inspector.", style = MaterialTheme.typography.bodyMedium)
 
         Section("Network")
@@ -66,7 +66,7 @@ fun SampleApp() {
         Wide("Load sample tracking plan") { sampler.loadTrackingPlan() }
 
         Section("Inspector")
-        Wide("Open Snoop (embedded)") { showInspector = true }
+        Wide("Open Verivent (embedded)") { showInspector = true }
         WebViewerControl()
         PlatformExtras()
     }
@@ -75,16 +75,16 @@ fun SampleApp() {
 @Composable
 private fun WebViewerControl() {
     var serverUrl by remember {
-        mutableStateOf<String?>(if (SnoopWebServer.isRunning) SnoopWebServer.lanUrl() ?: SnoopWebServer.url else null)
+        mutableStateOf<String?>(if (WebViewer.isRunning) WebViewer.lanUrl() ?: WebViewer.url else null)
     }
     Button(
         onClick = {
-            if (SnoopWebServer.isRunning) {
-                SnoopWebServer.stop()
+            if (WebViewer.isRunning) {
+                WebViewer.stop()
                 serverUrl = null
             } else {
                 // start() hands back the reachable URL — the LAN address with its token.
-                serverUrl = SnoopWebServer.start(SnoopBind.Lan)
+                serverUrl = WebViewer.start(WebViewerBind.Lan)
             }
         },
         modifier = Modifier.fillMaxWidth(),

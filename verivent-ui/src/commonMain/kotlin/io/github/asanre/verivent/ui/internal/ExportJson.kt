@@ -1,9 +1,9 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.KeyValue
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.KeyValue
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -23,7 +23,7 @@ private const val ARRAY_INDENT = "    "
  * [maxChars] and keeping the newest entries (the clipboard transaction has a hard binder limit
  * around 1MB). Returns the JSON and how many entries made it.
  */
-internal fun entriesToJsonCapped(entries: List<SnoopEntry>, maxChars: Int = 400_000): Pair<String, Int> {
+internal fun entriesToJsonCapped(entries: List<TimelineEntry>, maxChars: Int = 400_000): Pair<String, Int> {
     val keptNewestFirst = mutableListOf<String>()
     var used = 0
     for (entry in entries.asReversed()) {
@@ -38,7 +38,7 @@ internal fun entriesToJsonCapped(entries: List<SnoopEntry>, maxChars: Int = 400_
     return json to keptNewestFirst.size
 }
 
-private fun SnoopEntry.toJson(): JsonObject = when (this) {
+private fun TimelineEntry.toJson(): JsonObject = when (this) {
     is NetworkTransaction -> buildJsonObject {
         put("type", "network")
         put("id", id)

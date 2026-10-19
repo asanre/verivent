@@ -20,14 +20,14 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // StateFlow in the mirrored SnoopStore surface; accepted cost of full API parity.
+            // StateFlow in the mirrored TimelineStore surface; accepted cost of full API parity.
             api(libs.kotlinx.coroutines.core)
         }
     }
 }
 
 android {
-    namespace = "com.snoop.core"
+    namespace = "io.github.asanre.verivent.core"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

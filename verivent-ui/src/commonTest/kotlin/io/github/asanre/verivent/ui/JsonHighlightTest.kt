@@ -1,8 +1,8 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.ui.internal.JsonSpan
-import com.snoop.ui.internal.JsonTokenType
-import com.snoop.ui.internal.jsonSpans
+import io.github.asanre.verivent.ui.internal.JsonSpan
+import io.github.asanre.verivent.ui.internal.JsonTokenType
+import io.github.asanre.verivent.ui.internal.jsonSpans
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

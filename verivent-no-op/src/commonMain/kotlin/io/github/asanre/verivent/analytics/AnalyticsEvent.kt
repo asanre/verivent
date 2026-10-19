@@ -1,4 +1,4 @@
-package com.snoop.analytics
+package io.github.asanre.verivent.analytics
 
 /** No-op mirror of the analytics sink's host-side event. */
 data class AnalyticsEvent(

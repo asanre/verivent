@@ -1,23 +1,23 @@
 // swift-tools-version: 5.9
 //
 // Local development manifest: links the XCFramework straight out of the Gradle build, so
-// `./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework` then `xcodebuild test` from this
+// `./gradlew :verivent-native:assembleVeriventKitReleaseXCFramework` then `xcodebuild test` from this
 // directory exercises the real binary. The published manifest is rendered from
 // Package.swift.template and points at a release asset instead.
 import PackageDescription
 
 let package = Package(
-    name: "Snoop",
+    name: "Verivent",
     platforms: [.iOS(.v14)],
     products: [
-        .library(name: "Snoop", targets: ["Snoop"]),
+        .library(name: "Verivent", targets: ["Verivent"]),
     ],
     targets: [
         .binaryTarget(
-            name: "SnoopKit",
-            path: "../snoop-native/build/XCFrameworks/release/SnoopKit.xcframework"
+            name: "VeriventKit",
+            path: "../verivent-native/build/XCFrameworks/release/VeriventKit.xcframework"
         ),
-        .target(name: "Snoop", dependencies: ["SnoopKit"]),
-        .testTarget(name: "SnoopTests", dependencies: ["Snoop"]),
+        .target(name: "Verivent", dependencies: ["VeriventKit"]),
+        .testTarget(name: "VeriventTests", dependencies: ["Verivent"]),
     ]
 )

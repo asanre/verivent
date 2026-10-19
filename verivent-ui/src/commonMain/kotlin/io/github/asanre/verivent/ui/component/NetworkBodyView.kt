@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import com.snoop.ui.internal.compactPrintJson
-import com.snoop.ui.internal.prettyPrintJson
+import io.github.asanre.verivent.ui.internal.compactPrintJson
+import io.github.asanre.verivent.ui.internal.prettyPrintJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -1,11 +1,11 @@
-package com.snoop.ui
+package io.github.asanre.verivent.ui
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.PlanEvent
-import com.snoop.core.model.PlanIssue
-import com.snoop.core.model.PlanSummary
-import com.snoop.ui.internal.EventCoverage
-import com.snoop.ui.internal.planCoverage
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.PlanEvent
+import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.ui.internal.EventCoverage
+import io.github.asanre.verivent.ui.internal.planCoverage
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Instant

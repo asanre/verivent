@@ -1,6 +1,6 @@
-package com.snoop.core.capture
+package io.github.asanre.verivent.core.capture
 
-import com.snoop.core.model.BodyPreview
+import io.github.asanre.verivent.core.model.BodyPreview
 
 /**
  * No-op mirror: nothing is ever captured, so nothing needs previewing. Kept String-shaped like the

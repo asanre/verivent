@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Snoop.
+Thanks for helping improve Verivent.
 
 ## Build & check
 
@@ -10,7 +10,7 @@ Everything runs through Gradle. The one command that must stay green:
 ./gradlew check
 ```
 
-It compiles every module (Android + iOS), runs the tests, and — via `:snoop-parity-check` —
+It compiles every module (Android + iOS), runs the tests, and — via `:verivent-parity-check` —
 compiles a shared source file against both the real and the no-op modules, so any API drift between
 them fails the build. Run it on macOS so the Kotlin/Native iOS targets compile.
 
@@ -30,10 +30,10 @@ by path, and SwiftPM resolves the package graph before anything else runs, so a 
 fails at resolution rather than at link time.
 
 ```bash
-./gradlew :snoop-native:assembleSnoopKitReleaseXCFramework
+./gradlew :verivent-native:assembleVeriventKitReleaseXCFramework
 SIM=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
-(cd swift && xcodebuild test -scheme Snoop -destination "id=$SIM")            # the bridge tests
-(cd sample/iosApp && xcodebuild build -scheme SnoopSample -destination "id=$SIM")
+(cd swift && xcodebuild test -scheme Verivent -destination "id=$SIM")            # the bridge tests
+(cd sample/iosApp && xcodebuild build -scheme VeriventSample -destination "id=$SIM")
 (cd sample/composeApp/iosApp && xcodebuild build -scheme ComposeSample -destination "id=$SIM")
 ```
 
@@ -42,7 +42,7 @@ the OS is pinned too, and the pair that exists differs from machine to machine.
 
 Two things that bite:
 
-- **A stale `snoop-native/build/`.** The tests link whatever XCFramework is sitting there, so an old
+- **A stale `verivent-native/build/`.** The tests link whatever XCFramework is sitting there, so an old
   one passes while testing nothing current. Assemble before you trust a green run.
 - **`has been modified since the module file was built`.** Xcode's module cache still holds the
   previous XCFramework. Delete the project's folder under `~/Library/Developer/Xcode/DerivedData`
@@ -50,9 +50,9 @@ Two things that bite:
 
 ## Conventions
 
-- **No-op parity is mandatory.** Every public symbol in `snoop`/`snoop-ktor`
+- **No-op parity is mandatory.** Every public symbol in `verivent`/`verivent-ktor`
   has a matching declaration in its `-no-op` module. When you change a public API, update the mirror
-  and the references in `snoop-parity-check/src/ParityCheck.kt`.
+  and the references in `verivent-parity-check/src/ParityCheck.kt`.
 - **One concept per file**, named after its primary declaration.
 - **Idiomatic Kotlin** — immutable data, pure functions, exhaustive `when`.
 
@@ -65,4 +65,4 @@ pip install mkdocs-material
 mkdocs serve
 ```
 
-Releasing to Maven Central is documented in [releasing.md](https://github.com/asanre/snoop/blob/main/docs/releasing.md).
+Releasing to Maven Central is documented in [releasing.md](https://github.com/asanre/verivent/blob/main/docs/releasing.md).

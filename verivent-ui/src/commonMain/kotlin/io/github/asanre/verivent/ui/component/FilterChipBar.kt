@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -24,9 +24,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.snoop.ui.internal.TypeFilter
-import com.snoop.ui.theme.LocalSnoopColors
-import com.snoop.ui.theme.TintPair
+import io.github.asanre.verivent.ui.internal.TypeFilter
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
+import io.github.asanre.verivent.ui.theme.TintPair
 
 /**
  * Pill chip in the approved mockup style: unselected = hairline border on surface, selected =
@@ -34,7 +34,7 @@ import com.snoop.ui.theme.TintPair
  * keeps its [tint] while unselected, so it stands out before anyone picks it.
  */
 @Composable
-internal fun SnoopChip(
+internal fun InspectorChip(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
@@ -97,7 +97,7 @@ internal fun FilterChipBar(
     breaksPlan: Boolean,
     onBreaksPlan: () -> Unit,
 ) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -106,24 +106,24 @@ internal fun FilterChipBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         @Composable
-        fun typeChip(option: TypeFilter) = SnoopChip(label = option.name, selected = type == option, onClick = { onType(option) })
+        fun typeChip(option: TypeFilter) = InspectorChip(label = option.name, selected = type == option, onClick = { onType(option) })
 
         typeChip(TypeFilter.All)
         typeChip(TypeFilter.Analytics)
         breaking?.let { count ->
-            SnoopChip(
+            InspectorChip(
                 label = "Breaks plan · $count",
                 selected = breaksPlan,
                 onClick = onBreaksPlan,
                 tint = colors.planBreaks.pill,
-                leadingIcon = SnoopIcons.Alert,
+                leadingIcon = InspectorIcons.Alert,
                 alert = true,
             )
         }
         typeChip(TypeFilter.Network)
         channels.forEach { name ->
             val tint = colors.channelTint(name)
-            SnoopChip(
+            InspectorChip(
                 label = name,
                 selected = channel == name,
                 onClick = { onChannel(name) },

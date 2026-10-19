@@ -1,4 +1,4 @@
-package com.snoop.sample
+package io.github.asanre.verivent.sample
 
 import androidx.compose.runtime.Composable
 import io.ktor.client.engine.HttpClientEngineFactory

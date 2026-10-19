@@ -1,9 +1,9 @@
-package com.snoop.ktor
+package io.github.asanre.verivent.ktor
 
 import io.ktor.client.request.HttpRequestBuilder
 
-/** No-op mirror of `snoop-ktor`'s config DSL: every hook is inert. */
-class SnoopConfig {
+/** No-op mirror of `verivent-ktor`'s config DSL: every hook is inert. */
+class VeriventConfig {
     var maxContentLength: Long = 250_000
     fun sanitizeHeader(predicate: (String) -> Boolean) = Unit
     fun sanitizeQueryParameter(predicate: (String) -> Boolean) = Unit

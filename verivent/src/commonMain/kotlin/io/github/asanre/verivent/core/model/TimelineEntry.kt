@@ -1,9 +1,9 @@
-package com.snoop.core.model
+package io.github.asanre.verivent.core.model
 
 import kotlin.time.Instant
 
-/** A single item shown in the unified Snoop timeline: either a network call or an analytics event. */
-sealed interface SnoopEntry {
+/** A single item shown in the unified Verivent timeline: either a network call or an analytics event. */
+sealed interface TimelineEntry {
     val id: String
     val timestamp: Instant
 }

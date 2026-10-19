@@ -7,11 +7,11 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Snoop Sample"
+        android:label="Verivent Sample"
         android:theme="@style/Theme.Sample">
 
         <activity
-            android:name="com.snoop.sample.MainActivity"
+            android:name="io.github.asanre.verivent.sample.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Sample">
             <intent-filter>

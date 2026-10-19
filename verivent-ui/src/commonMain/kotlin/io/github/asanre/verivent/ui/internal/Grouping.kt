@@ -1,12 +1,12 @@
-package com.snoop.ui.internal
+package io.github.asanre.verivent.ui.internal
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.TimelineEntry
 
 /** A screen section in the timeline: a group-opening event and everything logged until the next one. */
 internal data class TimelineGroup(
     val screen: String?,
-    val entries: List<SnoopEntry>,
+    val entries: List<TimelineEntry>,
     val openedBy: String? = null,
 )
 
@@ -25,14 +25,14 @@ internal fun TimelineGroup.stableKey(): String = entries.last().id
  * Repeated stamps are never merged: two visits to the same screen give two separate groups, which is
  * what makes a close-and-reopen visible.
  */
-internal fun groupEntries(entries: List<SnoopEntry>, grouped: Boolean): List<TimelineGroup> {
+internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean): List<TimelineGroup> {
     if (!grouped) {
         return listOf(TimelineGroup(screen = null, entries = entries.asReversed()))
     }
     val groups = mutableListOf<TimelineGroup>()
     var screen: String? = null
     var openedBy: String? = null
-    var bucket = mutableListOf<SnoopEntry>()
+    var bucket = mutableListOf<TimelineEntry>()
 
     for (entry in entries) {
         if (entry is AnalyticsEntry && entry.groupLabel != null) {

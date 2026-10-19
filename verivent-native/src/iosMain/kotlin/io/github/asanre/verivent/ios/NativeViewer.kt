@@ -1,6 +1,6 @@
-package com.snoop.ios
+package io.github.asanre.verivent.ios
 
-import com.snoop.web.SnoopWebServer
+import io.github.asanre.verivent.web.WebViewer
 
 /**
  * The web viewer: an embedded HTTP server that serves the captured timeline as a live page, so a
@@ -9,14 +9,14 @@ import com.snoop.web.SnoopWebServer
  * This is the only viewer the native package ships — the Compose inspector stays out of the binary,
  * and the page itself travels as an inlined string, not as a resource bundle.
  */
-object SnoopViewer {
+object NativeViewer {
 
-    val isRunning: Boolean get() = SnoopWebServer.isRunning
+    val isRunning: Boolean get() = WebViewer.isRunning
 
     /** The token every request must carry as `?t=`, or null when no viewer is running. */
-    val token: String? get() = SnoopWebServer.token
+    val token: String? get() = WebViewer.token
 
-    val defaultPort: Int get() = SnoopWebServer.DEFAULT_PORT
+    val defaultPort: Int get() = WebViewer.DEFAULT_PORT
 
     /**
      * Start the viewer (idempotent). Returns the URL to open — the LAN one when reachable
@@ -24,15 +24,15 @@ object SnoopViewer {
      * failure surfaces afterwards in the device console rather than from this call.
      *
      * @param token forces this exact token instead of a generated one. Every bind is gated,
-     *   [SnoopViewerBind.Local] included: loopback is shared with every other app on the device.
+     *   [NativeViewerBind.Local] included: loopback is shared with every other app on the device.
      */
-    fun start(bind: SnoopViewerBind, port: Int, token: String?): String =
-        SnoopWebServer.start(bind = bind.core, port = port, token = token)
+    fun start(bind: NativeViewerBind, port: Int, token: String?): String =
+        WebViewer.start(bind = bind.core, port = port, token = token)
 
-    /** The URL to reach this device from another machine, or null on a [SnoopViewerBind.Local] bind. */
-    fun lanUrl(): String? = SnoopWebServer.lanUrl()
+    /** The URL to reach this device from another machine, or null on a [NativeViewerBind.Local] bind. */
+    fun lanUrl(): String? = WebViewer.lanUrl()
 
     fun stop() {
-        SnoopWebServer.stop()
+        WebViewer.stop()
     }
 }

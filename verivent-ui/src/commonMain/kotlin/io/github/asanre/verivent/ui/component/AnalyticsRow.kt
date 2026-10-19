@@ -1,4 +1,4 @@
-package com.snoop.ui.component
+package io.github.asanre.verivent.ui.component
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,12 +21,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.PlanSummary
-import com.snoop.ui.internal.breaksPlan
-import com.snoop.ui.internal.matchesPlan
-import com.snoop.ui.internal.problemCount
-import com.snoop.ui.theme.LocalSnoopColors
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.PlanSummary
+import io.github.asanre.verivent.ui.internal.breaksPlan
+import io.github.asanre.verivent.ui.internal.matchesPlan
+import io.github.asanre.verivent.ui.internal.problemCount
+import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 
 @Composable
 internal fun AnalyticsRow(
@@ -34,7 +34,7 @@ internal fun AnalyticsRow(
     plan: PlanSummary?,
     onClick: () -> Unit,
 ) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     val tint = colors.channelTint(entry.channel)
     Row(
         modifier = Modifier
@@ -47,7 +47,7 @@ internal fun AnalyticsRow(
         Surface(color = tint.container, shape = RoundedCornerShape(8.dp)) {
             Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
                 Icon(
-                    imageVector = SnoopIcons.BarsAnalytics,
+                    imageVector = InspectorIcons.BarsAnalytics,
                     contentDescription = null,
                     tint = tint.content,
                     modifier = Modifier.size(16.dp),
@@ -77,7 +77,7 @@ internal fun AnalyticsRow(
 
 @Composable
 private fun PlanBadge(entry: AnalyticsEntry, plan: PlanSummary?) {
-    val colors = LocalSnoopColors.current
+    val colors = LocalInspectorColors.current
     when {
         entry.breaksPlan(plan) -> Surface(
             color = colors.planBreaks.pill.container,
@@ -92,12 +92,12 @@ private fun PlanBadge(entry: AnalyticsEntry, plan: PlanSummary?) {
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
             ) {
-                Icon(SnoopIcons.Close, contentDescription = null, modifier = Modifier.size(12.dp))
+                Icon(InspectorIcons.Close, contentDescription = null, modifier = Modifier.size(12.dp))
                 Text("${entry.issues.size}", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             }
         }
         entry.matchesPlan(plan) -> Icon(
-            SnoopIcons.Check,
+            InspectorIcons.Check,
             contentDescription = "Matches the plan",
             tint = colors.planMatches.pill.content,
             modifier = Modifier.size(18.dp),

@@ -1,8 +1,8 @@
-package com.snoop.core.store
+package io.github.asanre.verivent.core.store
 
-import com.snoop.core.model.AnalyticsEntry
-import com.snoop.core.model.NetworkTransaction
-import com.snoop.core.model.SnoopEntry
+import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.update
  * Two eviction limits apply, both drop-oldest: [capacity] (entry count) and [maxTotalBytes]
  * (approximate memory), so a burst of huge bodies can't balloon the host's heap.
  */
-class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT_MAX_TOTAL_BYTES) {
+class TimelineStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT_MAX_TOTAL_BYTES) {
 
     init {
         require(capacity > 0) { "capacity must be > 0, was $capacity" }
@@ -31,8 +31,8 @@ class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT
     var maxTotalBytes: Long = maxTotalBytes
         private set
 
-    private val _entries = MutableStateFlow<List<SnoopEntry>>(emptyList())
-    val entries: StateFlow<List<SnoopEntry>> get() = _entries
+    private val _entries = MutableStateFlow<List<TimelineEntry>>(emptyList())
+    val entries: StateFlow<List<TimelineEntry>> get() = _entries
 
     /**
      * Change the limits in place. The same [entries] StateFlow survives, so UI and SSE collectors
@@ -51,14 +51,14 @@ class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT
         mutate { current -> if (clear) emptyList() else current.capped(capacity, maxTotalBytes) }
     }
 
-    fun record(entry: SnoopEntry) = mutate { (it + entry).capped(capacity, maxTotalBytes) }
+    fun record(entry: TimelineEntry) = mutate { (it + entry).capped(capacity, maxTotalBytes) }
 
     // Also capped: a response arriving via update() is what balloons an entry's size.
-    fun update(id: String, transform: (SnoopEntry) -> SnoopEntry) = mutate { list ->
+    fun update(id: String, transform: (TimelineEntry) -> TimelineEntry) = mutate { list ->
         list.map { if (it.id == id) transform(it) else it }.capped(capacity, maxTotalBytes)
     }
 
-    fun mutate(transform: (List<SnoopEntry>) -> List<SnoopEntry>) = _entries.update(transform)
+    fun mutate(transform: (List<TimelineEntry>) -> List<TimelineEntry>) = _entries.update(transform)
 
     fun clear() {
         _entries.value = emptyList()
@@ -70,7 +70,7 @@ class SnoopStore(capacity: Int = DEFAULT_CAPACITY, maxTotalBytes: Long = DEFAULT
     }
 }
 
-private fun List<SnoopEntry>.capped(capacity: Int, maxTotalBytes: Long): List<SnoopEntry> {
+private fun List<TimelineEntry>.capped(capacity: Int, maxTotalBytes: Long): List<TimelineEntry> {
     val overCapacity = (size - capacity).coerceAtLeast(0)
     var dropUntil = overCapacity
     var total = 0L
@@ -86,7 +86,7 @@ private fun List<SnoopEntry>.capped(capacity: Int, maxTotalBytes: Long): List<Sn
     return if (dropUntil == 0) this else subList(dropUntil, size).toList()
 }
 
-private fun SnoopEntry.approxBytes(): Long = when (this) {
+private fun TimelineEntry.approxBytes(): Long = when (this) {
     is NetworkTransaction -> approxBytes
     is AnalyticsEntry -> approxBytes
 }

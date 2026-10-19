@@ -1,25 +1,25 @@
 # Native iOS
 
-Snoop's inspector is a Compose Multiplatform surface, so a host with a shared KMP module gets
+Verivent's inspector is a Compose Multiplatform surface, so a host with a shared KMP module gets
 everything described in [Integration](integration.md). An app written entirely in Swift has no Ktor
-client to hook and no Compose tree to embed — for those, Snoop ships a separate Swift Package with a
+client to hook and no Compose tree to embed — for those, Verivent ships a separate Swift Package with a
 deliberately narrower scope: the analytics sink, the web viewer, and network capture through
 `URLSession` rather than Ktor.
 
 !!! warning "Network capture here is experimental, and partial by nature"
     `URLProtocol` only sees the sessions you install it on. It cannot see `URLSession.shared`,
     WebSockets, background sessions, or the sessions a third-party SDK builds for itself. And
-    because the request is replayed through Snoop's own session, **your `URLSessionDelegate` is not
+    because the request is replayed through Verivent's own session, **your `URLSessionDelegate` is not
     consulted for intercepted requests** — see [Capture network traffic](#capture-network-traffic).
     The API is a preview and may change in a minor release.
 
 ## Install
 
-Add `https://github.com/asanre/snoop-swift` in Xcode (*File → Add Package Dependency*), or declare
+Add `https://github.com/asanre/verivent-swift` in Xcode (*File → Add Package Dependency*), or declare
 it directly:
 
 ```swift
-.package(url: "https://github.com/asanre/snoop-swift.git", from: "0.7.0")
+.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.7.0")
 ```
 
 That repository is generated on every release; the sources live in `swift/` in the main repo,
@@ -27,19 +27,19 @@ alongside a runnable example: `sample/iosApp` is a SwiftUI app wired to everythi
 
 ## Capture analytics events
 
-Snoop never talks to an analytics SDK. Wire your own facade to `log`, alongside the real call:
+Verivent never talks to an analytics SDK. Wire your own facade to `log`, alongside the real call:
 
 ```swift
-import Snoop
+import Verivent
 
-Snoop.configure(
+Verivent.configure(
     keepEvent: { !$0.name.hasPrefix("debug_") },
     redactProperty: { $0 == "user_email" },
     groupByEvent: "screen_view",        // stamped on events as they're captured; nil turns grouping off
     groupLabelProperty: "screen_name"   // the property that labels each group
 )
 
-Snoop.log("purchase", channel: "firebase", properties: [
+Verivent.log("purchase", channel: "firebase", properties: [
     "sku": "SKU-9",
     "value": 42.5,
     "first": true,
@@ -57,14 +57,14 @@ with a visible `██` rather than dropped.
 
 ### Console lines and the tracking plan
 
-`Snoop.configure(logToConsole: true)` also writes each captured event as one JSON line to the
-unified log (`log stream --predicate 'eventMessage BEGINSWITH "SnoopEvent"'`). To check events
+`Verivent.configure(logToConsole: true)` also writes each captured event as one JSON line to the
+unified log (`log stream --predicate 'eventMessage BEGINSWITH "VeriventEvent"'`). To check events
 against the analytics team's tracking plan, load it, and set a folder to keep it across launches:
 
 ```swift
-Snoop.storageDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-    .appendingPathComponent("snoop")
-try Snoop.loadTrackingPlan(planJSON)   // throws on an invalid plan; Snoop.clearTrackingPlan() removes it
+Verivent.storageDirectory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    .appendingPathComponent("verivent")
+try Verivent.loadTrackingPlan(planJSON)   // throws on an invalid plan; Verivent.clearTrackingPlan() removes it
 ```
 
 The format and what the verdict means are in
@@ -78,7 +78,7 @@ call through that session lands in the timeline next to your analytics events:
 
 ```swift
 let configuration = URLSessionConfiguration.default
-Snoop.installNetworkInterceptor(
+Verivent.installNetworkInterceptor(
     on: configuration,
     maxContentLength: 250_000,
     redactHeader: { $0.lowercased() == "x-api-key" },
@@ -96,7 +96,7 @@ form-urlencoded body. A predicate that throws counts as a match, so a broken rul
 Unlike the Ktor DSL, whose rules are additive, each call **replaces** the previous configuration —
 the interceptor keeps one set of options for the process, so the last install wins.
 
-`Snoop.log` and the interceptor are independent: `redactProperty` in `configure` covers analytics
+`Verivent.log` and the interceptor are independent: `redactProperty` in `configure` covers analytics
 properties, `redactHeader` here covers HTTP headers.
 
 One cosmetic difference from the Ktor side: the protocol column shows the ALPN name URLSession
@@ -109,12 +109,12 @@ form Foundation reports.
 - **WebSockets and background sessions** — outside what `URLProtocol` is handed.
 - **Third-party SDKs** that construct their own session, unless they let you pass a configuration.
 - **Streamed upload bodies without a `Content-Length`**, or larger than 1 MB: a body stream is
-  one-shot, so rather than risk corrupting the upload Snoop stores a placeholder and sends the
+  one-shot, so rather than risk corrupting the upload Verivent stores a placeholder and sends the
   stream through untouched.
 
 ### Authentication and certificate pinning
 
-The intercepted request is replayed through Snoop's own session, so **the host's
+The intercepted request is replayed through Verivent's own session, so **the host's
 `URLSessionDelegate` never sees it**. Certificate pinning implemented in
 `urlSession(_:didReceive:completionHandler:)` does not run, and a credential you would have supplied
 for a Basic/Digest challenge goes unanswered. The connection still gets the system's default trust
@@ -125,17 +125,17 @@ what makes per-configuration installation the escape hatch rather than a global 
 ## Inspect
 
 ```swift
-let url = Snoop.startWebViewer()          // http://localhost:9394/?t=…
-Snoop.stopWebViewer()
+let url = Verivent.startWebViewer()          // http://localhost:9394/?t=…
+Verivent.stopWebViewer()
 ```
 
 Open that URL from your Mac's browser — the simulator shares the host loopback. It carries the
 access token every bind requires, loopback included, so open it as returned rather than typing the
-bare host and port (`Snoop.webViewerToken` exposes the token on its own). For a physical device,
+bare host and port (`Verivent.webViewerToken` exposes the token on its own). For a physical device,
 bind to the LAN and open the returned URL:
 
 ```swift
-let url = Snoop.startWebViewer(.lan)      // http://192.168.1.10:9394/?t=…
+let url = Verivent.startWebViewer(.lan)      // http://192.168.1.10:9394/?t=…
 ```
 
 See [Web viewer](web-viewer.md) for bind modes and tokens; the page, filters and detail views are
@@ -150,7 +150,7 @@ process, so your App Transport Security settings don't block the plain-HTTP URL:
 ```swift
 import SafariServices
 
-let url = URL(string: Snoop.startWebViewer())!   // .local is enough: same device
+let url = URL(string: Verivent.startWebViewer())!   // .local is enough: same device
 present(SFSafariViewController(url: url), animated: true)
 ```
 
@@ -158,7 +158,7 @@ present(SFSafariViewController(url: url), animated: true)
 
 !!! note "`startWebViewer` reports bind failures asynchronously"
     The engine binds on a background coroutine, so the returned URL is not proof that the port was
-    free. A failure logs a `Snoop` warning to the device console and flips `Snoop.isWebViewerRunning`
+    free. A failure logs a `Verivent` warning to the device console and flips `Verivent.isWebViewerRunning`
     back to false; a success logs the same URL. Check it a moment later, or just try the URL.
 
 ## Release builds
@@ -169,10 +169,10 @@ to swap in and **the framework links into your release binary too**. Guard your 
 
 ```swift
 #if DEBUG
-Snoop.log(event.name, channel: "firebase", properties: event.properties)
+Verivent.log(event.name, channel: "firebase", properties: event.properties)
 #endif
 ```
 
 `#if DEBUG` keeps the calls out, but not the binary: the arm64 device slice is ~5.7 MB. If that is
-unacceptable, keep Snoop out of the release target entirely rather than relying on dead-stripping —
+unacceptable, keep Verivent out of the release target entirely rather than relying on dead-stripping —
 Objective-C class metadata resists it.

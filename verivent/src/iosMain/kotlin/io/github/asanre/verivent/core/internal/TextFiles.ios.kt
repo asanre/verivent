@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 
-package com.snoop.core.internal
+package io.github.asanre.verivent.core.internal
 
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
