@@ -27,20 +27,6 @@ object NativeEvents {
     var logToConsole: Boolean = false
         private set
 
-    /** Overload keeping the pre-grouping selector alive for direct Objective-C/Swift callers. */
-    fun configure(
-        keepEvent: ((NativeEvent) -> Boolean)?,
-        redactProperty: ((String) -> Boolean)?,
-    ) = configure(keepEvent, redactProperty, groupByEvent, groupLabelProperty)
-
-    /** Overload keeping the pre-console selector alive for direct Objective-C/Swift callers. */
-    fun configure(
-        keepEvent: ((NativeEvent) -> Boolean)?,
-        redactProperty: ((String) -> Boolean)?,
-        groupByEvent: String?,
-        groupLabelProperty: String?,
-    ) = configure(keepEvent, redactProperty, groupByEvent, groupLabelProperty, logToConsole)
-
     /**
      * Install filtering, redaction and how the timeline is grouped. Both closures are optional —
      * null keeps every event and redacts nothing. Reconfiguring later only affects events captured
