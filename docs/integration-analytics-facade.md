@@ -130,6 +130,8 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
   cost of a pattern that backtracks. It can't stop one that backtracks exponentially, such as
   `(a+)+$`, on shorter values: avoid nesting quantifiers.
 - The check runs on the values you pass to `log`, before redaction, so types are the host's types.
+  A property you redact with `sanitizeProperty` is only checked for `required` and `type`: a verdict
+  on its `enum` or `pattern` would give its value away.
   `sections` are not checked.
 - An event the plan defines carries `planVersion`, the version it was checked against, and
   `issues`: one `PlanIssue(property, message)` per thing that breaks the plan, empty when it

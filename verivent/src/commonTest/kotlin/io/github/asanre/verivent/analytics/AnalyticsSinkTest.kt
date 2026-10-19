@@ -187,6 +187,21 @@ class AnalyticsSinkTest {
     }
 
     @Test
+    fun aRedactedPropertyIsCheckedForTypeButNeverAgainstItsAllowedValues() {
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "login", "channel": "firebase",
+                 "schema": { "properties": { "token": { "type": "string", "enum": ["a"], "pattern": "^a$" } } } } ] }""",
+        )
+        val verivent = AnalyticsSink { sanitizeProperty { it == "token" } }
+        verivent.log("login", "firebase", mapOf("token" to "b"))
+        verivent.log("login", "firebase", mapOf("token" to 7))
+
+        val (otherValue, wrongType) = entries()
+        assertEquals(emptyList(), otherValue.issues)
+        assertEquals(listOf(PlanIssue("token", "Expected string, got integer")), wrongType.issues)
+    }
+
+    @Test
     fun withoutAPlanNothingIsStamped() {
         AnalyticsSink().log("search", "firebase")
         val entry = entries().single()

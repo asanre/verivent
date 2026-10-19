@@ -33,13 +33,15 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             }
             if (!visible) return@runSafely
 
-            // Checked before redaction because only the raw values still carry their types.
-            val plan = Inspector.activePlan
-            val issues = plan?.issuesFor(name, channel, properties)
-
             // Labelled off the redacted list on purpose: a group must never surface a value the
             // host asked to hide, and the viewers already only ever read redacted properties.
             val redacted = redact(properties)
+
+            // Checked on the raw values because only they still carry their types, but a hidden
+            // value is only type-checked: a verdict on its enum or pattern would reveal it.
+            val plan = Inspector.activePlan
+            val hidden = redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }
+            val issues = plan?.issuesFor(name, channel, properties, hidden)
 
             val entry = AnalyticsEntry(
                 id = Inspector.nextId(),

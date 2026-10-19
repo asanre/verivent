@@ -34,9 +34,16 @@ internal class TrackingPlan private constructor(
 
     val summary = PlanSummary(version, schemas.keys.toList())
 
-    /** What breaks the plan in this event, or null when the plan doesn't define it. */
-    fun issuesFor(name: String, channel: String, properties: Map<String, Any?>): List<PlanIssue>? =
-        schemas[PlanEvent(name, channel)]?.issuesFor(properties)
+    /**
+     * What breaks the plan in this event, or null when the plan doesn't define it. Properties in
+     * [hidden] are checked for presence and type only.
+     */
+    fun issuesFor(
+        name: String,
+        channel: String,
+        properties: Map<String, Any?>,
+        hidden: Set<String> = emptySet(),
+    ): List<PlanIssue>? = schemas[PlanEvent(name, channel)]?.issuesFor(properties, hidden)
 
     companion object {
         /** @throws IllegalArgumentException naming what is wrong with [json]. */
@@ -64,14 +71,14 @@ private class EventSchema(
     private val additionalProperties: Boolean,
 ) {
 
-    fun issuesFor(values: Map<String, Any?>): List<PlanIssue> = buildList {
+    fun issuesFor(values: Map<String, Any?>, hidden: Set<String>): List<PlanIssue> = buildList {
         required.filterNot { it in values }.forEach { add(PlanIssue(it, "Required, but not sent")) }
         values.forEach { (key, value) ->
             val schema = properties[key]
             if (schema == null) {
                 if (!additionalProperties) add(PlanIssue(key, "Not in the plan for this event"))
             } else {
-                schema.issueFor(value)?.let { add(PlanIssue(key, it)) }
+                schema.issueFor(value, hidden = key in hidden)?.let { add(PlanIssue(key, it)) }
             }
         }
     }
@@ -97,11 +104,12 @@ private class PropertySchema(
     private val pattern: Regex?,
 ) {
 
-    fun issueFor(value: Any?): String? {
+    fun issueFor(value: Any?, hidden: Boolean): String? {
         val type = jsonType(value)
         return when {
             types.isNotEmpty() && types.none { type.satisfies(it, value) } ->
                 "Expected ${types.joinToString(" or ")}, got $type"
+            hidden -> null
             allowed != null && allowed.none { it.matches(value) } ->
                 "Not an allowed value · expects ${allowed.map { it.content }.joinAsChoice()}"
             pattern != null && value is String && value.length > MAX_PATTERN_INPUT ->
