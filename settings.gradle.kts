@@ -27,15 +27,15 @@ dependencyResolutionManagement {
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
-rootProject.name = "snoop-root"
+rootProject.name = "verivent-root"
 
-include(":snoop")
-include(":snoop-ui")
-include(":snoop-ktor")
-include(":snoop-native")
-include(":snoop-no-op")
-include(":snoop-ui-no-op")
-include(":snoop-ktor-no-op")
-include(":snoop-parity-check:real")
-include(":snoop-parity-check:noop")
+include(":verivent")
+include(":verivent-ui")
+include(":verivent-ktor")
+include(":verivent-native")
+include(":verivent-no-op")
+include(":verivent-ui-no-op")
+include(":verivent-ktor-no-op")
+include(":verivent-parity-check:real")
+include(":verivent-parity-check:noop")
 include(":sample:composeApp")

@@ -12,9 +12,9 @@ plugins {
 // Aggregated API reference: `./gradlew dokkaGenerate` renders the public modules into
 // build/dokka/html, which the docs site links to under /api.
 dependencies {
-    dokka(projects.snoop)
-    dokka(projects.snoopUi)
-    dokka(projects.snoopKtor)
+    dokka(projects.verivent)
+    dokka(projects.veriventUi)
+    dokka(projects.veriventKtor)
 }
 
 dokka {
