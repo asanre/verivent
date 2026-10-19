@@ -147,7 +147,8 @@ Load it whichever way suits who is testing:
 | Someone on the web viewer | *No plan* / *Plan x.y* in the header: drop or pick a file, or paste it |
 | An agent with `adb` | write the file below with `run-as`, then restart the app |
 
-To keep the plan across launches, give Verivent a directory; setting it loads the plan stored there:
+To keep the plan across launches, give Verivent a directory; setting it loads the plan stored there
+in the background, off the calling thread:
 
 ```kotlin
 Inspector.configure(storageDir = "${context.filesDir}/verivent")

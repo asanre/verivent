@@ -10,11 +10,17 @@ import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.github.asanre.verivent.core.model.PlanSummary
 import io.github.asanre.verivent.core.model.TimelineEntry
 import io.github.asanre.verivent.core.store.TimelineStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.time.Clock
@@ -58,8 +64,8 @@ object Inspector {
      * Reconfigure the store limits, the name the viewers show and the [storageDir]. Changing the
      * limits clears existing entries — set them before traffic starts; changing the title leaves the
      * store alone. The store and its StateFlow survive, so already-attached collectors (Compose UI,
-     * SSE) keep working. Setting a [storageDir] that holds a tracking plan loads it. [reset]
-     * restores the defaults.
+     * SSE) keep working. Setting a [storageDir] that holds a tracking plan loads it in the background,
+     * unless a plan is loaded or cleared first. [reset] restores the defaults.
      */
     fun configure(
         capacity: Int = store.capacity,
@@ -100,14 +106,26 @@ object Inspector {
 
     // --- tracking plan ---
 
-    @Volatile
-    internal var activePlan: TrackingPlan? = null
-        private set
+    // A fresh holder per install, so a restore that started earlier can tell — by identity — that
+    // something was loaded, cleared or reset meanwhile and drop what it read.
+    private class Installed(val plan: TrackingPlan?)
+
+    private val installed = AtomicReference(Installed(null))
+
+    internal val activePlan: TrackingPlan? get() = installed.load().plan
 
     private val loadedPlan = MutableStateFlow<PlanSummary?>(null)
 
     /** The loaded tracking plan's version and events, or null when none is loaded. */
     val trackingPlan: StateFlow<PlanSummary?> = loadedPlan.asStateFlow()
+
+    /**
+     * Every read, write and delete of the stored plan, one at a time and in call order: a plan can be
+     * megabytes of JSON, and the host usually configures and clears from the main thread.
+     */
+    internal val storage = Dispatchers.Default.limitedParallelism(1)
+
+    private val storageScope = CoroutineScope(SupervisorJob() + storage)
 
     /**
      * Validate every analytics event captured from now on against this tracking plan, replacing the
@@ -120,28 +138,37 @@ object Inspector {
         val plan = TrackingPlan.parse(json)
         install(plan)
         planFile()?.let { path ->
-            runCatching { writeTextFile(path, json) }
-                .onFailure { DiagnosticLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
+            storageScope.launch {
+                runCatching { writeTextFile(path, json) }
+                    .onFailure { DiagnosticLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
+            }
         }
     }
 
     /** Stop validating, and forget the plan kept in [storageDir]. */
     fun clearTrackingPlan() {
         install(null)
-        planFile()?.let { path -> runCatching { deleteFile(path) } }
+        planFile()?.let { path -> storageScope.launch { runCatching { deleteFile(path) } } }
     }
 
     private fun install(plan: TrackingPlan?) {
-        activePlan = plan
-        loadedPlan.value = plan?.summary
+        installed.store(Installed(plan))
+        publish()
     }
+
+    // Re-reads instead of taking the plan, so writers that race converge on the last one installed.
+    private fun publish() = loadedPlan.update { installed.load().plan?.summary }
 
     // A directory without a stored plan leaves the current one alone: it may have just been loaded.
     private fun restoreTrackingPlan() {
-        val json = planFile()?.let { path -> runCatching { readTextFile(path) }.getOrNull() } ?: return
-        runCatching { TrackingPlan.parse(json) }
-            .onSuccess(::install)
-            .onFailure { failure -> DiagnosticLog.warn(TAG, "ignoring the stored tracking plan", failure) }
+        val path = planFile() ?: return
+        val seen = installed.load()
+        storageScope.launch {
+            val json = runCatching { readTextFile(path) }.getOrNull() ?: return@launch
+            runCatching { TrackingPlan.parse(json) }
+                .onSuccess { plan -> if (installed.compareAndSet(seen, Installed(plan))) publish() }
+                .onFailure { failure -> DiagnosticLog.warn(TAG, "ignoring the stored tracking plan", failure) }
+        }
     }
 
     private fun planFile(): String? = storageDir?.let { "${it.trimEnd('/')}/$PLAN_FILE" }
