@@ -54,3 +54,9 @@ internal fun TrackingPlan.check(name: String, channel: String, properties: List<
     val values = exportedValues(properties)
     return check(name, channel, values.json, values.hidden, values.untyped, values.foreignTypes)
 }
+
+/** [Schema.check] on captured properties. */
+internal fun Schema.check(properties: List<KeyValue>): List<Finding> {
+    val values = exportedValues(properties)
+    return check(values.json, values.hidden, values.untyped, values.foreignTypes)
+}

@@ -36,6 +36,14 @@ public final class io/github/asanre/verivent/analytics/AnalyticsSinkKt {
 	public static synthetic fun AnalyticsSink$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/asanre/verivent/analytics/AnalyticsSink;
 }
 
+public final class io/github/asanre/verivent/baseline/Baseline {
+	public static final field INSTANCE Lio/github/asanre/verivent/baseline/Baseline;
+	public final fun diff (Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)Ljava/lang/String;
+	public static synthetic fun diff$default (Lio/github/asanre/verivent/baseline/Baseline;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun record (Ljava/util/List;)Ljava/lang/String;
+	public static synthetic fun record$default (Lio/github/asanre/verivent/baseline/Baseline;Ljava/util/List;ILjava/lang/Object;)Ljava/lang/String;
+}
+
 public final class io/github/asanre/verivent/core/Inspector {
 	public static final field INSTANCE Lio/github/asanre/verivent/core/Inspector;
 	public final fun clearTrackingPlan ()V

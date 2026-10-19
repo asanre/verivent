@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.github.asanre.verivent.analytics.AnalyticsEvent
 import io.github.asanre.verivent.analytics.AnalyticsSink
+import io.github.asanre.verivent.baseline.Baseline
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.capture.BodyCapture
@@ -244,4 +245,11 @@ private fun screen() {
 @OptIn(InternalVeriventApi::class)
 private fun export(entry: TimelineEntry) {
     val json: String = encodeExportEntry(entry)
+}
+
+private fun baseline(entries: List<TimelineEntry>) {
+    val recorded: String = Baseline.record()
+    val fromEntries: String = Baseline.record(entries)
+    val diff: String? = Baseline.diff(recorded)
+    val full: String? = Baseline.diff(baselineJson = recorded, entries = entries, variables = mapOf("user_id" to 7))
 }

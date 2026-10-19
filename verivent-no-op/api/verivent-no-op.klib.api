@@ -346,6 +346,11 @@ final value class io.github.asanre.verivent.core.model/Annotation { // io.github
     }
 }
 
+final object io.github.asanre.verivent.baseline/Baseline { // io.github.asanre.verivent.baseline/Baseline|null[0]
+    final fun diff(kotlin/String, kotlin.collections/List<io.github.asanre.verivent.core.model/TimelineEntry> = ..., kotlin.collections/Map<kotlin/String, kotlin/Any?> = ...): kotlin/String? // io.github.asanre.verivent.baseline/Baseline.diff|diff(kotlin.String;kotlin.collections.List<io.github.asanre.verivent.core.model.TimelineEntry>;kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
+    final fun record(kotlin.collections/List<io.github.asanre.verivent.core.model/TimelineEntry> = ...): kotlin/String // io.github.asanre.verivent.baseline/Baseline.record|record(kotlin.collections.List<io.github.asanre.verivent.core.model.TimelineEntry>){}[0]
+}
+
 final object io.github.asanre.verivent.core.capture/BodyCapture { // io.github.asanre.verivent.core.capture/BodyCapture|null[0]
     final fun binaryPlaceholder(kotlin/String?, kotlin/Long): io.github.asanre.verivent.core.model/BodyPreview // io.github.asanre.verivent.core.capture/BodyCapture.binaryPlaceholder|binaryPlaceholder(kotlin.String?;kotlin.Long){}[0]
     final fun isTextLike(kotlin/String?): kotlin/Boolean // io.github.asanre.verivent.core.capture/BodyCapture.isTextLike|isTextLike(kotlin.String?){}[0]

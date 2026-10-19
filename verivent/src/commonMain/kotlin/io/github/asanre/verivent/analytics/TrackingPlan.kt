@@ -49,10 +49,7 @@ internal class TrackingPlan private constructor(
         untyped: Set<String> = emptySet(),
         foreignTypes: Map<String, String> = emptyMap(),
     ): List<Finding>? {
-        val schema = schemas[PlanEvent(name, channel)] ?: return null
-        val walk = Walk(hidden, untyped, foreignTypes)
-        walk.objectChildren(schema, properties, path = "", depth = 0, hidden = false)
-        return walk.findings()
+        return schemas[PlanEvent(name, channel)]?.check(properties, hidden, untyped, foreignTypes)
     }
 
     /** [check] on the host's own values, as one [PlanIssue] per finding. */
@@ -93,6 +90,18 @@ internal class TrackingPlan private constructor(
 internal data class Finding(val path: String, val message: String, val count: Int? = null, val total: Int? = null) {
 
     fun toPlanIssue() = PlanIssue(path, if (count == null) message else "$message · $count of $total")
+}
+
+/** What breaks this event schema in [properties]; see [TrackingPlan.check] for the sets. */
+internal fun Schema.check(
+    properties: JsonObject,
+    hidden: Set<String> = emptySet(),
+    untyped: Set<String> = emptySet(),
+    foreignTypes: Map<String, String> = emptyMap(),
+): List<Finding> {
+    val walk = Walk(hidden, untyped, foreignTypes)
+    walk.objectChildren(this, properties, path = "", depth = 0, hidden = false)
+    return walk.findings()
 }
 
 internal class Schema(
@@ -288,9 +297,9 @@ internal fun jsonEquals(a: JsonElement, b: JsonElement): Boolean = when {
     else -> false
 }
 
-private fun JsonElement?.asObject(what: String): JsonObject = this as? JsonObject ?: invalid("$what must be an object")
+internal fun JsonElement?.asObject(what: String): JsonObject = this as? JsonObject ?: invalid("$what must be an object")
 
-private fun JsonElement?.asString(what: String): String =
+internal fun JsonElement?.asString(what: String): String =
     (this as? JsonPrimitive)?.takeIf { it.isString }?.content ?: invalid("$what must be a string")
 
-private fun invalid(reason: String): Nothing = throw IllegalArgumentException(reason)
+internal fun invalid(reason: String): Nothing = throw IllegalArgumentException(reason)

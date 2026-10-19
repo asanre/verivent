@@ -31,6 +31,9 @@ internal fun hostValues(properties: Map<String, Any?>): HostValues {
     return HostValues(json, foreign)
 }
 
+/** One host value as JSON, with the same limits as [hostValues]. */
+internal fun jsonOf(value: Any?): JsonElement = toJson(value, depth = 1, Budget())
+
 /** The value as the export and the viewers show it: strings bare, everything else as JSON. */
 internal fun JsonElement.displayText(): String = if (this is JsonPrimitive && isString) content else toString()
 
