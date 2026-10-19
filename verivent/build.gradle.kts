@@ -33,6 +33,12 @@ val generateWebPage = tasks.register("generateWebPage") {
 }
 
 kotlin {
+    // Binary API dump of each published module, checked against the committed one in `check`, so
+    // a release that only adds can't silently remove or change a public signature.
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled.set(true)
+    }
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
         optIn.add("kotlin.concurrent.atomics.ExperimentalAtomicApi")
@@ -77,3 +83,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
+// KGP 2.2 doesn't hook the ABI check into `check` yet (2.3.20 does).
+tasks.named("check") { dependsOn("checkLegacyAbi") }

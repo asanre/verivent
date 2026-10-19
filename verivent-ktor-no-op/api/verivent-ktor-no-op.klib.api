@@ -1,0 +1,23 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <verivent-root:verivent-ktor-no-op>
+final class io.github.asanre.verivent.ktor/VeriventConfig { // io.github.asanre.verivent.ktor/VeriventConfig|null[0]
+    constructor <init>() // io.github.asanre.verivent.ktor/VeriventConfig.<init>|<init>(){}[0]
+
+    final var maxContentLength // io.github.asanre.verivent.ktor/VeriventConfig.maxContentLength|{}maxContentLength[0]
+        final fun <get-maxContentLength>(): kotlin/Long // io.github.asanre.verivent.ktor/VeriventConfig.maxContentLength.<get-maxContentLength>|<get-maxContentLength>(){}[0]
+        final fun <set-maxContentLength>(kotlin/Long) // io.github.asanre.verivent.ktor/VeriventConfig.maxContentLength.<set-maxContentLength>|<set-maxContentLength>(kotlin.Long){}[0]
+
+    final fun filter(kotlin/Function1<io.ktor.client.request/HttpRequestBuilder, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.filter|filter(kotlin.Function1<io.ktor.client.request.HttpRequestBuilder,kotlin.Boolean>){}[0]
+    final fun sanitizeBody(kotlin/Function1<kotlin/String, kotlin/String>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeBody|sanitizeBody(kotlin.Function1<kotlin.String,kotlin.String>){}[0]
+    final fun sanitizeHeader(kotlin/Function1<kotlin/String, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeHeader|sanitizeHeader(kotlin.Function1<kotlin.String,kotlin.Boolean>){}[0]
+    final fun sanitizeQueryParameter(kotlin/Function1<kotlin/String, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeQueryParameter|sanitizeQueryParameter(kotlin.Function1<kotlin.String,kotlin.Boolean>){}[0]
+}
+
+final val io.github.asanre.verivent.ktor/Verivent // io.github.asanre.verivent.ktor/Verivent|{}Verivent[0]
+    final fun <get-Verivent>(): io.ktor.client.plugins.api/ClientPlugin<io.github.asanre.verivent.ktor/VeriventConfig> // io.github.asanre.verivent.ktor/Verivent.<get-Verivent>|<get-Verivent>(){}[0]

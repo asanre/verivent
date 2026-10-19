@@ -1,0 +1,18 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <verivent-root:verivent-ui-no-op>
+final object io.github.asanre.verivent.ui/InspectorLauncher { // io.github.asanre.verivent.ui/InspectorLauncher|null[0]
+    final fun dismissNotification() // io.github.asanre.verivent.ui/InspectorLauncher.dismissNotification|dismissNotification(){}[0]
+    final fun open() // io.github.asanre.verivent.ui/InspectorLauncher.open|open(){}[0]
+    final fun showNotification() // io.github.asanre.verivent.ui/InspectorLauncher.showNotification|showNotification(){}[0]
+}
+
+final val io.github.asanre.verivent.ui/io_github_asanre_verivent_ui_InspectorLauncher$stableprop // io.github.asanre.verivent.ui/io_github_asanre_verivent_ui_InspectorLauncher$stableprop|#static{}io_github_asanre_verivent_ui_InspectorLauncher$stableprop[0]
+
+final fun io.github.asanre.verivent.ui/InspectorScreen(androidx.compose.ui/Modifier?, kotlin/Function0<kotlin/Unit>?, androidx.compose.runtime/Composer?, kotlin/Int, kotlin/Int) // io.github.asanre.verivent.ui/InspectorScreen|InspectorScreen(androidx.compose.ui.Modifier?;kotlin.Function0<kotlin.Unit>?;androidx.compose.runtime.Composer?;kotlin.Int;kotlin.Int){}[0]
+final fun io.github.asanre.verivent.ui/io_github_asanre_verivent_ui_InspectorLauncher$stableprop_getter(): kotlin/Int // io.github.asanre.verivent.ui/io_github_asanre_verivent_ui_InspectorLauncher$stableprop_getter|io_github_asanre_verivent_ui_InspectorLauncher$stableprop_getter(){}[0]

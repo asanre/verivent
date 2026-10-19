@@ -1,0 +1,14 @@
+public final class io/github/asanre/verivent/ktor/VeriventConfig {
+	public fun <init> ()V
+	public final fun filter (Lkotlin/jvm/functions/Function1;)V
+	public final fun getMaxContentLength ()J
+	public final fun sanitizeBody (Lkotlin/jvm/functions/Function1;)V
+	public final fun sanitizeHeader (Lkotlin/jvm/functions/Function1;)V
+	public final fun sanitizeQueryParameter (Lkotlin/jvm/functions/Function1;)V
+	public final fun setMaxContentLength (J)V
+}
+
+public final class io/github/asanre/verivent/ktor/VeriventKt {
+	public static final fun getVerivent ()Lio/ktor/client/plugins/api/ClientPlugin;
+}
+
