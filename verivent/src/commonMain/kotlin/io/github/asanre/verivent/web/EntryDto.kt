@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.model.NetworkTransaction
@@ -8,8 +9,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
+/** [type] is an analytics property's JSON type; headers have none, so it's left out. */
 @Serializable
-internal data class KvDto(val name: String, val value: String, val redacted: Boolean)
+internal data class KvDto(val name: String, val value: String, val redacted: Boolean, val type: String? = null)
 
 @Serializable
 internal data class IssueDto(val property: String, val message: String)
@@ -61,7 +63,9 @@ internal data class EntryDto(
 @Serializable
 internal data class StreamFrameDto(val ids: List<String>, val entries: List<EntryDto>)
 
-private fun KeyValue.toDto() = KvDto(name, value, redacted)
+private fun KeyValue.toDto() = KvDto(name, value, redacted, type)
+
+internal fun KvDto.toKeyValue() = KeyValue(name, value, redacted, type)
 
 internal fun TimelineEntry.toDto(): EntryDto = when (this) {
     is NetworkTransaction -> EntryDto(
@@ -110,6 +114,13 @@ internal fun encodeEntries(entries: List<TimelineEntry>): String =
     webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
 
 internal fun encodeEntry(entry: TimelineEntry): String = webJson.encodeToString(EntryDto.serializer(), entry.toDto())
+
+/**
+ * One entry as every export writes it: the web viewer's download, the app's share and the console
+ * lines all carry this same JSON, so whatever reads one session file reads them all.
+ */
+@InternalVeriventApi
+fun encodeExportEntry(entry: TimelineEntry): String = encodeEntry(entry)
 
 internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))

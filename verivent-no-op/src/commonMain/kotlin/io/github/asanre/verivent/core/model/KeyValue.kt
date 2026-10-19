@@ -5,4 +5,5 @@ data class KeyValue(
     val name: String,
     val value: String,
     val redacted: Boolean = false,
+    val type: String? = null,
 )

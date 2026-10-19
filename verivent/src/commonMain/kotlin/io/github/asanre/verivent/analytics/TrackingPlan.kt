@@ -262,7 +262,7 @@ private fun List<String>.joinAsChoice(): String =
  */
 private const val MAX_PATTERN_INPUT = 256
 
-private val JSON_TYPES = setOf("string", "integer", "number", "boolean", "null", "object", "array")
+internal val JSON_TYPES = setOf("string", "integer", "number", "boolean", "null", "object", "array")
 
 private fun String.satisfies(expected: String, value: JsonElement): Boolean = when {
     this == expected -> true

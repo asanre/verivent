@@ -6,6 +6,10 @@
 // - Show declarations: true
 
 // Library unique name: <verivent-root:verivent-no-op>
+open annotation class io.github.asanre.verivent.core/InternalVeriventApi : kotlin/Annotation { // io.github.asanre.verivent.core/InternalVeriventApi|null[0]
+    constructor <init>() // io.github.asanre.verivent.core/InternalVeriventApi.<init>|<init>(){}[0]
+}
+
 final enum class io.github.asanre.verivent.core.model/NetworkState : kotlin/Enum<io.github.asanre.verivent.core.model/NetworkState> { // io.github.asanre.verivent.core.model/NetworkState|null[0]
     enum entry Complete // io.github.asanre.verivent.core.model/NetworkState.Complete|null[0]
     enum entry Failed // io.github.asanre.verivent.core.model/NetworkState.Failed|null[0]
@@ -147,19 +151,22 @@ final class io.github.asanre.verivent.core.model/BodyPreview { // io.github.asan
 }
 
 final class io.github.asanre.verivent.core.model/KeyValue { // io.github.asanre.verivent.core.model/KeyValue|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/Boolean = ...) // io.github.asanre.verivent.core.model/KeyValue.<init>|<init>(kotlin.String;kotlin.String;kotlin.Boolean){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Boolean = ..., kotlin/String? = ...) // io.github.asanre.verivent.core.model/KeyValue.<init>|<init>(kotlin.String;kotlin.String;kotlin.Boolean;kotlin.String?){}[0]
 
     final val name // io.github.asanre.verivent.core.model/KeyValue.name|{}name[0]
         final fun <get-name>(): kotlin/String // io.github.asanre.verivent.core.model/KeyValue.name.<get-name>|<get-name>(){}[0]
     final val redacted // io.github.asanre.verivent.core.model/KeyValue.redacted|{}redacted[0]
         final fun <get-redacted>(): kotlin/Boolean // io.github.asanre.verivent.core.model/KeyValue.redacted.<get-redacted>|<get-redacted>(){}[0]
+    final val type // io.github.asanre.verivent.core.model/KeyValue.type|{}type[0]
+        final fun <get-type>(): kotlin/String? // io.github.asanre.verivent.core.model/KeyValue.type.<get-type>|<get-type>(){}[0]
     final val value // io.github.asanre.verivent.core.model/KeyValue.value|{}value[0]
         final fun <get-value>(): kotlin/String // io.github.asanre.verivent.core.model/KeyValue.value.<get-value>|<get-value>(){}[0]
 
     final fun component1(): kotlin/String // io.github.asanre.verivent.core.model/KeyValue.component1|component1(){}[0]
     final fun component2(): kotlin/String // io.github.asanre.verivent.core.model/KeyValue.component2|component2(){}[0]
     final fun component3(): kotlin/Boolean // io.github.asanre.verivent.core.model/KeyValue.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ...): io.github.asanre.verivent.core.model/KeyValue // io.github.asanre.verivent.core.model/KeyValue.copy|copy(kotlin.String;kotlin.String;kotlin.Boolean){}[0]
+    final fun component4(): kotlin/String? // io.github.asanre.verivent.core.model/KeyValue.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin/String? = ...): io.github.asanre.verivent.core.model/KeyValue // io.github.asanre.verivent.core.model/KeyValue.copy|copy(kotlin.String;kotlin.String;kotlin.Boolean;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.core.model/KeyValue.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // io.github.asanre.verivent.core.model/KeyValue.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // io.github.asanre.verivent.core.model/KeyValue.toString|toString(){}[0]
@@ -394,4 +401,5 @@ final object io.github.asanre.verivent.web/WebViewer { // io.github.asanre.veriv
 }
 
 final fun io.github.asanre.verivent.analytics/AnalyticsSink(kotlin/Function1<io.github.asanre.verivent.analytics/AnalyticsSinkConfig, kotlin/Unit> = ...): io.github.asanre.verivent.analytics/AnalyticsSink // io.github.asanre.verivent.analytics/AnalyticsSink|AnalyticsSink(kotlin.Function1<io.github.asanre.verivent.analytics.AnalyticsSinkConfig,kotlin.Unit>){}[0]
+final fun io.github.asanre.verivent.web/encodeExportEntry(io.github.asanre.verivent.core.model/TimelineEntry): kotlin/String // io.github.asanre.verivent.web/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.TimelineEntry){}[0]
 final inline fun io.github.asanre.verivent.core.internal/runSafely(kotlin/String, kotlin/Function0<kotlin/Unit>) // io.github.asanre.verivent.core.internal/runSafely|runSafely(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]

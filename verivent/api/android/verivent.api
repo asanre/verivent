@@ -57,6 +57,9 @@ public final class io/github/asanre/verivent/core/Inspector {
 	public final fun updateNetwork (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 }
 
+public abstract interface annotation class io/github/asanre/verivent/core/InternalVeriventApi : java/lang/annotation/Annotation {
+}
+
 public final class io/github/asanre/verivent/core/capture/BodyCapture {
 	public static final field INSTANCE Lio/github/asanre/verivent/core/capture/BodyCapture;
 	public final fun binaryPlaceholder (Ljava/lang/String;J)Lio/github/asanre/verivent/core/model/BodyPreview;
@@ -145,16 +148,18 @@ public final class io/github/asanre/verivent/core/model/BodyPreview {
 }
 
 public final class io/github/asanre/verivent/core/model/KeyValue {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Z
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lio/github/asanre/verivent/core/model/KeyValue;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/KeyValue;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/asanre/verivent/core/model/KeyValue;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;)Lio/github/asanre/verivent/core/model/KeyValue;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/KeyValue;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/core/model/KeyValue;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getName ()Ljava/lang/String;
 	public final fun getRedacted ()Z
+	public final fun getType ()Ljava/lang/String;
 	public final fun getValue ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
@@ -293,6 +298,10 @@ public final class io/github/asanre/verivent/core/store/TimelineStore {
 }
 
 public final class io/github/asanre/verivent/core/store/TimelineStore$Companion {
+}
+
+public final class io/github/asanre/verivent/web/EntryDtoKt {
+	public static final fun encodeExportEntry (Lio/github/asanre/verivent/core/model/TimelineEntry;)Ljava/lang/String;
 }
 
 public final class io/github/asanre/verivent/web/WebViewer {

@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import io.github.asanre.verivent.analytics.AnalyticsEvent
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.capture.BodyCapture
 import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.internal.runSafely
@@ -29,6 +30,7 @@ import io.github.asanre.verivent.ui.InspectorLauncher as LauncherEntryPoints
 import io.github.asanre.verivent.ui.InspectorScreen
 import io.github.asanre.verivent.web.WebViewerBind
 import io.github.asanre.verivent.web.WebViewer
+import io.github.asanre.verivent.web.encodeExportEntry
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
 import kotlin.time.Instant
@@ -82,7 +84,8 @@ private fun internals() {
 }
 
 private fun model() {
-    val kv = KeyValue(name = "n", value = "v", redacted = false)
+    val kv = KeyValue(name = "n", value = "v", redacted = false, type = "string")
+    val kvType: String? = kv.type
     val body = BodyPreview(text = "t", byteCount = 1L, truncated = false)
     val isEmpty: Boolean = body.isEmpty
     val states = listOf(NetworkState.Pending, NetworkState.Complete, NetworkState.Failed)
@@ -236,4 +239,9 @@ private fun screen() {
     InspectorScreen(modifier = Modifier)
     InspectorScreen(onClose = {})
     InspectorScreen(modifier = Modifier, onClose = null)
+}
+
+@OptIn(InternalVeriventApi::class)
+private fun export(entry: TimelineEntry) {
+    val json: String = encodeExportEntry(entry)
 }

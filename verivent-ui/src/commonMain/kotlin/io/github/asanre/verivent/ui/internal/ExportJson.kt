@@ -1,17 +1,10 @@
 package io.github.asanre.verivent.ui.internal
 
-import io.github.asanre.verivent.core.model.AnalyticsEntry
-import io.github.asanre.verivent.core.model.KeyValue
-import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.model.TimelineEntry
+import io.github.asanre.verivent.web.encodeExportEntry
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.JsonElement
 
 private val exportJson = Json { prettyPrint = true }
 
@@ -22,12 +15,16 @@ private const val ARRAY_INDENT = "    "
  * Serialize the session to a JSON array for the "Export" action (share/copy), capped to roughly
  * [maxChars] and keeping the newest entries (the clipboard transaction has a hard binder limit
  * around 1MB). Returns the JSON and how many entries made it.
+ *
+ * Each entry is the core's export JSON, the same the web viewer downloads and the console lines
+ * carry, indented for whoever reads the shared file.
  */
+@OptIn(InternalVeriventApi::class)
 internal fun entriesToJsonCapped(entries: List<TimelineEntry>, maxChars: Int = 400_000): Pair<String, Int> {
     val keptNewestFirst = mutableListOf<String>()
     var used = 0
     for (entry in entries.asReversed()) {
-        val text = exportJson.encodeToString(JsonObject.serializer(), entry.toJson())
+        val text = exportJson.encodeToString(JsonElement.serializer(), Json.parseToJsonElement(encodeExportEntry(entry)))
         if (keptNewestFirst.isNotEmpty() && used + text.length > maxChars) break
         keptNewestFirst += text
         used += text.length
@@ -36,62 +33,4 @@ internal fun entriesToJsonCapped(entries: List<TimelineEntry>, maxChars: Int = 4
     val json = keptNewestFirst.asReversed()
         .joinToString(",\n", prefix = "[\n", postfix = "\n]") { it.prependIndent(ARRAY_INDENT) }
     return json to keptNewestFirst.size
-}
-
-private fun TimelineEntry.toJson(): JsonObject = when (this) {
-    is NetworkTransaction -> buildJsonObject {
-        put("type", "network")
-        put("id", id)
-        put("timestamp", timestamp.toString())
-        put("method", method)
-        put("url", url)
-        put("status", status)
-        put("durationMillis", durationMillis)
-        put("error", error)
-        putHeaders("requestHeaders", requestHeaders)
-        put("requestBody", requestBody?.text)
-        putHeaders("responseHeaders", responseHeaders)
-        put("responseBody", responseBody?.text)
-    }
-    is AnalyticsEntry -> buildJsonObject {
-        put("type", "analytics")
-        put("id", id)
-        put("timestamp", timestamp.toString())
-        put("name", name)
-        put("channel", channel)
-        put("annotations", annotations.joinToString(",") { it.label })
-        put("properties", propertiesJsonObject(properties))
-        if (sections.isNotEmpty()) {
-            putJsonArray("sections") {
-                sections.forEach { (title, section) ->
-                    addJsonObject {
-                        put("title", title)
-                        put("properties", propertiesJsonObject(section))
-                    }
-                }
-            }
-        }
-        planVersion?.let { put("planVersion", it) }
-        if (issues.isNotEmpty()) {
-            putJsonArray("issues") {
-                issues.forEach { issue ->
-                    addJsonObject {
-                        put("property", issue.property)
-                        put("message", issue.message)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Headers as an ordered array of `{name, value}`. An object would fold repeats into one entry, and
- * three `Set-Cookie`s collapsing into a single line is exactly the thing you export a session to
- * look at.
- */
-private fun JsonObjectBuilder.putHeaders(key: String, items: List<KeyValue>) {
-    putJsonArray(key) {
-        items.forEach { addJsonObject { put("name", it.name); put("value", it.value) } }
-    }
 }

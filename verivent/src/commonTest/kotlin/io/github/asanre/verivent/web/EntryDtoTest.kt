@@ -149,4 +149,26 @@ class EntryDtoTest {
         assertEquals("true", network["responseBodyTruncated"].toString())
         assertEquals("5000", network["responseByteCount"].toString())
     }
+
+    @Test
+    fun analyticsPropertiesCarryTheirTypeAndHeadersDont() {
+        val json = encodeEntries(
+            listOf(
+                NetworkTransaction(
+                    "1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a",
+                    requestHeaders = listOf(KeyValue("Accept", "*/*")),
+                ),
+                AnalyticsEntry(
+                    "2", Instant.fromEpochMilliseconds(0), "purchase", "firebase",
+                    properties = listOf(KeyValue("value", "42", type = "integer"), KeyValue("token", "██", redacted = true, type = "string")),
+                ),
+            ),
+        )
+        val (network, analytics) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertTrue("type" !in network.getValue("requestHeaders").jsonArray.single().jsonObject)
+        assertEquals(
+            listOf("integer", "string"),
+            analytics.getValue("properties").jsonArray.map { it.jsonObject.getValue("type").jsonPrimitive.content },
+        )
+    }
 }

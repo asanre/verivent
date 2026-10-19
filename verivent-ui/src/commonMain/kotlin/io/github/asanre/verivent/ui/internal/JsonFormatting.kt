@@ -53,9 +53,8 @@ internal fun nestingTooDeep(raw: String, max: Int): Boolean {
 }
 
 /**
- * Analytics properties as a JSON object. They come from a Map, so a name can't repeat and an
- * object stays the friendlier shape. Shared with the session export so the screen, the copied
- * payload and the exported file always show the same JSON.
+ * Analytics properties as a JSON object, for the Raw view and the copied payload. They come from a
+ * Map, so a name can't repeat and an object stays the friendlier shape.
  */
 internal fun propertiesJsonObject(properties: List<KeyValue>): JsonObject =
     buildJsonObject { properties.forEach { put(it.name, it.value) } }

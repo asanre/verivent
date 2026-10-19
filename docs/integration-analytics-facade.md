@@ -101,9 +101,28 @@ adb logcat -s VeriventEvent
 VeriventEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…]}
 ```
 
-The line is the captured entry, the same JSON the web viewer receives, so redacted values stay
-redacted. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
+The line is the captured entry, the same JSON the web viewer receives and every export writes, so
+redacted values stay redacted. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
 split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON back.
+
+## Exported sessions
+
+*Export* in the inspector, the web viewer's download and the console lines all write the same JSON:
+an array of entries (one per line for the console). Each analytics property says its JSON type,
+taken before redaction, so a session can be checked again against any plan without false type
+errors:
+
+```json
+{ "type": "analytics", "id": "7", "ts": 1760900000000, "name": "play", "channel": "firebase",
+  "properties": [
+    { "name": "count",  "value": "3",              "redacted": false, "type": "integer" },
+    { "name": "tracks", "value": "[{\"ms\":1200}]", "redacted": false, "type": "array" },
+    { "name": "email",  "value": "██",             "redacted": true,  "type": "string" } ],
+  "planVersion": "1.4.0" }
+```
+
+`value` is text: a string as sent, anything else as JSON. A redacted property keeps only its type.
+Exports from before 0.9 have no `type`.
 
 ## Tracking plan
 

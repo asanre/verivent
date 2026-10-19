@@ -75,8 +75,9 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             .onFailure { failure -> DiagnosticLog.warn(TAG, "line logger threw", failure) }
     }
 
+    // The type is the raw value's, so a redacted property still says what it was.
     private fun redact(values: HostValues): List<KeyValue> =
-        values.json.map { (key, value) -> redaction.redactProperty(key, value.displayText()) }
+        values.json.map { (key, value) -> redaction.redactProperty(key, value.displayText()).copy(type = values.typeOf(key)) }
 
     private fun groupLabel(name: String, properties: List<KeyValue>): String? {
         if (name != config.groupByEvent) return null

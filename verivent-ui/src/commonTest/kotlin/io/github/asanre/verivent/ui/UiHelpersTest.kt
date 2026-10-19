@@ -151,17 +151,24 @@ class ExportJsonTest {
     }
 
     @Test
-    fun analyticsPropertiesStayAnObject() {
+    fun analyticsPropertiesAreTheWebViewerExportWithTheirTypes() {
         val (json, _) = entriesToJsonCapped(
             listOf(
                 AnalyticsEntry(
                     "1", Instant.fromEpochMilliseconds(0), "purchase", "firebase",
-                    properties = listOf(KeyValue("value", "42.5")),
+                    properties = listOf(KeyValue("value", "42.5", type = "number"), KeyValue("token", "██", redacted = true, type = "string")),
                 ),
             ),
         )
-        val properties = Json.parseToJsonElement(json).jsonArray.single().jsonObject.getValue("properties")
-        assertEquals("42.5", properties.jsonObject.getValue("value").jsonPrimitive.content)
+        val properties = Json.parseToJsonElement(json).jsonArray.single().jsonObject.getValue("properties").jsonArray
+            .map { it.jsonObject.mapValues { (_, v) -> v.jsonPrimitive.content } }
+        assertEquals(
+            listOf(
+                mapOf("name" to "value", "value" to "42.5", "redacted" to "false", "type" to "number"),
+                mapOf("name" to "token", "value" to "██", "redacted" to "true", "type" to "string"),
+            ),
+            properties,
+        )
     }
 
     @Test
@@ -180,7 +187,7 @@ class ExportJsonTest {
         val (withSection, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
         val section = withSection.getValue("sections").jsonArray.single().jsonObject
         assertEquals("User properties", section.getValue("title").jsonPrimitive.content)
-        assertEquals("false", section.getValue("properties").jsonObject.getValue("user_logged").jsonPrimitive.content)
+        assertEquals("false", section.getValue("properties").jsonArray.single().jsonObject.getValue("value").jsonPrimitive.content)
         assertTrue("sections" !in without)
         val issue = withSection.getValue("issues").jsonArray.single().jsonObject
         assertEquals("search_term", issue.getValue("property").jsonPrimitive.content)
