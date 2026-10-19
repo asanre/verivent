@@ -4,15 +4,16 @@ import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.TimelineEntry
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.ApplicationCallPipeline
 import io.ktor.server.application.call
 import io.ktor.server.application.install
-import io.ktor.server.request.contentLength
 import io.ktor.server.request.header
-import io.ktor.server.request.receiveText
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
@@ -20,7 +21,9 @@ import io.ktor.server.routing.routing
 import io.ktor.server.sse.SSE
 import io.ktor.server.sse.sse
 import io.ktor.sse.ServerSentEvent
+import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.delay
+import kotlinx.io.readByteArray
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -58,7 +61,7 @@ private fun planStatus(): String = buildJsonObject {
 }.toString()
 
 /**
- * CSRF guard for every state-changing route: the custom header forces a preflight this server
+ * CSRF guard for every state-changing request: the custom header forces a preflight this server
  * never approves, and any cross-origin caller (a hostile page open in the same browser) carries a
  * foreign Origin. Same-origin is judged against the Host actually used, which the gate vouches for.
  */
@@ -80,6 +83,10 @@ internal fun Application.webViewerModule(token: String? = null) {
             call.respondText("unauthorized", status = HttpStatusCode.Unauthorized)
             return@intercept finish()
         }
+        if (call.request.httpMethod != HttpMethod.Get && !call.mutationAllowed()) {
+            call.respondText("forbidden", status = HttpStatusCode.Forbidden)
+            return@intercept finish()
+        }
     }
     routing {
         get("/") {
@@ -91,7 +98,6 @@ internal fun Application.webViewerModule(token: String? = null) {
             call.respondText(encodeEntries(Inspector.store.entries.value), ContentType.Application.Json)
         }
         post("/api/clear") {
-            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
             Inspector.store.clear()
             call.respondText("ok")
         }
@@ -99,10 +105,12 @@ internal fun Application.webViewerModule(token: String? = null) {
             call.respondText(planStatus(), ContentType.Application.Json)
         }
         post("/api/tracking-plan") {
-            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
-            val fits = (call.request.contentLength() ?: 0) <= MAX_PLAN_BYTES
-            val json = (if (fits) call.receiveText() else null)?.takeIf { it.length <= MAX_PLAN_BYTES }
-                ?: return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
+            // Read one byte past the limit, whether or not the client declared a length.
+            val body = call.receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray()
+            if (body.size > MAX_PLAN_BYTES) {
+                return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
+            }
+            val json = body.decodeToString()
             try {
                 Inspector.loadTrackingPlan(json)
             } catch (invalid: IllegalArgumentException) {
@@ -111,7 +119,6 @@ internal fun Application.webViewerModule(token: String? = null) {
             call.respondText(planStatus(), ContentType.Application.Json)
         }
         post("/api/tracking-plan/clear") {
-            if (!call.mutationAllowed()) return@post call.respondText("forbidden", status = HttpStatusCode.Forbidden)
             Inspector.clearTrackingPlan()
             call.respondText(planStatus(), ContentType.Application.Json)
         }

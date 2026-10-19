@@ -13,8 +13,11 @@ import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.server.testing.testApplication
+import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.readUTF8Line
+import io.ktor.utils.io.writeFully
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -159,6 +162,26 @@ class WebViewerTest {
             setBody("x".repeat(2 * 1024 * 1024 + 1))
         }
         assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+    }
+
+    @Test
+    fun aPlanWithoutContentLengthIsLimitedByBytesNotCharacters() = testApplication {
+        application { webViewerModule() }
+        // Two UTF-8 bytes per char: over the limit in bytes, well under it in chars.
+        val bytes = "é".repeat(1024 * 1024 + 1).encodeToByteArray()
+        val response = client.post("/api/tracking-plan") {
+            header("X-Verivent", "1")
+            setBody(object : OutgoingContent.WriteChannelContent() {
+                override suspend fun writeTo(channel: ByteWriteChannel) = channel.writeFully(bytes)
+            })
+        }
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+    }
+
+    @Test
+    fun aMutationIsRefusedBeforeRoutingEvenOnAnUnknownRoute() = testApplication {
+        application { webViewerModule() }
+        assertEquals(HttpStatusCode.Forbidden, client.post("/api/anything").status)
     }
 
     @Test
