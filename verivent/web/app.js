@@ -186,19 +186,33 @@ function listHtml(){
 }
 function toggleGroup(k){collapsedGroups[k]=!collapsedGroups[k];render();}
 
+// The sent property an issue belongs to: its own, or the one a nested path (tracks[*].id,
+// item.price) starts from; null when it wasn't sent. Same rule as the app's issueRoot.
+function issueRoot(path,sent){
+  if(sent[path])return path;
+  var best=null;
+  Object.keys(sent).forEach(function(n){
+    if((path.indexOf(n+'.')===0||path.indexOf(n+'[')===0)&&(best==null||n.length>best.length))best=n;
+  });
+  return best;
+}
 // [issues] mark the rows that break the tracking plan and add the required ones that weren't sent.
 function kvHtml(items,alignEnd,issues){
-  var issueFor=Object.create(null),sent=Object.create(null);
-  (issues||[]).forEach(function(i){issueFor[i.property]=i.message;});
-  var h=(items||[]).map(function(k){
-    sent[k.name]=true;
-    var v=k.redacted?"<span class='redact'></span>":esc(k.value);
-    var issue=issueFor[k.name];
-    if(issue==null)return "<div class='kv"+(alignEnd?' end':'')+"'><div class='k mono'>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
-    return "<div class='kv issue"+(alignEnd?' end':'')+"' title='"+esc(issue)+"'><div class='k mono'><span class='idot'></span>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
-  }).join('');
+  var sent=Object.create(null),byRoot=Object.create(null),missing=[];
+  (items||[]).forEach(function(k){sent[k.name]=true;});
   (issues||[]).forEach(function(i){
-    if(!sent[i.property])h+="<div class='kv ghost'><div class='k mono'><span class='idot'></span>"+esc(i.property)+"</div><div class='v'>missing · required</div></div>";
+    var root=issueRoot(i.property,sent);
+    if(root==null){missing.push(i);return;}
+    (byRoot[root]=byRoot[root]||[]).push(i.property===root?i.message:i.property+' · '+i.message);
+  });
+  var h=(items||[]).map(function(k){
+    var v=k.redacted?"<span class='redact'></span>":esc(k.value);
+    var lines=byRoot[k.name];
+    if(!lines)return "<div class='kv"+(alignEnd?' end':'')+"'><div class='k mono'>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
+    return "<div class='kv issue"+(alignEnd?' end':'')+"' title='"+esc(lines.join('\n'))+"'><div class='k mono'><span class='idot'></span>"+esc(k.name)+"</div><div class='v mono'>"+v+"</div></div>";
+  }).join('');
+  missing.forEach(function(i){
+    h+="<div class='kv ghost'><div class='k mono'><span class='idot'></span>"+esc(i.property)+"</div><div class='v'>missing · required</div></div>";
   });
   return h;
 }

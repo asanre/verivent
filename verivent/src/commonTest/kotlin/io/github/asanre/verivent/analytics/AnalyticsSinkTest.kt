@@ -228,4 +228,17 @@ class AnalyticsSinkTest {
         assertFailsWith<IllegalArgumentException> { Inspector.loadTrackingPlan("{}") }
         assertEquals("2.1.0", Inspector.trackingPlan.value?.version)
     }
+
+    @Test
+    fun nestedValuesAreShownAsJsonAndCheckedItemByItem() {
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "play", "channel": "firebase",
+                 "schema": { "properties": { "tracks": { "items": { "properties": { "ms": { "type": "integer" } } } } } } } ] }""",
+        )
+        AnalyticsSink().log("play", "firebase", mapOf("tracks" to listOf(mapOf("ms" to "1"), mapOf("ms" to 2)), "rate" to 1.5f))
+
+        val entry = entries().single()
+        assertEquals(listOf("""[{"ms":"1"},{"ms":2}]""", "1.5"), entry.properties.map { it.value })
+        assertEquals(listOf(PlanIssue("tracks[*].ms", "Expected integer, got string · 1 of 2")), entry.issues)
+    }
 }

@@ -94,6 +94,29 @@ final class VeriventBridgeTests: XCTestCase {
         XCTAssertNil(entry["issues"], "unexpected issues: \(entry["issues"] ?? "")")
     }
 
+    /// Nested Swift collections must reach Kotlin as lists and maps, or the plan couldn't look
+    /// into them and the export couldn't show them as JSON.
+    func testNestedSwiftCollectionsAreCheckedItemByItem() async throws {
+        Verivent.configure()
+        try Verivent.loadTrackingPlan("""
+        { "version": "1.0.0", "events": [ { "name": "plan_nested", "channel": "firebase",
+          "schema": { "properties": { "tracks": { "type": "array", "items": { "type": "object",
+            "properties": { "id": { "type": "string" }, "duration_ms": { "type": "integer" } } } } } } } ] }
+        """)
+        defer { Verivent.clearTrackingPlan() }
+
+        Verivent.log("plan_nested", channel: "firebase", properties: [
+            "tracks": [["id": "a", "duration_ms": "slow"], ["id": "b", "duration_ms": 1200]],
+        ])
+
+        let entry = try await fetchEntry(named: "plan_nested")
+        let issues = try XCTUnwrap(entry["issues"] as? [[String: String]])
+        XCTAssertEqual(issues, [["property": "tracks[*].duration_ms", "message": "Expected integer, got string · 1 of 2"]])
+        let properties = try XCTUnwrap(entry["properties"] as? [[String: Any]])
+        let tracks = try XCTUnwrap(properties.first { $0["name"] as? String == "tracks" }?["value"] as? String)
+        XCTAssertTrue(tracks.hasPrefix("[{"), "nested values should be shown as JSON, got \(tracks)")
+    }
+
     // MARK: - Helpers
 
     private func fetchEntry(named name: String) async throws -> [String: Any] {

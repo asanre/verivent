@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.ui.internal.issueRoot
+import io.github.asanre.verivent.ui.internal.lineUnder
 import io.github.asanre.verivent.ui.internal.prettyPrintJson
 import io.github.asanre.verivent.ui.internal.propertiesToJson
 import io.github.asanre.verivent.ui.theme.LocalInspectorColors
@@ -93,12 +95,12 @@ internal fun PropertiesView(
                 CodePanel { JsonSyntaxText(json, Modifier.fillMaxWidth()) }
             }
         } else {
-            val issueFor = issues.associate { it.property to it.message }
             val sent = properties.mapTo(HashSet()) { it.name }
-            val missing = issues.filter { it.property !in sent }
+            val byRoot = issues.groupBy { issueRoot(it.property, sent) }
+            val missing = byRoot[null].orEmpty()
             SectionCard(Modifier.padding(horizontal = 16.dp), radius = 14.dp, contentPadding = 0.dp) {
                 properties.forEachIndexed { index, property ->
-                    PropertyRow(property, issueFor[property.name])
+                    PropertyRow(property, byRoot[property.name].orEmpty().map { it.lineUnder(property.name) })
                     if (index < properties.lastIndex || missing.isNotEmpty()) {
                         HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.surfaceVariant)
                     }
@@ -110,22 +112,23 @@ internal fun PropertiesView(
 }
 
 @Composable
-private fun PropertyRow(property: KeyValue, issue: String?) {
+private fun PropertyRow(property: KeyValue, issues: List<String>) {
     val breaks = LocalInspectorColors.current.planBreaks
+    val breaksPlan = issues.isNotEmpty()
     Column(
         Modifier
             .fillMaxWidth()
-            .then(if (issue != null) Modifier.background(breaks.card.container) else Modifier)
+            .then(if (breaksPlan) Modifier.background(breaks.card.container) else Modifier)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(0.42f), verticalAlignment = Alignment.CenterVertically) {
-                if (issue != null) IssueDot()
+                if (breaksPlan) IssueDot()
                 Text(
                     property.name,
                     style = codeTextStyle,
-                    color = if (issue != null) breaks.card.content else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (breaksPlan) breaks.card.content else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Box(Modifier.weight(0.58f), contentAlignment = Alignment.CenterEnd) {
@@ -136,7 +139,7 @@ private fun PropertyRow(property: KeyValue, issue: String?) {
                 }
             }
         }
-        issue?.let {
+        issues.forEach {
             Text(
                 it,
                 style = MaterialTheme.typography.bodySmall,

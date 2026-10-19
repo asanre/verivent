@@ -120,9 +120,24 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
                   "additionalProperties": false } } ] }
 ```
 
-- Supported keywords: `required`, `properties` with `type` (one or a list), `enum` and `pattern`,
-  and `additionalProperties`, true when absent as in JSON Schema. Others are ignored. `pattern`
-  only applies to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
+- Supported keywords: `type` (one or a list), `enum`, `const`, `pattern`, `properties`, `required`,
+  `additionalProperties` (true when absent, as in JSON Schema), `items` (one schema every element
+  of a list must meet), `minItems` and `contains` (at least one element meets it). They nest as
+  deep as your values do. Others, such as `contentMediaType`, are ignored. `pattern` only applies
+  to strings; integers satisfy `number`, and whole numbers satisfy `integer`.
+- Lists and maps are checked inside. An issue names its path, with `.` into a map and `[*]` into
+  every element of a list, and says how many elements break it:
+
+    ```json
+    "tracks": { "type": "array", "minItems": 1,
+                "items": { "type": "object", "required": ["id"],
+                           "properties": { "id": { "type": "string" },
+                                           "duration_ms": { "type": "integer" } } } }
+    ```
+
+    Sending 60 tracks whose `duration_ms` is a string gives one issue,
+    `tracks[*].duration_ms · Expected integer, got string · 60 of 60`. A list sent as JSON text is
+    a string: *Expected array, got string*. Values nested past 64 levels aren't checked.
 - `pattern` isn't anchored, as in JSON Schema: `[0-9]+` accepts `"sku-42"` because it finds digits
   somewhere in it. Write `^[0-9]+$` to constrain the whole value.
 - A string over 256 characters isn't run through `pattern`: it gets the issue *Too long to check
@@ -130,8 +145,9 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
   cost of a pattern that backtracks. It can't stop one that backtracks exponentially, such as
   `(a+)+$`, on shorter values: avoid nesting quantifiers.
 - The check runs on the values you pass to `log`, before redaction, so types are the host's types.
-  A property you redact with `sanitizeProperty` is only checked for `required` and `type`: a verdict
-  on its `enum` or `pattern` would give its value away.
+  A property you redact with `sanitizeProperty` is only checked for `required` and `type`, all the
+  way down: a verdict on its `enum`, `const`, `pattern`, `minItems` or `contains` would give its
+  value away.
   `sections` are not checked.
 - An event the plan defines carries `planVersion`, the version it was checked against, and
   `issues`: one `PlanIssue(property, message)` per thing that breaks the plan, empty when it

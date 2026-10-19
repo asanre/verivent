@@ -33,15 +33,19 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             }
             if (!visible) return@runSafely
 
+            // Converted once: the same JSON is checked against the plan and shown.
+            val values = hostValues(properties)
+
             // Labelled off the redacted list on purpose: a group must never surface a value the
             // host asked to hide, and the viewers already only ever read redacted properties.
-            val redacted = redact(properties)
+            val redacted = redact(values)
 
-            // Checked on the raw values because only they still carry their types, but a hidden
-            // value is only type-checked: a verdict on its enum or pattern would reveal it.
+            // Checked before redaction because only the raw values still carry their types, but a
+            // hidden value is only type-checked: a verdict on its enum or pattern would reveal it.
             val plan = Inspector.activePlan
             val hidden = redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }
-            val issues = plan?.issuesFor(name, channel, properties, hidden)
+            val issues = plan?.check(name, channel, values.json, hidden, foreignTypes = values.foreignTypes)
+                ?.map { it.toPlanIssue() }
 
             val entry = AnalyticsEntry(
                 id = Inspector.nextId(),
@@ -50,7 +54,7 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
                 channel = channel,
                 properties = redacted,
                 groupLabel = groupLabel(name, redacted),
-                sections = sections.filterValues { it.isNotEmpty() }.mapValues { (_, section) -> redact(section) },
+                sections = sections.filterValues { it.isNotEmpty() }.mapValues { (_, section) -> redact(hostValues(section)) },
                 annotations = config.annotators
                     .flatMap {
                         runCatching { it(event) }
@@ -71,8 +75,8 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             .onFailure { failure -> DiagnosticLog.warn(TAG, "line logger threw", failure) }
     }
 
-    private fun redact(properties: Map<String, Any?>): List<KeyValue> =
-        properties.map { (key, value) -> redaction.redactProperty(key, value?.toString() ?: "null") }
+    private fun redact(values: HostValues): List<KeyValue> =
+        values.json.map { (key, value) -> redaction.redactProperty(key, value.displayText()) }
 
     private fun groupLabel(name: String, properties: List<KeyValue>): String? {
         if (name != config.groupByEvent) return null
