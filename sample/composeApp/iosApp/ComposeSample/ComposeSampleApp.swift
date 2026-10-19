@@ -7,7 +7,9 @@ import SwiftUI
 struct ComposeSampleApp: App {
     var body: some Scene {
         WindowGroup {
-            ComposeView().ignoresSafeArea(.keyboard)
+            // Edge to edge: Compose applies the insets itself, so the inspector's background
+            // reaches behind the status bar and the home indicator.
+            ComposeView().ignoresSafeArea()
         }
     }
 }

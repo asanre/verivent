@@ -139,7 +139,12 @@ struct SnoopInspector: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
 }
+
+SnoopInspector().ignoresSafeArea()
 ```
+
+In SwiftUI, let it ignore the safe area: `SnoopScreen` applies the insets to its own content, and
+inside the safe area its background stops short of the status bar and the home indicator.
 
 If this is the first Compose UI in the app, add `CADisableMinimumFrameDurationOnPhone` = `true` to
 its `Info.plist`: Compose Multiplatform crashes at runtime without it (or set
