@@ -56,5 +56,6 @@ nav:
       - Filters, redaction & annotations: filters-redaction-annotations.md
       - Analytics facade: integration-analytics-facade.md
       - Web viewer: web-viewer.md
+      - Validator in the browser: validator-npm.md
   - Contributing: contributing.md
   - API reference: https://asanre.github.io/verivent/api/

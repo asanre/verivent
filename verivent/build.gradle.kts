@@ -50,24 +50,56 @@ kotlin {
     }
     iosArm64()
     iosSimulatorArm64()
+    // Only for the npm package of the validator (see npm/): the browser checks events with the same
+    // rules and messages as the device. Apps on Kotlin/JS aren't a supported target.
+    js {
+        outputModuleName = "verivent"
+        nodejs()
+        // ES modules export each declaration at the top level (`import { Plan } from "verivent"`),
+        // where CommonJS would nest them under the Kotlin package.
+        useEsModules()
+        binaries.library()
+        generateTypeScriptDefinitions()
+        compilations["main"].packageJson {
+            version = providers.gradleProperty("VERSION_NAME").get()
+        }
+    }
+
+    // The web viewer's server runs on the devices only: `mobile` sits between common and the
+    // Android and iOS source sets, so the JS build never sees Ktor.
+    applyDefaultHierarchyTemplate()
 
     sourceSets {
-        commonMain {
-            kotlin.srcDir(generateWebPage)
-            dependencies {
-                api(libs.kotlinx.coroutines.core)
-                implementation(libs.ktor.server.core)
-                implementation(libs.ktor.server.cio)
-                implementation(libs.ktor.server.sse)
-                implementation(libs.kotlinx.serialization.json)
-            }
+        commonMain.dependencies {
+            api(libs.kotlinx.coroutines.core)
+            // BodyCapture's content types and charsets; it used to arrive through the server.
+            implementation(libs.ktor.http)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation(libs.ktor.server.test.host)
-            implementation(libs.ktor.client.cio)
             implementation(libs.kotlinx.coroutines.test)
         }
+        val mobileMain by creating {
+            dependsOn(commonMain.get())
+            kotlin.srcDir(generateWebPage)
+            dependencies {
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.cio)
+                implementation(libs.ktor.server.sse)
+            }
+        }
+        val mobileTest by creating {
+            dependsOn(commonTest.get())
+            dependencies {
+                implementation(libs.ktor.server.test.host)
+                implementation(libs.ktor.client.cio)
+            }
+        }
+        androidMain.get().dependsOn(mobileMain)
+        iosMain.get().dependsOn(mobileMain)
+        androidUnitTest.get().dependsOn(mobileTest)
+        iosTest.get().dependsOn(mobileTest)
     }
 }
 

@@ -52,6 +52,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
 
+      - name: Attach the validator's npm package
+        # The web app installs the validator from this release asset: there is no registry package.
+        # Built from the same sources as the libraries, so the browser gives the device's messages.
+        run: |
+          ./gradlew :verivent:jsNodeProductionLibraryDistribution --no-configuration-cache
+          npm pack ./verivent/build/dist/js/productionLibrary
+          gh release upload "$TAG" verivent-*.tgz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+
       - name: Publish the Swift package
         # asanre/verivent-swift is generated wholesale from swift/ on every release — never edited by
         # hand. Apple has no package registry, so a git repo is the distribution channel.

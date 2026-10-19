@@ -10,6 +10,10 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
 `VeriventKit.xcframework`, attaches the zip to the release, and regenerates `asanre/verivent-swift` from
 `swift/`. See [Native iOS](native-ios.md) for what that package contains.
 
+It also attaches the validator's npm package (`verivent-<version>.tgz`, built by
+`:verivent:jsNodeProductionLibraryDistribution` and `npm pack`) to the release. There is no npm
+registry package; see [Validator in the browser](validator-npm.md).
+
 ## One-time setup (manual, outside the repo)
 
 1. **Central Portal account** — sign in at [central.sonatype.com](https://central.sonatype.com) with

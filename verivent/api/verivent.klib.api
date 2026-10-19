@@ -1,5 +1,6 @@
 // Klib ABI Dump
-// Targets: [iosArm64, iosSimulatorArm64]
+// Targets: [iosArm64, iosSimulatorArm64, js]
+// Alias: ios => [iosArm64, iosSimulatorArm64]
 // Rendering settings:
 // - Signature version: 2
 // - Show manifest properties: true
@@ -27,33 +28,6 @@ sealed interface io.github.asanre.verivent.core.model/TimelineEntry { // io.gith
         abstract fun <get-id>(): kotlin/String // io.github.asanre.verivent.core.model/TimelineEntry.id.<get-id>|<get-id>(){}[0]
     abstract val timestamp // io.github.asanre.verivent.core.model/TimelineEntry.timestamp|{}timestamp[0]
         abstract fun <get-timestamp>(): kotlin.time/Instant // io.github.asanre.verivent.core.model/TimelineEntry.timestamp.<get-timestamp>|<get-timestamp>(){}[0]
-}
-
-sealed interface io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind|null[0]
-    final class Host : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Host|null[0]
-        constructor <init>(kotlin/String) // io.github.asanre.verivent.web/WebViewerBind.Host.<init>|<init>(kotlin.String){}[0]
-
-        final val address // io.github.asanre.verivent.web/WebViewerBind.Host.address|{}address[0]
-            final fun <get-address>(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.address.<get-address>|<get-address>(){}[0]
-
-        final fun component1(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.component1|component1(){}[0]
-        final fun copy(kotlin/String = ...): io.github.asanre.verivent.web/WebViewerBind.Host // io.github.asanre.verivent.web/WebViewerBind.Host.copy|copy(kotlin.String){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Host.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Host.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.toString|toString(){}[0]
-    }
-
-    final object Lan : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Lan|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Lan.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Lan.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Lan.toString|toString(){}[0]
-    }
-
-    final object Local : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Local|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Local.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Local.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Local.toString|toString(){}[0]
-    }
 }
 
 final class io.github.asanre.verivent.analytics/AnalyticsEvent { // io.github.asanre.verivent.analytics/AnalyticsEvent|null[0]
@@ -385,6 +359,39 @@ final object io.github.asanre.verivent.core/Inspector { // io.github.asanre.veri
     final fun updateNetwork(kotlin/String, kotlin/Function1<io.github.asanre.verivent.core.model/NetworkTransaction, io.github.asanre.verivent.core.model/NetworkTransaction>) // io.github.asanre.verivent.core/Inspector.updateNetwork|updateNetwork(kotlin.String;kotlin.Function1<io.github.asanre.verivent.core.model.NetworkTransaction,io.github.asanre.verivent.core.model.NetworkTransaction>){}[0]
 }
 
+final fun io.github.asanre.verivent.analytics/AnalyticsSink(kotlin/Function1<io.github.asanre.verivent.analytics/AnalyticsSinkConfig, kotlin/Unit> = ...): io.github.asanre.verivent.analytics/AnalyticsSink // io.github.asanre.verivent.analytics/AnalyticsSink|AnalyticsSink(kotlin.Function1<io.github.asanre.verivent.analytics.AnalyticsSinkConfig,kotlin.Unit>){}[0]
+final fun io.github.asanre.verivent.web/encodeExportEntry(io.github.asanre.verivent.core.model/TimelineEntry): kotlin/String // io.github.asanre.verivent.web/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.TimelineEntry){}[0]
+final inline fun io.github.asanre.verivent.core.internal/runSafely(kotlin/String, kotlin/Function0<kotlin/Unit>) // io.github.asanre.verivent.core.internal/runSafely|runSafely(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]
+
+// Targets: [ios]
+sealed interface io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind|null[0]
+    final class Host : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Host|null[0]
+        constructor <init>(kotlin/String) // io.github.asanre.verivent.web/WebViewerBind.Host.<init>|<init>(kotlin.String){}[0]
+
+        final val address // io.github.asanre.verivent.web/WebViewerBind.Host.address|{}address[0]
+            final fun <get-address>(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.address.<get-address>|<get-address>(){}[0]
+
+        final fun component1(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): io.github.asanre.verivent.web/WebViewerBind.Host // io.github.asanre.verivent.web/WebViewerBind.Host.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Host.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Host.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Host.toString|toString(){}[0]
+    }
+
+    final object Lan : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Lan|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Lan.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Lan.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Lan.toString|toString(){}[0]
+    }
+
+    final object Local : io.github.asanre.verivent.web/WebViewerBind { // io.github.asanre.verivent.web/WebViewerBind.Local|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/WebViewerBind.Local.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/WebViewerBind.Local.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.asanre.verivent.web/WebViewerBind.Local.toString|toString(){}[0]
+    }
+}
+
+// Targets: [ios]
 final object io.github.asanre.verivent.web/WebViewer { // io.github.asanre.verivent.web/WebViewer|null[0]
     final const val DEFAULT_PORT // io.github.asanre.verivent.web/WebViewer.DEFAULT_PORT|{}DEFAULT_PORT[0]
         final fun <get-DEFAULT_PORT>(): kotlin/Int // io.github.asanre.verivent.web/WebViewer.DEFAULT_PORT.<get-DEFAULT_PORT>|<get-DEFAULT_PORT>(){}[0]
@@ -401,6 +408,59 @@ final object io.github.asanre.verivent.web/WebViewer { // io.github.asanre.veriv
     final fun stop() // io.github.asanre.verivent.web/WebViewer.stop|stop(){}[0]
 }
 
-final fun io.github.asanre.verivent.analytics/AnalyticsSink(kotlin/Function1<io.github.asanre.verivent.analytics/AnalyticsSinkConfig, kotlin/Unit> = ...): io.github.asanre.verivent.analytics/AnalyticsSink // io.github.asanre.verivent.analytics/AnalyticsSink|AnalyticsSink(kotlin.Function1<io.github.asanre.verivent.analytics.AnalyticsSinkConfig,kotlin.Unit>){}[0]
-final fun io.github.asanre.verivent.web/encodeExportEntry(io.github.asanre.verivent.core.model/TimelineEntry): kotlin/String // io.github.asanre.verivent.web/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.TimelineEntry){}[0]
-final inline fun io.github.asanre.verivent.core.internal/runSafely(kotlin/String, kotlin/Function0<kotlin/Unit>) // io.github.asanre.verivent.core.internal/runSafely|runSafely(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]
+// Targets: [js]
+final class io.github.asanre.verivent.js/Issue { // io.github.asanre.verivent.js/Issue|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Int?, kotlin/Int?) // io.github.asanre.verivent.js/Issue.<init>|<init>(kotlin.String;kotlin.String;kotlin.Int?;kotlin.Int?){}[0]
+
+    final val count // io.github.asanre.verivent.js/Issue.count|{}count[0]
+        final fun <get-count>(): kotlin/Int? // io.github.asanre.verivent.js/Issue.count.<get-count>|<get-count>(){}[0]
+    final val line // io.github.asanre.verivent.js/Issue.line|{}line[0]
+        final fun <get-line>(): kotlin/String // io.github.asanre.verivent.js/Issue.line.<get-line>|<get-line>(){}[0]
+    final val message // io.github.asanre.verivent.js/Issue.message|{}message[0]
+        final fun <get-message>(): kotlin/String // io.github.asanre.verivent.js/Issue.message.<get-message>|<get-message>(){}[0]
+    final val path // io.github.asanre.verivent.js/Issue.path|{}path[0]
+        final fun <get-path>(): kotlin/String // io.github.asanre.verivent.js/Issue.path.<get-path>|<get-path>(){}[0]
+    final val total // io.github.asanre.verivent.js/Issue.total|{}total[0]
+        final fun <get-total>(): kotlin/Int? // io.github.asanre.verivent.js/Issue.total.<get-total>|<get-total>(){}[0]
+}
+
+// Targets: [js]
+final class io.github.asanre.verivent.js/Plan { // io.github.asanre.verivent.js/Plan|null[0]
+    constructor <init>(kotlin/String) // io.github.asanre.verivent.js/Plan.<init>|<init>(kotlin.String){}[0]
+
+    final val events // io.github.asanre.verivent.js/Plan.events|{}events[0]
+        final fun <get-events>(): kotlin/Array<io.github.asanre.verivent.js/PlannedEvent> // io.github.asanre.verivent.js/Plan.events.<get-events>|<get-events>(){}[0]
+    final val version // io.github.asanre.verivent.js/Plan.version|{}version[0]
+        final fun <get-version>(): kotlin/String // io.github.asanre.verivent.js/Plan.version.<get-version>|<get-version>(){}[0]
+
+    final fun check(kotlin/String, kotlin/String, kotlin/String): kotlin/Array<io.github.asanre.verivent.js/Issue>? // io.github.asanre.verivent.js/Plan.check|check(kotlin.String;kotlin.String;kotlin.String){}[0]
+    final fun checkSession(kotlin/String): kotlin/Array<io.github.asanre.verivent.js/SessionEvent> // io.github.asanre.verivent.js/Plan.checkSession|checkSession(kotlin.String){}[0]
+}
+
+// Targets: [js]
+final class io.github.asanre.verivent.js/PlannedEvent { // io.github.asanre.verivent.js/PlannedEvent|null[0]
+    constructor <init>(kotlin/String, kotlin/String) // io.github.asanre.verivent.js/PlannedEvent.<init>|<init>(kotlin.String;kotlin.String){}[0]
+
+    final val channel // io.github.asanre.verivent.js/PlannedEvent.channel|{}channel[0]
+        final fun <get-channel>(): kotlin/String // io.github.asanre.verivent.js/PlannedEvent.channel.<get-channel>|<get-channel>(){}[0]
+    final val name // io.github.asanre.verivent.js/PlannedEvent.name|{}name[0]
+        final fun <get-name>(): kotlin/String // io.github.asanre.verivent.js/PlannedEvent.name.<get-name>|<get-name>(){}[0]
+}
+
+// Targets: [js]
+final class io.github.asanre.verivent.js/SessionEvent { // io.github.asanre.verivent.js/SessionEvent|null[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlin/Array<io.github.asanre.verivent.js/Issue>, kotlin/Boolean) // io.github.asanre.verivent.js/SessionEvent.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlin.Array<io.github.asanre.verivent.js.Issue>;kotlin.Boolean){}[0]
+
+    final val channel // io.github.asanre.verivent.js/SessionEvent.channel|{}channel[0]
+        final fun <get-channel>(): kotlin/String // io.github.asanre.verivent.js/SessionEvent.channel.<get-channel>|<get-channel>(){}[0]
+    final val id // io.github.asanre.verivent.js/SessionEvent.id|{}id[0]
+        final fun <get-id>(): kotlin/String // io.github.asanre.verivent.js/SessionEvent.id.<get-id>|<get-id>(){}[0]
+    final val issues // io.github.asanre.verivent.js/SessionEvent.issues|{}issues[0]
+        final fun <get-issues>(): kotlin/Array<io.github.asanre.verivent.js/Issue> // io.github.asanre.verivent.js/SessionEvent.issues.<get-issues>|<get-issues>(){}[0]
+    final val name // io.github.asanre.verivent.js/SessionEvent.name|{}name[0]
+        final fun <get-name>(): kotlin/String // io.github.asanre.verivent.js/SessionEvent.name.<get-name>|<get-name>(){}[0]
+    final val untyped // io.github.asanre.verivent.js/SessionEvent.untyped|{}untyped[0]
+        final fun <get-untyped>(): kotlin/Boolean // io.github.asanre.verivent.js/SessionEvent.untyped.<get-untyped>|<get-untyped>(){}[0]
+    final val verdict // io.github.asanre.verivent.js/SessionEvent.verdict|{}verdict[0]
+        final fun <get-verdict>(): kotlin/String // io.github.asanre.verivent.js/SessionEvent.verdict.<get-verdict>|<get-verdict>(){}[0]
+}

@@ -17,6 +17,11 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew check
+      - name: Smoke-test the npm package
+        # Loads the package as the web app does; jsTest above runs the same checks inside Kotlin.
+        run: |
+          ./gradlew :verivent:jsNodeProductionLibraryDistribution
+          node verivent/npm/smoke.mjs
 
   swift:
     # The Swift package is XCTest against the real XCFramework, so it needs macOS and a simulator.
