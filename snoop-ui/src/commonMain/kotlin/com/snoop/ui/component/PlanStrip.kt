@@ -59,7 +59,7 @@ internal fun PlanStrip(
                 if (matching > 0) CountPill("$matching match", colors.planMatches.pill)
             } else {
                 Text(
-                    "No tracking plan · events aren't checked",
+                    "No plan · events aren't checked",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
                     color = scheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
