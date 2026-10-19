@@ -35,7 +35,7 @@ labelled with `screen_name` out of the box. It is set where events are captured,
 logger, and every viewer groups by what capture stamped:
 
 ```kotlin
-val verivent = AnalyticsSink {
+val sink = AnalyticsSink {
     groupBy("page_shown", "page")
     // groupBy(null)  // no grouping at all
 }

@@ -10,16 +10,16 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:verivent:0.7.0")
-    releaseImplementation("io.github.asanre:verivent-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent:0.8.0")
+    releaseImplementation("io.github.asanre:verivent-no-op:0.8.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:verivent-ui:0.7.0")
-    releaseImplementation("io.github.asanre:verivent-ui-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent-ui:0.8.0")
+    releaseImplementation("io.github.asanre:verivent-ui-no-op:0.8.0")
 
     // network capture for Ktor clients:
-    debugImplementation("io.github.asanre:verivent-ktor:0.7.0")
-    releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.7.0")
+    debugImplementation("io.github.asanre:verivent-ktor:0.8.0")
+    releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.8.0")
 }
 ```
 
@@ -66,14 +66,14 @@ for the full list.
 Verivent never talks to an analytics SDK. Wire your own analytics facade to `log`:
 
 ```kotlin
-val verivent = AnalyticsSink {
+val sink = AnalyticsSink {
     filter { event -> !event.name.startsWith("debug_") }
     sanitizeProperty { key -> key in setOf("user_email", "user_id") }
     annotate { event -> if (event.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
 }
 
 // from your facade, alongside the real SDK call:
-verivent.log("purchase", channel = "firebase", properties = mapOf("value" to 42.5))
+sink.log("purchase", channel = "firebase", properties = mapOf("value" to 42.5))
 ```
 
 See [Hook your analytics facade](integration-analytics-facade.md) for the pattern.

@@ -19,7 +19,7 @@ Add `https://github.com/asanre/verivent-swift` in Xcode (*File → Add Package D
 it directly:
 
 ```swift
-.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.7.0")
+.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.8.0")
 ```
 
 That repository is generated on every release; the sources live in `swift/` in the main repo,

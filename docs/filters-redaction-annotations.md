@@ -58,7 +58,7 @@ what `URLProtocol` cannot reach.
 `Annotation` values: `Ecommerce`, `Conversion`, `Consent`, `ScreenView`.
 
 ```kotlin
-val verivent = AnalyticsSink {
+val sink = AnalyticsSink {
     filter { !it.name.startsWith("debug_") }
     sanitizeProperty { it in setOf("user_email", "user_id") }
     annotate {

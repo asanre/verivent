@@ -1,10 +1,10 @@
 # Verivent
 
-![Verivent — network and analytics inspector for Compose Multiplatform](assets/banner.webp)
-
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/verivent)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
+
+> Formerly **Snoop**: versions up to 0.7.0 were published as `io.github.asanre:snoop`.
 
 **Verivent** is an on-device inspector for **network traffic and analytics events**, built for Compose
 Multiplatform. Both streams land on one timeline, so you can see a request and the events around it

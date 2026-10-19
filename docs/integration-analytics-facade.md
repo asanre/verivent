@@ -27,14 +27,14 @@ wrap it with a decorator that also forwards to Verivent, gated to internal/debug
 ```kotlin
 class VeriventAnalyticsHelper(
     private val delegate: AnalyticsHelper,
-    private val verivent: AnalyticsSink = AnalyticsSink {
+    private val sink: AnalyticsSink = AnalyticsSink {
         sanitizeProperty { it in setOf("user_email", "user_id") }
         annotate { if (it.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
     },
 ) : AnalyticsHelper {
     override fun log(event: AnalyticsEvent) {
         delegate.log(event)
-        verivent.log(
+        sink.log(
             name = event.name,
             channel = event.channelLabel(),      // map your sealed event type -> "firebase" / "gtm" / ...
             properties = event.properties,
@@ -69,7 +69,7 @@ below *Parameters*, in the order you give. Empty blocks are dropped. Verivent ke
 own, so take the snapshot where the event is sent:
 
 ```kotlin
-verivent.log(
+sink.log(
     name = event.name,
     channel = "firebase",
     properties = event.properties,
@@ -89,7 +89,7 @@ Turn on `logTo` and every captured event is also written as one JSON line, so wh
 the inspector (an agent driving the app, a CI log) still sees what was sent:
 
 ```kotlin
-val verivent = AnalyticsSink {
+val sink = AnalyticsSink {
     sanitizeProperty { it == "user_email" }
     logTo()                                   // Logcat (tag VeriventEvent) / unified log on iOS
     // logTo { Timber.tag("VeriventEvent").i(it) } to go through your own logging

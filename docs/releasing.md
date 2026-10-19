@@ -56,11 +56,11 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    ```
 3. Tag the release commit and push the tag:
    ```bash
-   git tag v0.1.0 && git push origin v0.1.0
+   git tag v0.8.0 && git push origin v0.8.0
    ```
 4. Create the GitHub Release for that tag, which triggers `publish`:
    ```bash
-   gh release create v0.1.0 --generate-notes
+   gh release create v0.8.0 --generate-notes
    ```
    The workflow runs `./gradlew publishAndReleaseToMavenCentral` on a macOS runner, so the iOS klibs
    are built and published alongside the Android ones, and the deployment is released without a
@@ -75,18 +75,18 @@ The same workflow also cuts the **Swift Package** for native iOS hosts: it assem
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
    ```bash
-   curl -sI https://repo1.maven.org/maven2/io/github/asanre/verivent/0.7.0/verivent-0.7.0.pom.asc
+   curl -sI https://repo1.maven.org/maven2/io/github/asanre/verivent/0.8.0/verivent-0.8.0.pom.asc
    ```
 7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
    compare the published manifest against the asset it points at:
    ```bash
-   gh release download v0.1.0 -p VeriventKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/VeriventKit.xcframework.zip
+   gh release download v0.8.0 -p VeriventKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/VeriventKit.xcframework.zip
    ```
    ```bash
-   curl -s https://raw.githubusercontent.com/asanre/verivent-swift/0.1.0/Package.swift | grep checksum
+   curl -s https://raw.githubusercontent.com/asanre/verivent-swift/0.8.0/Package.swift | grep checksum
    ```
    The two must match. The tag on `verivent-swift` is the version **without** the `v` prefix, so
-   consumers write `.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.1.0")`.
+   consumers write `.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.8.0")`.
 
 ## If the Swift step fails after Central published
 

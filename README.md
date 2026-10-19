@@ -1,10 +1,10 @@
 # Verivent
 
-![Verivent — network and analytics inspector for Compose Multiplatform](docs/assets/banner.webp)
-
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.asanre/verivent)](https://central.sonatype.com/namespace/io.github.asanre)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 ![Platforms](https://img.shields.io/badge/platforms-Android%20%7C%20iOS-informational)
+
+> Formerly **Snoop**: versions up to 0.7.0 were published as `io.github.asanre:snoop`.
 
 On-device inspector for **network calls** and **analytics events** in Compose Multiplatform apps.
 One unified timeline, a Ktor plugin, a vendor-agnostic analytics sink, and a Material 3 UI you can
@@ -49,16 +49,16 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("io.github.asanre:verivent:0.7.0")
-releaseImplementation("io.github.asanre:verivent-no-op:0.7.0")
+debugImplementation("io.github.asanre:verivent:0.8.0")
+releaseImplementation("io.github.asanre:verivent-no-op:0.8.0")
 
 // the on-device inspector UI:
-debugImplementation("io.github.asanre:verivent-ui:0.7.0")
-releaseImplementation("io.github.asanre:verivent-ui-no-op:0.7.0")
+debugImplementation("io.github.asanre:verivent-ui:0.8.0")
+releaseImplementation("io.github.asanre:verivent-ui-no-op:0.8.0")
 
 // network capture for Ktor clients:
-debugImplementation("io.github.asanre:verivent-ktor:0.7.0")
-releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.7.0")
+debugImplementation("io.github.asanre:verivent-ktor:0.8.0")
+releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.8.0")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.
@@ -82,14 +82,14 @@ val client = HttpClient(engine) {
 Verivent never talks to an analytics SDK. Wire your own analytics facade to `log`:
 
 ```kotlin
-val verivent = AnalyticsSink {
+val sink = AnalyticsSink {
     filter { event -> !event.name.startsWith("debug_") }
     sanitizeProperty { key -> key in setOf("user_email", "user_id") }
     annotate { event -> if (event.name in ecommerceEvents) listOf(Annotation.Ecommerce) else emptyList() }
 }
 
 // from your facade:
-verivent.log(name = event.name, channel = "firebase", properties = event.properties)
+sink.log(name = event.name, channel = "firebase", properties = event.properties)
 ```
 
 See [docs/integration-analytics-facade.md](docs/integration-analytics-facade.md) for the facade recipe.
@@ -113,7 +113,7 @@ with its `screen_name` parameter by default. Set on the logger, where events are
 viewer (inspector, Activity, web page, native iOS) groups the same way:
 
 ```kotlin
-val verivent = AnalyticsSink { groupBy("page_shown", "page") }
+val sink = AnalyticsSink { groupBy("page_shown", "page") }
 ```
 
 See [Integration](https://asanre.github.io/verivent/integration/) for the full inspector API.
