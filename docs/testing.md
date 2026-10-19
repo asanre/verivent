@@ -77,3 +77,41 @@ Baseline: 3 expected, 1 matched, 2 missing, 2 extra
 The baseline lives in the `verivent` module. With `verivent-no-op`, `diff` always reports
 *Verivent no-op: nothing was captured*, so a test wired to the no-op fails instead of passing on
 an empty session. On iOS, check analytics over HTTP (below).
+
+## Over HTTP
+
+The web viewer's server also answers whether any event broke the plan, so a black-box test
+(Maestro, Appium, a shell script in CI) can check analytics without linking any Verivent code, the
+way you would with Snowplow Micro. Start the server in the build under test with a token you know,
+and load a plan:
+
+```kotlin
+if (BuildConfig.DEBUG) WebViewer.start(token = "ci")
+```
+
+```bash
+adb forward tcp:9394 tcp:9394                                  # Android; the iOS simulator shares localhost
+curl -s -X POST -H 'X-Verivent: 1' --data-binary @plan.json 'http://localhost:9394/api/tracking-plan?t=ci'
+curl -s -X POST -H 'X-Verivent: 1' 'http://localhost:9394/api/clear?t=ci'      # reset between tests
+# … drive the app …
+curl -s 'http://localhost:9394/api/assert/all?t=ci'
+```
+
+```json
+{ "plan": "1.4.0", "total": 12, "good": 10, "bad": 1, "unplanned": 1 }
+```
+
+| Route | Answers |
+|---|---|
+| `GET /api/assert/all` | How many analytics events, by verdict, against the plan loaded now |
+| `GET /api/assert/good` | Events the loaded plan checked and found compliant |
+| `GET /api/assert/bad` | Events the loaded plan checked, with their `issues` |
+| `GET /api/assert/unplanned` | Events the loaded plan didn't check: it doesn't define them, or there's no plan |
+
+The three lists take `?name=` and `?channel=` filters and return the same JSON as the
+[export](integration-analytics-facade.md#exported-sessions). Every route sits behind the same
+gate as the viewer: the token in `?t=`, and `X-Verivent: 1` on the requests that change something.
+`POST /api/clear` resets the captured events.
+
+A test that only needs "no event broke the plan" asserts that `bad` is 0. One that needs to know
+that an event was sent at all asks for it by name in `good`.

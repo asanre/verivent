@@ -106,6 +106,11 @@ WebViewer.token                                         // the token the running
 The token gates every route, and both `start` and `lanUrl()` carry it as `?t=…`, so the link works
 as-is. A URL without it gets a `401` — the page then shows "Can't reach Verivent" instead of data.
 
+## Tests over HTTP
+
+The same server tells a black-box test whether any event broke the tracking plan: see
+[Testing analytics](testing.md#over-http).
+
 ## Notes
 
 - **Android** needs the `INTERNET` permission (to open the listening socket). iOS needs no

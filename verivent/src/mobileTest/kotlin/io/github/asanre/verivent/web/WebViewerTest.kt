@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.ktor.client.HttpClient
@@ -382,6 +383,8 @@ class WebViewerTest {
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/assert/all").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/assert/bad").status)
     }
 
     @Test
@@ -464,6 +467,66 @@ class WebViewerTest {
             port = 9394,
             bind = bind,
             token = token,
+        )
+    }
+
+    private val assertPlan = """
+        { "version": "3.0.0", "events": [ { "name": "search", "channel": "firebase",
+          "schema": { "required": ["search_term"], "properties": { "search_term": { "type": "string" } } } } ] }
+    """
+
+    @Test
+    fun aTestThatOnlySpeaksHttpKnowsWhetherAnEventBrokeThePlan() = testApplication {
+        application { webViewerModule(token = "t0k") }
+        client.post("/api/tracking-plan?t=t0k") {
+            header("X-Verivent", "1")
+            setBody(assertPlan)
+        }
+        val sink = AnalyticsSink()
+        sink.log("search", "firebase", mapOf("search_term" to "shoes"))
+        sink.log("search", "firebase", mapOf("search_term" to 7))
+        sink.log("screen_view", "firebase")
+
+        val summary = Json.parseToJsonElement(client.get("/api/assert/all?t=t0k").bodyAsText()).jsonObject
+        assertEquals(
+            mapOf("plan" to "3.0.0", "total" to "3", "good" to "1", "bad" to "1", "unplanned" to "1"),
+            summary.mapValues { it.value.jsonPrimitive.content },
+        )
+        val bad = Json.parseToJsonElement(client.get("/api/assert/bad?t=t0k").bodyAsText()).jsonArray.single().jsonObject
+        assertEquals("search_term", bad.getValue("issues").jsonArray.single().jsonObject.getValue("property").jsonPrimitive.content)
+
+        client.post("/api/clear?t=t0k") { header("X-Verivent", "1") }
+        val afterReset = Json.parseToJsonElement(client.get("/api/assert/all?t=t0k").bodyAsText()).jsonObject
+        assertEquals("0", afterReset.getValue("total").jsonPrimitive.content)
+    }
+
+    @Test
+    fun assertionsFilterByEventAndRejectUnknownVerdicts() = testApplication {
+        application { webViewerModule() }
+        Inspector.loadTrackingPlan(assertPlan)
+        val sink = AnalyticsSink()
+        sink.log("search", "firebase", mapOf("search_term" to "a"))
+        sink.log("search", "server-side")
+        sink.log("login", "firebase")
+
+        suspend fun names(path: String) = Json.parseToJsonElement(client.get(path).bodyAsText()).jsonArray.map {
+            it.jsonObject.getValue("name").jsonPrimitive.content + "/" + it.jsonObject.getValue("channel").jsonPrimitive.content
+        }
+        assertEquals(listOf("search/server-side", "login/firebase"), names("/api/assert/unplanned"))
+        assertEquals(listOf("login/firebase"), names("/api/assert/unplanned?name=login"))
+        assertEquals(listOf("search/server-side"), names("/api/assert/unplanned?channel=server-side"))
+        assertEquals(listOf("search/firebase"), names("/api/assert/good"))
+        assertEquals(HttpStatusCode.NotFound, client.get("/api/assert/maybe").status)
+    }
+
+    @Test
+    fun withoutAPlanEveryEventIsUnplanned() = testApplication {
+        application { webViewerModule() }
+        AnalyticsSink().log("search", "firebase")
+        val summary = Json.parseToJsonElement(client.get("/api/assert/all").bodyAsText()).jsonObject
+        assertEquals(
+            mapOf("plan" to "null", "total" to "1", "good" to "0", "bad" to "0", "unplanned" to "1"),
+            summary.mapValues { it.value.jsonPrimitive.content },
         )
     }
 }

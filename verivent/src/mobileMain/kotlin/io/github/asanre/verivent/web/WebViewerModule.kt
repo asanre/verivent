@@ -122,6 +122,24 @@ internal fun Application.webViewerModule(token: String? = null) {
             Inspector.clearTrackingPlan()
             call.respondText(planStatus(), ContentType.Application.Json)
         }
+        // Black-box test assertions, in the spirit of Snowplow Micro: a test that only speaks HTTP
+        // (through `adb forward` or the simulator's localhost) asks whether any event broke the
+        // plan. `POST /api/clear` resets between tests.
+        get("/api/assert/all") {
+            call.respondText(assertionSummary(Inspector.store.entries.value, Inspector.trackingPlan.value), ContentType.Application.Json)
+        }
+        get("/api/assert/{verdict}") {
+            val verdict = Verdict.entries.firstOrNull { it.route == call.parameters["verdict"] }
+                ?: return@get call.respondText("no such verdict: good, bad or unplanned", status = HttpStatusCode.NotFound)
+            val matching = assertionEntries(
+                entries = Inspector.store.entries.value,
+                plan = Inspector.trackingPlan.value,
+                verdict = verdict,
+                name = call.request.queryParameters["name"],
+                channel = call.request.queryParameters["channel"],
+            )
+            call.respondText(encodeEntries(matching), ContentType.Application.Json)
+        }
         sse("/api/stream") {
             // Deltas, tracked per connection: the store holds up to 20 MB and re-encoding all of it
             // on every mutation is the host's bill to pay. `TimelineStore.update` replaces only the
