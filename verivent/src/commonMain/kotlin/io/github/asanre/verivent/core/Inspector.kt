@@ -108,9 +108,9 @@ object Inspector {
 
     // A fresh holder per install, so a restore that started earlier can tell — by identity — that
     // something was loaded, cleared or reset meanwhile and drop what it read.
-    private class Installed(val plan: TrackingPlan?)
+    private class Installed(val plan: TrackingPlan?, val json: String?)
 
-    private val installed = AtomicReference(Installed(null))
+    private val installed = AtomicReference(Installed(null, null))
 
     internal val activePlan: TrackingPlan? get() = installed.load().plan
 
@@ -135,25 +135,35 @@ object Inspector {
      * @throws IllegalArgumentException when [json] isn't a valid tracking plan; nothing changes then.
      */
     fun loadTrackingPlan(json: String) {
-        val plan = TrackingPlan.parse(json)
-        install(plan)
-        planFile()?.let { path ->
-            storageScope.launch {
-                runCatching { writeTextFile(path, json) }
-                    .onFailure { DiagnosticLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
-            }
-        }
+        install(Installed(TrackingPlan.parse(json), json))
+        persist()
     }
 
     /** Stop validating, and forget the plan kept in [storageDir]. */
     fun clearTrackingPlan() {
-        install(null)
-        planFile()?.let { path -> storageScope.launch { runCatching { deleteFile(path) } } }
+        install(Installed(null, null))
+        persist()
     }
 
-    private fun install(plan: TrackingPlan?) {
-        installed.store(Installed(plan))
+    private fun install(next: Installed) {
+        installed.store(next)
         publish()
+    }
+
+    // Keeps whatever is installed when the write runs, not what the caller installed: two loads or
+    // a load and a clear racing on different threads would otherwise leave memory on one plan and
+    // the disk on the other. Writes run one at a time, so the last one sees the final plan.
+    private fun persist() {
+        val path = planFile() ?: return
+        storageScope.launch {
+            val json = installed.load().json
+            if (json == null) {
+                runCatching { deleteFile(path) }
+            } else {
+                runCatching { writeTextFile(path, json) }
+                    .onFailure { DiagnosticLog.warn(TAG, "could not keep the tracking plan; it lasts until the app restarts", it) }
+            }
+        }
     }
 
     // Re-reads instead of taking the plan, so writers that race converge on the last one installed.
@@ -166,21 +176,23 @@ object Inspector {
         storageScope.launch {
             val json = runCatching { readTextFile(path) }.getOrNull() ?: return@launch
             runCatching { TrackingPlan.parse(json) }
-                .onSuccess { plan -> if (installed.compareAndSet(seen, Installed(plan))) publish() }
+                .onSuccess { plan -> if (installed.compareAndSet(seen, Installed(plan, json))) publish() }
                 .onFailure { failure -> DiagnosticLog.warn(TAG, "ignoring the stored tracking plan", failure) }
         }
     }
 
     private fun planFile(): String? = storageDir?.let { "${it.trimEnd('/')}/$PLAN_FILE" }
 
-    /** Test/utility hook to reset all state. */
+    /**
+     * Test/utility hook to reset all state. Ids keep counting across it, so a capture still in flight
+     * from before the reset can't land on a new entry that took its id.
+     */
     fun reset() {
-        idCounter.store(0)
         store.clear()
         enabled = true
         title = DEFAULT_TITLE
         storageDir = null
-        install(null)
+        install(Installed(null, null))
     }
 
     private const val DEFAULT_TITLE = "Verivent"

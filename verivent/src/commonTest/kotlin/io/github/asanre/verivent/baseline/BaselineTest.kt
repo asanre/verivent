@@ -24,6 +24,9 @@ class BaselineTest {
         sink.log("purchase", "firebase", mapOf("value" to 9.5, "items" to listOf(mapOf("id" to itemId, "qty" to quantity))))
     }
 
+    /** The id of the [n]th event sent since the last reset, as the diff names it. */
+    private fun sent(n: Int) = Inspector.entriesSnapshot[n - 1].id
+
     private fun recorded(): String {
         checkout()
         return Baseline.record().also { Inspector.reset() }
@@ -44,13 +47,13 @@ class BaselineTest {
             """
             Baseline: 3 expected, 1 matched, 2 missing, 2 extra
             ✗ missing  add_to_cart · firebase, #2 in the baseline
-                closest: event 2
+                closest: event ${sent(2)}
                   quantity · Not the expected value · expects 2
             ✗ missing  purchase · firebase, #3 in the baseline
-                closest: event 3
+                closest: event ${sent(3)}
                   items[*].qty · Expected integer, got string · 1 of 1
-            + extra    add_to_cart · firebase, event 2
-            + extra    purchase · firebase, event 3
+            + extra    add_to_cart · firebase, event ${sent(2)}
+            + extra    purchase · firebase, event ${sent(3)}
             """.trimIndent(),
             Baseline.diff(baseline),
         )
@@ -74,7 +77,7 @@ class BaselineTest {
         checkout()
         sink.log("screen_view", "firebase", mapOf("screen_name" to "cart"))
         assertEquals(
-            "Baseline: 3 expected, 3 matched, 0 missing, 1 extra\n+ extra    screen_view · firebase, event 4",
+            "Baseline: 3 expected, 3 matched, 0 missing, 1 extra\n+ extra    screen_view · firebase, event ${sent(4)}",
             Baseline.diff(baseline),
         )
         assertNull(Baseline.diff(baseline.replace("\"extra\": \"fail\"", "\"extra\": \"allow\"")))
@@ -107,8 +110,8 @@ class BaselineTest {
             """
             Baseline: 3 expected, 2 matched, 1 missing, 1 extra, in order
             ✗ missing  screen_view · firebase, #1 in the baseline
-                closest: event 2, which matches but is out of order
-            + extra    screen_view · firebase, event 2
+                closest: event ${sent(2)}, which matches but is out of order
+            + extra    screen_view · firebase, event ${sent(2)}
             """.trimIndent(),
             Baseline.diff(baseline),
         )

@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.model.PlanSummary
 import io.github.asanre.verivent.core.model.TimelineEntry
 import io.github.asanre.verivent.ui.component.DetailScaffold
@@ -113,7 +114,14 @@ private fun PlanLoader(modifier: Modifier, current: PlanSummary?, onLoaded: () -
                     error = failure.message.orEmpty().sentenceCase() +
                         (current?.let { ". Nothing changed: ${it.version} is still loaded." } ?: ".")
                 }
-                else -> throw failure
+                // Anything else is Verivent's own failure: say so here instead of taking the
+                // host app down with it.
+                else -> {
+                    DiagnosticLog.warn("ui", "loading the tracking plan failed", failure)
+                    json = text
+                    error = "Couldn't load it: ${failure.message ?: failure::class.simpleName}" +
+                        (current?.let { ". Nothing changed: ${it.version} is still loaded." } ?: ".")
+                }
             }
         }
     }

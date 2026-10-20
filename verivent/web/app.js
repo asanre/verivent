@@ -297,8 +297,13 @@ function showPlan(status){
   plan=(status&&status.version)?{version:status.version,events:status.events||[]}:null;
   render();
 }
+// Every plan request takes a number, and a read only lands if nothing was sent after it: a slow GET
+// must not paint the plan a load or clear has just replaced.
+var planSeq=0;
 function refreshPlan(){
-  fetch(apiUrl('/api/tracking-plan')).then(function(r){return r.ok?r.json():null;}).then(showPlan).catch(function(){});
+  var seq=++planSeq;
+  fetch(apiUrl('/api/tracking-plan')).then(function(r){return r.ok?r.json():null;})
+    .then(function(s){if(seq===planSeq)showPlan(s);}).catch(function(){});
 }
 // Same as the inspector's planCoverage: every event the plan defines, against the captures checked by
 // this same version (events stamped by an earlier plan say nothing about this one). Verdict 0 breaks,
@@ -385,6 +390,7 @@ function readPlanFile(file){
   reader.readAsText(file);
 }
 function planRequest(path,body){
+  planSeq++;
   return fetch(apiUrl(path),{method:'POST',headers:{'X-Verivent':'1','Content-Type':'application/json'},body:body}).then(function(r){
     return r.text().then(function(t){if(!r.ok)throw new Error(t||('rejected: '+r.status));return JSON.parse(t);});
   });
@@ -539,7 +545,7 @@ function setChan(c){if(channelFilter===c){channelFilter=null;}else{channelFilter
 
 function render(){
   document.getElementById('count').textContent=entries.length;
-  document.getElementById('dot').className='dot'+(paused?' off':'');
+  document.getElementById('dot').className='dot'+(paused||unreachable?' off':'');
   var chans=[];entries.forEach(function(e){if(e.type==='analytics'&&chans.indexOf(e.channel)<0)chans.push(e.channel);});
   var tc=[['all','All'],['network','Network'],['analytics','Analytics']].map(function(t){
     return "<span class='chip"+(typeFilter===t[0]?' on':'')+"' onclick='setType(\""+t[0]+"\")'>"+t[1]+"</span>";
@@ -604,8 +610,16 @@ document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&planOpen)
 // The plan isn't streamed: re-read it when the page regains focus or an event arrives stamped by
 // another version (it was loaded or replaced on the device).
 window.addEventListener('focus',refreshPlan);
+// Asks once per unknown stamp: events checked by a plan cleared since keep theirs, and a full frame
+// (the first one, or after a reconnect) carries them all again.
+var stampAsked=null;
 function planChanged(frame){
-  return (frame.entries||[]).some(function(e){return e.planVersion!=null&&e.planVersion!==(plan&&plan.version);});
+  var stamp=null;
+  (frame.entries||[]).forEach(function(e){
+    if(e.planVersion!=null&&e.planVersion!==(plan&&plan.version)&&e.planVersion!==stampAsked)stamp=e.planVersion;
+  });
+  if(stamp!=null)stampAsked=stamp;
+  return stamp!=null;
 }
 refreshPlan();
 var es=new EventSource(apiUrl('/api/stream'));
@@ -616,6 +630,8 @@ es.onmessage=function(ev){
   if(planChanged(frame))refreshPlan();
   if(!paused){setEntries(latest,streamById);render();}
 };
+// The browser retries on its own; until a frame arrives again, the page says it isn't live.
+es.onerror=function(){setUnreachable(true);};
 fetch(apiUrl('/api/entries')).then(function(r){
   if(!r.ok)throw new Error('entries rejected: '+r.status);
   return r.json();
