@@ -78,6 +78,43 @@ The baseline lives in the `verivent` module. With `verivent-no-op`, `diff` alway
 *Verivent no-op: nothing was captured*, so a test wired to the no-op fails instead of passing on
 an empty session. On iOS, check analytics over HTTP (below).
 
+### In the sample
+
+`sample/composeApp` checks its own analytics this way, on a device:
+`SampleFlowBaselineTest` taps *Log screen_view*, *Log purchase* and *Log server-side* and
+compares what they sent with `sample-flow.baseline.json`, next to the test in
+`src/androidInstrumentedTest/resources`.
+
+```kotlin
+@Test
+fun flowMatchesTheBaseline() {
+    runFlow()                                            // Inspector.reset() first, then tap the buttons
+    assertNull(Baseline.diff(fixture(), variables = mapOf("screen" to "home", "item_id" to "SN-42")))
+}
+```
+
+The fixture is the recording with two edits: `screen_name` expects `"{{screen}}"`, and `items`
+gained a `contains` for `"{{item_id}}"`. A third test expects a `value` the app no longer sends and
+asserts the report it gets back:
+
+```text
+Baseline: 3 expected, 2 matched, 1 missing, 1 extra
+✗ missing  purchase · firebase, #2 in the baseline
+    closest: event 5
+      value · Not the expected value · expects 49.99
++ extra    purchase · firebase, event 5
+```
+
+Run them on an emulator or a device with `./gradlew :sample:composeApp:connectedDebugAndroidTest`.
+`recordsTheFlow` writes the recording to the app's external files. Gradle uninstalls the app after
+the run, so to keep the recording, install the APKs and run that one test by hand:
+
+```bash
+./gradlew :sample:composeApp:installDebug :sample:composeApp:installDebugAndroidTest
+adb shell am instrument -w -e class io.github.asanre.verivent.sample.SampleFlowBaselineTest#recordsTheFlow io.github.asanre.verivent.sample.test/androidx.test.runner.AndroidJUnitRunner
+adb pull /sdcard/Android/data/io.github.asanre.verivent.sample/files/sample-flow.baseline.json
+```
+
 ## Over HTTP
 
 The web viewer's server also answers whether any event broke the plan, so a black-box test

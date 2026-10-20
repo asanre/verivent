@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -12,6 +13,7 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
         }
+        instrumentedTestVariant.sourceSetTree.set(KotlinSourceSetTree.test)
     }
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
@@ -36,6 +38,12 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.cio)
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.compose.ui.test.junit4)
+            implementation(libs.androidx.test.runner)
+            // Compose's ui-test pulls Espresso 3.5, which can't inject input on recent Android releases.
+            implementation(libs.androidx.test.espresso.core)
+        }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
@@ -51,6 +59,7 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

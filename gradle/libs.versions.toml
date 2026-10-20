@@ -8,6 +8,8 @@ datetime = "0.7.1"
 ktor = "3.3.3"
 activityCompose = "1.12.4"
 coreKtx = "1.18.0"
+androidxTestRunner = "1.7.0"
+espresso = "3.7.0"
 mavenPublish = "0.34.0"
 dokka = "2.0.0"
 
@@ -35,6 +37,9 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+compose-ui-test-junit4 = { module = "org.jetbrains.compose.ui:ui-test-junit4", version.ref = "composeMultiplatform" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

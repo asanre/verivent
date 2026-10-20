@@ -1,0 +1,89 @@
+{
+    "baseline": 1,
+    "order": "set",
+    "extra": "fail",
+    "events": [
+        {
+            "name": "screen_view",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "screen_name"
+                ],
+                "properties": {
+                    "screen_name": {
+                        "const": "{{screen}}"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "purchase",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "value",
+                    "currency",
+                    "user_email",
+                    "items"
+                ],
+                "properties": {
+                    "value": {
+                        "const": 42.5
+                    },
+                    "currency": {
+                        "const": "EUR"
+                    },
+                    "user_email": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "item_id": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
+                            }
+                        },
+                        "contains": {
+                            "properties": {
+                                "item_id": {
+                                    "const": "{{item_id}}"
+                                }
+                            },
+                            "required": [
+                                "item_id"
+                            ]
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "checkout_started",
+            "channel": "gtm",
+            "schema": {
+                "required": [
+                    "cart_size"
+                ],
+                "properties": {
+                    "cart_size": {
+                        "const": 3
+                    }
+                },
+                "additionalProperties": false
+            }
+        }
+    ]
+}
