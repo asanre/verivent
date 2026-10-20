@@ -43,7 +43,9 @@ object WebViewer {
 
     /**
      * Start the server (idempotent, thread-safe). Returns the URL you'd actually open: [lanUrl]
-     * when reachable off-device, otherwise the local [url] — token always included.
+     * when reachable off-device, otherwise the local [url], token included. When the server can't
+     * even be created nothing runs: [isRunning] stays false and this returns [url]'s bare default,
+     * with no token.
      *
      * The bind itself is asynchronous: this returns before the port is actually listening, so a
      * failure (port taken, restricted environment) surfaces afterwards as a warning in Logcat/the
@@ -53,7 +55,8 @@ object WebViewer {
      *
      * @param bind where to listen. [WebViewerBind.Local] (default) is loopback-only; [WebViewerBind.Lan] and
      *   [WebViewerBind.Host] are reachable off-device. All of them are token-gated.
-     * @param token forces this exact token instead of the generated one.
+     * @param token forces this exact token instead of the generated one. A blank one is replaced
+     *   by a generated token, since it would let in requests that carry none.
      */
     fun start(bind: WebViewerBind = WebViewerBind.Local, port: Int = DEFAULT_PORT, token: String? = null): String {
         val resolvedToken = resolveToken(token)

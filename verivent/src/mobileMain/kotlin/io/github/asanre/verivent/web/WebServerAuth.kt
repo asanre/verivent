@@ -1,11 +1,20 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.core.internal.DiagnosticLog
+
 /**
  * Every bind is gated, loopback included: on Android the loopback interface is shared by every
  * installed app, so an open `127.0.0.1:9394` hands the whole capture buffer to any co-installed
- * app. A token is generated unless the host forces its own.
+ * app. A token is generated unless the host forces its own. A blank one would match a request
+ * that carries none, opening the gate, so it gets a generated token too.
  */
-internal fun resolveToken(token: String?): String = token ?: secureRandomToken()
+internal fun resolveToken(token: String?): String = when {
+    token == null -> secureRandomToken()
+    token.isBlank() -> secureRandomToken().also {
+        DiagnosticLog.warn("web", "a blank token would leave the viewer open; using a generated one")
+    }
+    else -> token
+}
 
 /**
  * DNS-rebinding guard. A hostile page can point its own domain at this device and then talk to us

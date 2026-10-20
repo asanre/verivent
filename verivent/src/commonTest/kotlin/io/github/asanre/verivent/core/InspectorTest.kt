@@ -203,6 +203,12 @@ class RedactionEngineTest {
         val engine = RedactionEngine()
         assertEquals("https://api.test/x?token=██#section", engine.redactUrl("https://api.test/x?token=abc#section"))
         assertEquals("https://api.test/x#/route", engine.redactUrl("https://api.test/x#/route"))
+        // A hash-routed app keeps its own query after the route.
+        assertEquals(
+            "https://app.test/#/callback?access_token=██&state=xyz",
+            engine.redactUrl("https://app.test/#/callback?access_token=abc&state=xyz"),
+        )
+        assertEquals("https://app.test/#/route?page=2", engine.redactUrl("https://app.test/#/route?page=2"))
         // Nothing to redact anywhere: the very same string comes back, not a rebuilt copy.
         val untouched = "https://api.test/x?page=1#/route"
         assertSame(untouched, engine.redactUrl(untouched))

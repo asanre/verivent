@@ -33,8 +33,9 @@ class RedactionEngine(
     /**
      * Redact sensitive parameter values in [url] — in the query string and in the fragment alike.
      * An OAuth implicit-flow redirect carries its token only in `#access_token=…`, often with no
-     * query string at all. A fragment that isn't a `name=value` list (`#section`, `#/route`) has
-     * nothing to match and passes through. Pure string transform — no URL parsing dependency — so
+     * query string at all, and a hash-routed app puts a query of its own after the route
+     * (`#/callback?access_token=…`). A fragment that isn't a `name=value` list (`#section`,
+     * `#/route`) has nothing to match and passes through. Pure string transform — no URL parsing dependency — so
      * malformed URLs pass through untouched.
      */
     fun redactUrl(url: String): String {
@@ -45,10 +46,19 @@ class RedactionEngine(
         val query = if (queryStart >= 0) head.substring(queryStart + 1) else null
 
         val safeQuery = query?.let(::redactParams)
-        val safeFragment = fragment?.let(::redactParams)
+        val safeFragment = fragment?.let(::redactFragment)
         if (safeQuery === query && safeFragment === fragment) return url
         val path = if (queryStart >= 0) head.substring(0, queryStart) else head
         return path + safeQuery?.let { "?$it" }.orEmpty() + safeFragment?.let { "#$it" }.orEmpty()
+    }
+
+    /** A fragment's own params, or those after a hash route's `?`: the route itself is kept. */
+    private fun redactFragment(fragment: String): String {
+        val routeQuery = fragment.indexOf('?')
+        if (routeQuery < 0) return redactParams(fragment)
+        val params = fragment.substring(routeQuery + 1)
+        val safe = redactParams(params)
+        return if (safe === params) fragment else fragment.substring(0, routeQuery + 1) + safe
     }
 
     /**

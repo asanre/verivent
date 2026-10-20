@@ -428,6 +428,15 @@ class WebViewerTest {
     }
 
     @Test
+    fun aBlankForcedTokenNeverOpensTheGate() = testApplication {
+        val token = resolveToken(" ")
+        assertTrue(token.isNotBlank() && token.length >= 16, "expected a generated token, got '$token'")
+        application { webViewerModule(token) }
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries?t=").status)
+    }
+
+    @Test
     fun bindAddressMapsEachMode() {
         assertEquals("127.0.0.1", WebViewerBind.Local.bindAddress)
         assertEquals("0.0.0.0", WebViewerBind.Lan.bindAddress)
