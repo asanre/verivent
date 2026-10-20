@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,8 @@ import io.github.asanre.verivent.ui.internal.prettyPrintJson
 import io.github.asanre.verivent.ui.internal.propertiesToJson
 import io.github.asanre.verivent.ui.theme.LocalInspectorColors
 import io.github.asanre.verivent.ui.theme.codeTextStyle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Analytics parameters viewer. Pretty = one row per top-level property (nested values stay as
@@ -87,12 +90,24 @@ internal fun PropertiesView(
         }
         if (!expanded) return@Column
         if (showRaw) {
-            val json = remember(properties) {
-                val compact = propertiesToJson(properties)
-                prettyPrintJson(compact) ?: compact
+            // Formatted off the composition thread, like a network body: a large nested payload
+            // would otherwise freeze the frame that switches to Raw.
+            var json by remember(properties) { mutableStateOf<String?>(null) }
+            LaunchedEffect(properties) {
+                json = withContext(Dispatchers.Default) {
+                    val compact = propertiesToJson(properties)
+                    prettyPrintJson(compact) ?: compact
+                }
             }
             Box(Modifier.padding(horizontal = 16.dp)) {
-                CodePanel { JsonSyntaxText(json, Modifier.fillMaxWidth()) }
+                CodePanel {
+                    val text = json
+                    when {
+                        text == null -> PlainBody("…")
+                        text.length > HIGHLIGHT_LIMIT -> PlainBody(text)
+                        else -> JsonSyntaxText(text, Modifier.fillMaxWidth())
+                    }
+                }
             }
         } else {
             val sent = properties.mapTo(HashSet()) { it.name }

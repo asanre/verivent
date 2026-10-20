@@ -20,6 +20,11 @@ public final class VeriventURLProtocol: URLProtocol {
     /// upload's integrity wins over seeing it.
     private static let streamDrainCap: Int64 = 1 << 20
 
+    /// Where a finished call is recorded: the host's body sanitizer and the copy into Kotlin run
+    /// here, not on the delegate queue every intercepted request shares. Serial, so a call's record
+    /// keeps its order.
+    private static let captureQueue = DispatchQueue(label: "io.github.asanre.verivent.capture")
+
     private let lock = NSLock()
     private var callId: String?
     private var innerTask: URLSessionTask?
@@ -28,6 +33,8 @@ public final class VeriventURLProtocol: URLProtocol {
     private var protocolName: String?
     private var buffered = Data()
     private var totalResponseBytes: Int64 = 0
+    /// Bytes of the response worth keeping, read once: every chunk checks it.
+    private var responseCap = 0
     private var finished = false
     private var stopped = false
 
@@ -76,6 +83,9 @@ public final class VeriventURLProtocol: URLProtocol {
         callId = id
         innerTask = task
         startedAt = DispatchTime.now()
+        // One byte past the limit is all Kotlin needs to flag truncation, exactly like the Ktor
+        // adapter's `readRemaining(maxLen + 1)`.
+        responseCap = Int(NativeNetwork.shared.maxContentLength) + 1
         lock.unlock()
 
         InnerSession.shared.register(self, for: task)
@@ -130,11 +140,8 @@ public final class VeriventURLProtocol: URLProtocol {
         lock.lock()
         defer { lock.unlock() }
         totalResponseBytes += Int64(data.count)
-        // One byte past the limit is all Kotlin needs to flag truncation, exactly like the Ktor
-        // adapter's `readRemaining(maxLen + 1)`.
-        let cap = Int(NativeNetwork.shared.maxContentLength) + 1
-        if buffered.count < cap {
-            buffered.append(data.prefix(cap - buffered.count))
+        if buffered.count < responseCap {
+            buffered.append(data.prefix(responseCap - buffered.count))
         }
     }
 
@@ -169,29 +176,32 @@ public final class VeriventURLProtocol: URLProtocol {
         lock.unlock()
 
         if let error = error {
+            if !silent { client?.urlProtocol(self, didFailWithError: error) }
             if let id = id {
-                NativeNetwork.shared.fail(
+                let message = error.localizedDescription
+                VeriventURLProtocol.captureQueue.async {
+                    NativeNetwork.shared.fail(id: id, message: message, durationMillis: elapsed)
+                }
+            }
+            return
+        }
+        if !silent { client?.urlProtocolDidFinishLoading(self) }
+        if let id = id, let response = response {
+            let contentType = response.value(forHTTPHeaderField: "Content-Type")
+            let headers = VeriventURLProtocol.headerFields(of: response)
+            VeriventURLProtocol.captureQueue.async {
+                NativeNetwork.shared.complete(
                     id: id,
-                    message: error.localizedDescription,
+                    status: Int32(response.statusCode),
+                    protocol: negotiated,
+                    contentType: contentType,
+                    headers: headers,
+                    body: body,
+                    bodyByteCount: total,
                     durationMillis: elapsed
                 )
             }
-            if !silent { client?.urlProtocol(self, didFailWithError: error) }
-            return
         }
-        if let id = id, let response = response {
-            NativeNetwork.shared.complete(
-                id: id,
-                status: Int32(response.statusCode),
-                protocol: negotiated,
-                contentType: response.value(forHTTPHeaderField: "Content-Type"),
-                headers: VeriventURLProtocol.headerFields(of: response),
-                body: body,
-                bodyByteCount: total,
-                durationMillis: elapsed
-            )
-        }
-        if !silent { client?.urlProtocolDidFinishLoading(self) }
     }
 
     /**
@@ -213,16 +223,20 @@ public final class VeriventURLProtocol: URLProtocol {
         lock.unlock()
 
         if let id = id {
-            NativeNetwork.shared.complete(
-                id: id,
-                status: Int32(response.statusCode),
-                protocol: nil,
-                contentType: response.value(forHTTPHeaderField: "Content-Type"),
-                headers: VeriventURLProtocol.headerFields(of: response),
-                body: nil,
-                bodyByteCount: 0,
-                durationMillis: elapsed
-            )
+            let contentType = response.value(forHTTPHeaderField: "Content-Type")
+            let headers = VeriventURLProtocol.headerFields(of: response)
+            VeriventURLProtocol.captureQueue.async {
+                NativeNetwork.shared.complete(
+                    id: id,
+                    status: Int32(response.statusCode),
+                    protocol: nil,
+                    contentType: contentType,
+                    headers: headers,
+                    body: nil,
+                    bodyByteCount: 0,
+                    durationMillis: elapsed
+                )
+            }
         }
         // URLSession derives the redirect from the request we marked as handled, and carries the
         // marker across — leaving it on would make `canInit` skip the next hop entirely.

@@ -527,13 +527,17 @@ function propertiesBlockHtml(label,list,raw,setter,issues,section){
   }
   return h+"</div>";
 }
+// The list and the detail are only replaced when their markup changes, like the plan summary: a
+// stream frame arrives several times a second, and rewriting an unchanged detail would clear the
+// text someone is selecting in it.
+var shownList=null,shownDetail=null;
 function renderDetail(){
   var d=document.getElementById('detail');
   var e=entryById(selectedId);
   document.querySelector('main').classList.toggle('has-detail',!!e);
-  if(!e){d.className='detail';d.innerHTML='';return;}
-  d.className='detail open';
-  d.innerHTML=e.type==='network'?networkDetailHtml(e):analyticsDetailHtml(e);
+  d.className=e?'detail open':'detail';
+  var html=e?(e.type==='network'?networkDetailHtml(e):analyticsDetailHtml(e)):'';
+  if(html!==shownDetail)d.innerHTML=shownDetail=html;
 }
 function sel(id){
   if(id!==selectedId){detailTab='overview';rawBody=false;rawParams=false;rawSections={};openSections={};}
@@ -560,7 +564,8 @@ function render(){
     var style=on?('background:'+pair[0]+';color:'+pair[1]+';border:2px solid '+pair[1]):'';
     return "<span class='chip"+(on?' on':'')+"' style='"+style+"' data-chan='"+esc(c)+"'><span class='chipdot' style='background:"+pair[1]+"'></span>"+esc(c)+"</span>";
   }).join('');
-  document.getElementById('list').innerHTML=listHtml()||emptyHtml();
+  var list=listHtml()||emptyHtml();
+  if(list!==shownList)document.getElementById('list').innerHTML=shownList=list;
   renderDetail();
   renderPlan();
   document.getElementById('pauseIcon').style.display=paused?'none':'inline-flex';

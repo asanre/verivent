@@ -20,7 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Beyond this, colouring the text costs more than it is worth — the panel renders plain. */
-private const val HIGHLIGHT_LIMIT = 200_000
+internal const val HIGHLIGHT_LIMIT = 200_000
 
 private data class JsonBody(val pretty: String, val compact: String)
 
@@ -64,7 +64,7 @@ internal fun NetworkBodyView(raw: String) {
 }
 
 @Composable
-private fun PlainBody(text: String) {
+internal fun PlainBody(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),

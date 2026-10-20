@@ -215,12 +215,20 @@ final class VeriventNetworkTests: XCTestCase {
 
     /// Read back over `URLSession.shared`, which carries no interceptor, so reading the timeline
     /// never shows up in it.
+    /// A call is recorded off the host's queue, after the host already has its response, so this
+    /// waits (up to two seconds) until every matching entry has settled.
     private func networkEntries(path: String) async throws -> [[String: Any]] {
         var components = try XCTUnwrap(viewer)
         components.path = "/api/entries"
         let url = try XCTUnwrap(components.url)
-        let (data, _) = try await URLSession.shared.data(from: url)
-        let entries = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
-        return entries.filter { $0["type"] as? String == "network" && $0["path"] as? String == path }
+        var matching: [[String: Any]] = []
+        for _ in 0..<40 {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let entries = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [[String: Any]])
+            matching = entries.filter { $0["type"] as? String == "network" && $0["path"] as? String == path }
+            if !matching.isEmpty && matching.allSatisfy({ $0["state"] as? String != "pending" }) { return matching }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        return matching
     }
 }

@@ -38,14 +38,16 @@ internal fun matchesFilters(entry: TimelineEntry, filters: TimelineFilters, quer
     if (filters.channel != null && !(entry is AnalyticsEntry && entry.channel == filters.channel)) return false
     if (filters.breaksPlan && !entry.breaksPlan(plan)) return false
     if (query.isBlank()) return true
-    val q = query.trim().lowercase()
+    // Case-insensitive in place: this runs for every entry on every capture while a search is on,
+    // and lowercasing each field would allocate a string per field per entry.
+    val q = query.trim()
     return when (entry) {
         is NetworkTransaction ->
             // The url carries the query string (already redacted), which path alone drops.
-            entry.url.lowercase().contains(q) ||
-                entry.host.lowercase().contains(q) ||
-                entry.method.lowercase().contains(q)
+            entry.url.contains(q, ignoreCase = true) ||
+                entry.host.contains(q, ignoreCase = true) ||
+                entry.method.contains(q, ignoreCase = true)
         is AnalyticsEntry ->
-            entry.name.lowercase().contains(q) || entry.channel.lowercase().contains(q)
+            entry.name.contains(q, ignoreCase = true) || entry.channel.contains(q, ignoreCase = true)
     }
 }
