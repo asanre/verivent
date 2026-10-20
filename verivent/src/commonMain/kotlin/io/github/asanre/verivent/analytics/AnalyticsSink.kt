@@ -43,9 +43,9 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             // Checked before redaction because only the raw values still carry their types, but a
             // hidden value is only type-checked: a verdict on its enum or pattern would reveal it.
             val plan = Inspector.activePlan
-            val hidden = redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }
-            val issues = plan?.check(name, channel, values.json, hidden, foreignTypes = values.foreignTypes)
-                ?.map { it.toPlanIssue() }
+            val issues = plan?.let { checker ->
+                checker.issuesFor(name, channel, values.hiding(redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }))
+            }
 
             val entry = AnalyticsEntry(
                 id = Inspector.nextId(),
@@ -76,7 +76,7 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
     }
 
     // The type is the raw value's, so a redacted property still says what it was.
-    private fun redact(values: HostValues): List<KeyValue> =
+    private fun redact(values: CheckedValues): List<KeyValue> =
         values.json.map { (key, value) -> redaction.redactProperty(key, value.displayText()).copy(type = values.typeOf(key)) }
 
     private fun groupLabel(name: String, properties: List<KeyValue>): String? {

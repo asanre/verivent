@@ -2,14 +2,15 @@
 
 package io.github.asanre.verivent.js
 
+import io.github.asanre.verivent.analytics.CheckedValues
 import io.github.asanre.verivent.analytics.Finding
 import io.github.asanre.verivent.analytics.TrackingPlan
-import io.github.asanre.verivent.analytics.check
+import io.github.asanre.verivent.analytics.exportedValues
+import io.github.asanre.verivent.analytics.parseObject
 import io.github.asanre.verivent.web.EntryDto
 import io.github.asanre.verivent.web.toKeyValue
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 
 /**
  * The npm package's entry point: a tracking plan, checked with the device's own rules and messages.
@@ -29,23 +30,21 @@ class Plan(json: String) {
      * What breaks the plan in an event whose properties are the JSON object [propertiesJson], or null
      * when the plan doesn't define it.
      */
-    fun check(name: String, channel: String, propertiesJson: String): Array<Issue>? {
-        val properties = Json.parseToJsonElement(propertiesJson) as? JsonObject
-            ?: throw IllegalArgumentException("the properties must be a JSON object")
-        return plan.check(name, channel, properties)?.toIssues()
-    }
+    fun check(name: String, channel: String, propertiesJson: String): Array<Issue>? =
+        plan.check(name, channel, CheckedValues(parseObject(propertiesJson, "the properties")))?.toIssues()
 
-    /** Every analytics event of an exported session (the JSON array any export writes), checked again. */
+    /** Every analytics event of an exported session (the JSON array the exports write), checked again. */
     fun checkSession(exportJson: String): Array<SessionEvent> =
         session.decodeFromString(ListSerializer(EntryDto.serializer()), exportJson)
-            .filter { it.type == "analytics" && it.name != null && it.channel != null }
-            .map { entry ->
+            .mapNotNull { entry ->
+                val name = entry.name?.takeIf { entry.type == "analytics" } ?: return@mapNotNull null
+                val channel = entry.channel ?: return@mapNotNull null
                 val properties = entry.properties.orEmpty().map { it.toKeyValue() }
-                val findings = plan.check(entry.name!!, entry.channel!!, properties)
+                val findings = plan.check(name, channel, exportedValues(properties))
                 SessionEvent(
                     id = entry.id,
-                    name = entry.name,
-                    channel = entry.channel,
+                    name = name,
+                    channel = channel,
                     verdict = when {
                         findings == null -> "not_in_plan"
                         findings.isEmpty() -> "complies"

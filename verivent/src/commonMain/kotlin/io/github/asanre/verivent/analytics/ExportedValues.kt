@@ -8,55 +8,23 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Captured properties rebuilt as the JSON the plan checks, so a recorded or exported session can be
+ * Captured properties rebuilt as the plan checks them, so a recorded or exported session can be
  * checked again — against another plan version, a baseline, in the browser. A redacted value keeps
  * only its type; a property without one (exported before types were) is only checked for presence.
  */
-internal class ExportedValues(
-    val json: JsonObject,
-    val hidden: Set<String>,
-    val untyped: Set<String>,
-    val foreignTypes: Map<String, String>,
-)
-
-internal fun exportedValues(properties: List<KeyValue>): ExportedValues {
-    val hidden = HashSet<String>()
-    val untyped = HashSet<String>()
-    val foreign = HashMap<String, String>()
+internal fun exportedValues(properties: List<KeyValue>): CheckedValues {
+    val facts = HashMap<String, Fact>()
     val json = properties.associate { property ->
         val type = property.type
+        fun known(fact: Fact, value: JsonElement): JsonElement = value.also { facts[property.name] = fact }
         property.name to when {
-            type == null -> JsonPrimitive(property.value).also { untyped += property.name }
-            // Checked as a value of its type that can't be looked into or compared with anything.
-            property.redacted -> JsonNull.also {
-                hidden += property.name
-                foreign[property.name] = type
-            }
+            type == null -> known(Fact.Untyped, JsonPrimitive(property.value))
+            property.redacted -> known(Fact.Opaque(type), JsonNull)
+            type !in JSON_TYPES -> known(Fact.Foreign(type), JsonPrimitive(property.value))
             type == "string" -> JsonPrimitive(property.value)
-            type !in JSON_TYPES -> JsonPrimitive(property.value).also { foreign[property.name] = type }
-            else -> parsed(property.value)?.takeIf { jsonType(it).satisfies(type) } ?: JsonNull.also {
-                hidden += property.name
-                foreign[property.name] = type
-            }
+            // Anything else was captured as JSON text; text that isn't JSON (a NaN) keeps its type only.
+            else -> runCatching { Json.parseToJsonElement(property.value) }.getOrNull() ?: known(Fact.Opaque(type), JsonNull)
         }
     }
-    return ExportedValues(JsonObject(json), hidden, untyped, foreign)
-}
-
-private fun parsed(text: String): JsonElement? = runCatching { Json.parseToJsonElement(text) }.getOrNull()
-
-// A whole number captured as `number` can print without its decimals (`2` on JS) and read back as an
-// integer, which every `number` schema accepts anyway.
-private fun String.satisfies(type: String) = this == type || (this == "integer" && type == "number")
-
-/** [TrackingPlan.check] on captured properties instead of the host's values. */
-internal fun TrackingPlan.check(name: String, channel: String, properties: List<KeyValue>): List<Finding>? {
-    val values = exportedValues(properties)
-    return check(name, channel, values.json, values.hidden, values.untyped, values.foreignTypes)
-}
-
-/** [Schema.check] on captured properties. */
-internal fun Schema.check(properties: List<KeyValue>): List<Finding> {
-    val values = exportedValues(properties)
-    return check(values.json, values.hidden, values.untyped, values.foreignTypes)
+    return CheckedValues(JsonObject(json), facts)
 }

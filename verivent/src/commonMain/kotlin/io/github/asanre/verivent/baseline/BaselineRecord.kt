@@ -1,14 +1,13 @@
 package io.github.asanre.verivent.baseline
 
-import io.github.asanre.verivent.analytics.JSON_TYPES
+import io.github.asanre.verivent.analytics.Fact
+import io.github.asanre.verivent.analytics.exportedValues
 import io.github.asanre.verivent.analytics.jsonType
 import io.github.asanre.verivent.core.model.AnalyticsEntry
-import io.github.asanre.verivent.core.model.KeyValue
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -30,9 +29,12 @@ internal fun recordBaseline(entries: List<AnalyticsEntry>): String = prettyJson.
                 addJsonObject {
                     put("name", entry.name)
                     put("channel", entry.channel)
+                    val values = exportedValues(entry.properties)
                     putJsonObject("schema") {
-                        putJsonArray("required") { entry.properties.forEach { add(it.name) } }
-                        putJsonObject("properties") { entry.properties.forEach { put(it.name, propertySchema(it)) } }
+                        putJsonArray("required") { values.json.keys.forEach { add(it) } }
+                        putJsonObject("properties") {
+                            values.json.forEach { (name, value) -> put(name, propertySchema(value, values.facts[name])) }
+                        }
                         put("additionalProperties", false)
                     }
                 }
@@ -42,16 +44,15 @@ internal fun recordBaseline(entries: List<AnalyticsEntry>): String = prettyJson.
 )
 
 /**
- * The value sent as a `const`. A redacted one only keeps its type, and one with no JSON type is
- * only expected to be there. A list keeps its shape instead: its items vary from run to run, and
+ * The value sent as a `const`. A redacted one only keeps its type, and one with no JSON type (or no
+ * type at all) is only expected to be there. A list keeps its shape instead: its items vary from run to run, and
  * the test says which one it knows with `contains`.
  */
-private fun propertySchema(property: KeyValue): JsonObject {
-    val type = property.type ?: return JsonObject(emptyMap())
-    if (property.redacted) return typeSchema(listOf(type))
-    if (type !in JSON_TYPES) return JsonObject(emptyMap())
-    val value = if (type == "string") JsonPrimitive(property.value) else parsed(property.value) ?: return typeSchema(listOf(type))
-    return if (value is JsonArray) shapeOf(listOf(value)) else buildJsonObject { put("const", value) }
+private fun propertySchema(value: JsonElement, fact: Fact?): JsonObject = when (fact) {
+    null -> if (value is JsonArray) shapeOf(listOf(value)) else buildJsonObject { put("const", value) }
+    is Fact.Opaque -> typeSchema(listOf(fact.type))
+    Fact.Hidden -> typeSchema(listOf(jsonType(value)))
+    Fact.Untyped, is Fact.Foreign -> JsonObject(emptyMap())
 }
 
 /** The schema every one of [values] meets, with no `const`: types, nested keys and items. */
@@ -80,5 +81,3 @@ private fun shapeOf(values: List<JsonElement>): JsonObject {
 private fun typeSchema(types: List<String>) = buildJsonObject {
     types.singleOrNull()?.let { put("type", it) } ?: putJsonArray("type") { types.forEach { add(it) } }
 }
-
-private fun parsed(text: String): JsonElement? = runCatching { Json.parseToJsonElement(text) }.getOrNull()

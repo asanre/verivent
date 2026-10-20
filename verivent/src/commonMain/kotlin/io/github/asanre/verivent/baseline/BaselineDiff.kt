@@ -1,6 +1,7 @@
 package io.github.asanre.verivent.baseline
 
 import io.github.asanre.verivent.analytics.check
+import io.github.asanre.verivent.analytics.exportedValues
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 
 /**
@@ -10,9 +11,14 @@ import io.github.asanre.verivent.core.model.AnalyticsEntry
  */
 internal fun compare(baseline: BaselineFile, sent: List<AnalyticsEntry>): String? {
     val expected = baseline.events
-    val fits = expected.map { event ->
-        sent.map { entry -> event.name == entry.name && event.channel == entry.channel && event.schema.check(entry.properties).isEmpty() }
+    // What breaks each expected event in each sent one of the same name and channel, null for the rest.
+    val values = sent.map { exportedValues(it.properties) }
+    val findings = expected.map { event ->
+        sent.indices.map { at ->
+            values[at].takeIf { sent[at].name == event.name && sent[at].channel == event.channel }?.let(event.schema::check)
+        }
     }
+    val fits = findings.map { row -> row.map { it?.isEmpty() == true } }
     val pairs = if (baseline.sequence) inOrder(fits, sent.size) else maximumMatching(fits, sent.size)
     val missing = expected.indices.filter { pairs[it] < 0 }
     val taken = pairs.filter { it >= 0 }.toSet()
@@ -28,21 +34,20 @@ internal fun compare(baseline: BaselineFile, sent: List<AnalyticsEntry>): String
             val event = expected[index]
             appendLine("✗ missing  ${event.name} · ${event.channel}, #${index + 1} in the baseline")
             // The closest same-named event, preferring one nothing else took: its issues say why.
-            val closest = sent.indices
-                .filter { sent[it].name == event.name && sent[it].channel == event.channel }
-                .map { it to event.schema.check(sent[it].properties) }
+            val closest = findings[index].withIndex()
+                .mapNotNull { (at, found) -> found?.let { at to it } }
                 .minWithOrNull(compareBy({ it.first in taken }, { it.second.size }))
             if (closest == null) {
                 appendLine("    never sent")
             } else {
-                val (at, findings) = closest
+                val (at, issues) = closest
                 val why = when {
-                    findings.isNotEmpty() -> ""
+                    issues.isNotEmpty() -> ""
                     at in taken -> ", which matches another expected event"
                     else -> ", which matches but is out of order"
                 }
                 appendLine("    closest: event ${sent[at].id}$why")
-                findings.map { it.toPlanIssue() }.forEach { appendLine("      ${it.property} · ${it.message}") }
+                issues.map { it.toPlanIssue() }.forEach { appendLine("      ${it.property} · ${it.message}") }
             }
         }
         extra.forEach { appendLine("+ extra    ${sent[it].name} · ${sent[it].channel}, event ${sent[it].id}") }

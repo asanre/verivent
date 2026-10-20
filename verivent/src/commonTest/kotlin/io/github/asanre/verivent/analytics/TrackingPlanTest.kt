@@ -293,3 +293,7 @@ class TrackingPlanTest {
         )
     }
 }
+
+/** The host's values as the sink checks them. */
+private fun TrackingPlan.issuesFor(name: String, channel: String, properties: Map<String, Any?>, hidden: Set<String> = emptySet()) =
+    issuesFor(name, channel, hostValues(properties).hiding(hidden))

@@ -10,16 +10,19 @@ import kotlinx.serialization.json.put
  * The verdict a black-box test asks about, against the plan loaded now (events keep the verdict of
  * the plan they were captured with, so one checked by another plan, or by none, is unplanned).
  */
-internal enum class Verdict(val route: String) {
+internal enum class Verdict {
     /** Checked by the loaded plan and compliant. */
-    Good("good"),
+    Good,
 
     /** Checked by the loaded plan, with issues. */
-    Bad("bad"),
+    Bad,
 
     /** Not checked by the loaded plan: it doesn't define the event, or there's no plan. */
-    Unplanned("unplanned"),
+    Unplanned,
     ;
+
+    /** The last segment of its `/api/assert/…` route. */
+    val route: String get() = name.lowercase()
 
     companion object {
         fun of(entry: AnalyticsEntry, plan: PlanSummary?): Verdict = when {

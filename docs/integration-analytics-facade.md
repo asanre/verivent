@@ -107,8 +107,8 @@ split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON
 
 ## Exported sessions
 
-*Export* in the inspector, the web viewer's download and the console lines all write the same JSON:
-an array of entries (one per line for the console). Each analytics property says its JSON type,
+*Export* in the inspector and the web viewer's download write the same JSON, an array of entries;
+the console lines carry the same entries, one per line. Each analytics property says its JSON type,
 taken before redaction, so a session can be checked again against any plan without false type
 errors:
 

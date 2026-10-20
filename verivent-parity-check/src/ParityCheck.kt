@@ -245,6 +245,7 @@ private fun screen() {
 @OptIn(InternalVeriventApi::class)
 private fun export(entry: TimelineEntry) {
     val json: String = encodeExportEntry(entry)
+    val indented: String = encodeExportEntry(entry, pretty = true)
 }
 
 private fun baseline(entries: List<TimelineEntry>) {

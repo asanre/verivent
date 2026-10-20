@@ -37,7 +37,7 @@ class ExportedValuesTest {
         val json = encodeEntries(Inspector.entriesSnapshot)
         val checker = TrackingPlan.parse(plan)
         return Json { ignoreUnknownKeys = true }.decodeFromString(ListSerializer(EntryDto.serializer()), json).map { dto ->
-            checker.check(dto.name!!, dto.channel!!, dto.properties.orEmpty().map { it.toKeyValue() })?.map { it.toPlanIssue() }
+            checker.issuesFor(dto.name!!, dto.channel!!, exportedValues(dto.properties.orEmpty().map { it.toKeyValue() }))
         }
     }
 
@@ -81,10 +81,12 @@ class ExportedValuesTest {
             KeyValue("count", "██", redacted = true, type = "integer"),
             KeyValue("label", "zzz"),
             KeyValue("token", "██", redacted = true, type = "boolean"),
+            // A whole number captured as a double: the device saw it was whole, so it passed.
+            KeyValue("whole", "██", redacted = true, type = "number"),
         )
         assertEquals(
             listOf(PlanIssue("token", "Expected string, got boolean")),
-            checker.check("play", "firebase", properties)?.map { it.toPlanIssue() },
+            checker.issuesFor("play", "firebase", exportedValues(properties)),
         )
     }
 }

@@ -9,26 +9,20 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.longOrNull
 
 /**
- * The host's properties as JSON, plus the class name of each top-level value JSON has no type for
- * (a `Date`, an enum…). Such a value travels as its `toString()`, but the plan still reports it by
- * its class, as it always has; one nested deeper is just a string.
+ * The host's properties as the plan checks them. A value JSON has no type for (a `Date`, an
+ * enum…) travels as its `toString()`, but the plan still reports it by its class, as it always
+ * has; one nested deeper is just a string.
  */
-internal class HostValues(val json: JsonObject, val foreignTypes: Map<String, String>) {
-
-    /** The JSON type of the top-level property [key], as the export carries it. */
-    fun typeOf(key: String): String? = foreignTypes[key] ?: json[key]?.let(::jsonType)
-}
-
-internal fun hostValues(properties: Map<String, Any?>): HostValues {
+internal fun hostValues(properties: Map<String, Any?>): CheckedValues {
     val budget = Budget()
-    val foreign = HashMap<String, String>()
+    val facts = HashMap<String, Fact>()
     val json = JsonObject(
         properties.mapValues { (key, value) ->
-            if (!value.isJsonValue()) foreign[key] = value!!::class.simpleName ?: "unknown"
+            if (!value.isJsonValue()) facts[key] = Fact.Foreign(value!!::class.simpleName ?: "unknown")
             toJson(value, depth = 1, budget)
         },
     )
-    return HostValues(json, foreign)
+    return CheckedValues(json, facts)
 }
 
 /** One host value as JSON, with the same limits as [hostValues]. */
@@ -63,9 +57,7 @@ private val CUT = JsonPrimitive("…")
 private class Budget(var left: Int = 10_000)
 
 private fun toJson(value: Any?, depth: Int, budget: Budget): JsonElement {
-    if (value is Map<*, *> || value is Collection<*> || value is Array<*>) {
-        if (depth > MAX_DEPTH || budget.left-- <= 0) return CUT
-    }
+    if (value.isContainer() && (depth > MAX_DEPTH || budget.left-- <= 0)) return CUT
     return when (value) {
         null -> JsonNull
         is String -> JsonPrimitive(value)
@@ -79,6 +71,6 @@ private fun toJson(value: Any?, depth: Int, budget: Budget): JsonElement {
     }
 }
 
-private fun Any?.isJsonValue(): Boolean =
-    this == null || this is String || this is Boolean || this is Number ||
-        this is Map<*, *> || this is Collection<*> || this is Array<*>
+private fun Any?.isContainer(): Boolean = this is Map<*, *> || this is Collection<*> || this is Array<*>
+
+private fun Any?.isJsonValue(): Boolean = this == null || this is String || this is Boolean || this is Number || isContainer()

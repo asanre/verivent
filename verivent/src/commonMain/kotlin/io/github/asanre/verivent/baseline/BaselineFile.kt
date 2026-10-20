@@ -6,7 +6,7 @@ import io.github.asanre.verivent.analytics.asString
 import io.github.asanre.verivent.analytics.displayText
 import io.github.asanre.verivent.analytics.invalid
 import io.github.asanre.verivent.analytics.jsonOf
-import kotlinx.serialization.json.Json
+import io.github.asanre.verivent.analytics.parseObject
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -19,9 +19,7 @@ internal class BaselineFile(val events: List<ExpectedEvent>, val sequence: Boole
 
     companion object {
         fun parse(json: String, variables: Map<String, Any?>): BaselineFile {
-            val root = runCatching { Json.parseToJsonElement(json) }
-                .getOrElse { throw IllegalArgumentException("not valid JSON", it) }
-                .asObject("the baseline")
+            val root = parseObject(json, "the baseline")
             val events = (root["events"] as? JsonArray) ?: invalid("events must be an array")
             return BaselineFile(
                 events = events.mapIndexed { index, element ->
