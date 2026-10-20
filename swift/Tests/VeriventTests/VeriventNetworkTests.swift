@@ -96,6 +96,23 @@ final class VeriventNetworkTests: XCTestCase {
         XCTAssertEqual(entry["requestBody"] as? String, #"{"hello":"world"}"#)
     }
 
+    /// Only the declared length is read and sent, so a stream longer than its header can't grow
+    /// memory past the cap.
+    func testAStreamIsReadUpToItsDeclaredLength() async throws {
+        let session = makeSession()
+        let path = "/probe-stream"
+        var request = URLRequest(url: try viewerURL(path: path))
+        request.httpMethod = "POST"
+        request.setValue("text/plain", forHTTPHeaderField: "Content-Type")
+        request.setValue("5", forHTTPHeaderField: "Content-Length")
+        request.httpBodyStream = InputStream(data: Data("hello, and much more".utf8))
+        _ = try await session.data(for: request)
+
+        let entries = try await networkEntries(path: path)
+        let entry = try XCTUnwrap(entries.first)
+        XCTAssertEqual(entry["requestBody"] as? String, "hello")
+    }
+
     func testFormBodySecretsAreRedacted() async throws {
         let session = makeSession()
         let path = "/probe-form"

@@ -49,7 +49,14 @@ public final class VeriventURLProtocol: URLProtocol {
         VeriventURLProtocol.setProperty(true, forKey: VeriventURLProtocol.handledKey, in: marked)
         var inner = marked as URLRequest
 
-        let body = VeriventURLProtocol.captureRequestBody(from: request, into: &inner)
+        let body: RequestBody
+        do {
+            body = try VeriventURLProtocol.captureRequestBody(from: request, into: &inner)
+        } catch {
+            // The stream is spent by now: sending what's left would upload a truncated body.
+            client?.urlProtocol(self, didFailWithError: error)
+            return
+        }
         let url = request.url
 
         let id = NativeNetwork.shared.begin(
@@ -261,11 +268,13 @@ public final class VeriventURLProtocol: URLProtocol {
      already turned it into a stream, even for a plain `dataTask` whose caller set `httpBody`. So
      the stream branch is the normal path: drain it whole and re-attach it as `httpBody` on the
      request we actually send, which is only safe when `Content-Length` says it fits in memory.
+     Only the declared length is read: the server takes no more than that, and it bounds memory
+     even when the header understates the stream. Throws when the stream fails mid-read.
      */
     private static func captureRequestBody(
         from original: URLRequest,
         into inner: inout URLRequest
-    ) -> RequestBody {
+    ) throws -> RequestBody {
         if let data = original.httpBody {
             return RequestBody(data: data, byteCount: Int64(data.count), placeholder: nil)
         }
@@ -273,26 +282,27 @@ public final class VeriventURLProtocol: URLProtocol {
             return RequestBody(data: nil, byteCount: 0, placeholder: nil)
         }
         let declared = original.value(forHTTPHeaderField: "Content-Length").flatMap { Int64($0) }
-        guard let length = declared, length <= streamDrainCap, let drained = drain(stream) else {
+        guard let length = declared, length <= streamDrainCap else {
             return RequestBody(
                 data: nil,
                 byteCount: declared ?? -1,
                 placeholder: "(streaming body — not captured)"
             )
         }
+        let drained = try drain(stream, limit: length)
         inner.httpBodyStream = nil
         inner.httpBody = drained
         return RequestBody(data: drained, byteCount: Int64(drained.count), placeholder: nil)
     }
 
-    private static func drain(_ stream: InputStream) -> Data? {
+    private static func drain(_ stream: InputStream, limit: Int64) throws -> Data {
         stream.open()
         defer { stream.close() }
         var data = Data()
         var buffer = [UInt8](repeating: 0, count: 4096)
-        while stream.hasBytesAvailable {
-            let read = stream.read(&buffer, maxLength: buffer.count)
-            if read < 0 { return nil }
+        while Int64(data.count) < limit && stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: min(buffer.count, Int(limit - Int64(data.count))))
+            if read < 0 { throw stream.streamError ?? URLError(.unknown) }
             if read == 0 { break }
             data.append(buffer, count: read)
         }
