@@ -6,114 +6,180 @@ HTTP.
 
 ## Baseline
 
-Record what a flow sends once, keep the JSON next to the test, and compare every later run with it:
+A baseline is the analytics a flow of the app must send, kept as a file next to the test and
+reviewed like code. The test runs the flow inside `flow { }`; Verivent waits for the events and
+compares them with the file:
 
 ```kotlin
 @Test
-fun checkoutSendsItsAnalytics() {
+fun checkoutSendsItsAnalytics() = runAndroidComposeUiTest<MainActivity> {
     Inspector.reset()
-    runCheckout()                                        // drive the app however your tests do
-
-    // First run: print it and save it as checkout.baseline.json
-    // println(Baseline.record())
-
-    Baseline.diff(readResource("checkout.baseline.json"), variables = mapOf("order_id" to order.id))
-        ?.let { fail(it) }
+    Baseline.parse(readResource("baselines/checkout.json")).flow(waiter()) {
+        tap("Log screen_view")
+        tap("Log purchase (ecommerce)")
+        tap("Log server-side (gtm)")
+    }                                                    // throws BaselineMismatch when they don't match
 }
 ```
 
-`Baseline.record()` writes every analytics event captured so far, in order, with the tracking
-plan's JSON Schema. Each property is a `const` of the value sent:
+### The file
+
+Each expected event is the tracking plan's JSON Schema for its properties. A recording writes
+every property as a `const` of the value sent:
 
 ```json
-{ "baseline": 1, "order": "set", "extra": "fail",
+{ "flow": "checkout", "order": "set",
   "events": [
-    { "name": "add_to_cart", "channel": "firebase",
-      "schema": { "required": ["item_id", "quantity", "email"],
-                  "properties": { "item_id":  { "const": "42" },
-                                  "quantity": { "const": 2 },
-                                  "email":    { "type": "string" },
-                                  "items":    { "type": "array", "minItems": 1,
-                                                "items": { "type": "object",
-                                                           "properties": { "id": { "type": "string" } } } } },
+    { "name": "purchase", "channel": "firebase",
+      "schema": { "required": ["value", "currency", "user_email", "items"],
+                  "properties": { "value":      { "const": 42.5 },
+                                  "currency":   { "const": "EUR" },
+                                  "user_email": { "type": "string" },
+                                  "items":      { "type": "array", "minItems": 1,
+                                                  "items": { "type": "object",
+                                                             "properties": { "item_id": { "type": "string" } } } } },
                   "additionalProperties": false } } ] }
 ```
 
-Then edit it like a plan:
+Then polish it like a plan:
 
-- **A value that changes per run:** write `"{{name}}"` in its `const` and pass it in `variables`.
-  A string that is only the variable takes the variable's value and type (`"{{quantity}}"` with
-  `2` is the integer 2); inside a longer string it's interpolated. A variable without a value
-  throws.
 - **A value you don't care about:** replace the `const` with a `type`, a `pattern` or nothing.
-- **Lists:** they're recorded by shape, because their items vary from run to run. Add `contains`
-  for the item the test knows:
-  `"contains": { "properties": { "id": { "const": "{{item_id}}" } }, "required": ["id"] }`.
+- **A value that changes per run:** bind it in the test (see [below](#values-that-change-per-run)).
+- **Lists** are recorded by their shape, because their items vary from run to run.
 - **Redacted properties** are recorded with their type only, and only their type is compared.
 
 How it compares:
 
-- `"order": "set"` (the default) ignores the order. `"sequence"` also wants the recorded order.
-- Every recorded event must be matched by one sent event: the same name and channel, and no
-  issue. A recorded event that nothing matches is **missing**.
-- `"extra": "fail"` (the default) also fails on any sent event the baseline doesn't account for,
-  such as an event fired twice. `"allow"` lets them through.
+- Every listed event must be sent exactly as many times as it's listed, with no issue against its
+  schema. One never sent is **missing**; one sent again, a second firing say, is **sent more times
+  than expected**.
+- Events of a name and channel the baseline doesn't list are ignored: the plan covers those.
+- `"order": "set"` (the default) ignores the order. `"sequence"` also wants it.
 
-`diff` returns null when the session matches, or a readable report. It names what the baseline
-expected, never the values sent:
+### Steps
 
-```text
-Baseline: 3 expected, 1 matched, 2 missing, 2 extra
-✗ missing  add_to_cart · firebase, #2 in the baseline
-    closest: event 2
-      quantity · Not the expected value · expects 2
-✗ missing  purchase · firebase, #3 in the baseline
-    closest: event 3
-      items[*].qty · Expected integer, got string · 1 of 1
-+ extra    add_to_cart · firebase, event 2
-+ extra    purchase · firebase, event 3
-```
-
-The baseline lives in the `verivent` module. With `verivent-no-op`, `diff` always reports
-*Verivent no-op: nothing was captured*, so a test wired to the no-op fails instead of passing on
-an empty session. On iOS, check analytics over HTTP (below).
-
-### In the sample
-
-`sample/composeApp` checks its own analytics this way, on a device:
-`SampleFlowBaselineTest` taps *Log screen_view*, *Log purchase* and *Log server-side* and
-compares what they sent with `sample-flow.baseline.json`, next to the test in
-`src/androidInstrumentedTest/resources`.
+A longer flow splits into steps, so a failure says where it happened and an event sent at two
+points of the flow is expected at each:
 
 ```kotlin
-@Test
-fun flowMatchesTheBaseline() {
-    runFlow()                                            // Inspector.reset() first, then tap the buttons
-    assertNull(Baseline.diff(fixture(), variables = mapOf("screen" to "home", "item_id" to "SN-42")))
+baseline.flow(waiter()) {
+    step("browse") { tap("Log screen_view") }
+    step("buy") { tap("Log purchase (ecommerce)") }
+    step("checkout") { tap("Log server-side (gtm)") }
 }
 ```
 
-The fixture is the recording with two edits: `screen_name` expects `"{{screen}}"`, and `items`
-gained a `contains` for `"{{item_id}}"`. A third test expects a `value` the app no longer sends and
-asserts the report it gets back:
+The file then lists `steps`, each with its own `order` and `events`, and the test runs them in
+that order; a step it skips fails the flow. Each step is compared once its action returns, with the
+events sent since it started. When the flow ends, an event sent more often over the whole flow than
+its steps list it fails too, even if it arrived in a later step that doesn't list it. `step`
+returns what its action returns.
+
+### Values that change per run
+
+`bound` names a value only the test knows, after the property it's delegated to:
+
+```kotlin
+step("buy") {
+    val itemId by bound(firstItem().id)
+    tap("Log purchase (ecommerce)")
+}
+```
+
+Recording writes `"{{itemId}}"` wherever that value was sent, and for a list a `contains` with the
+first item holding it:
+
+```json
+"items": { "type": "array", "minItems": 1, "items": { "type": "object" },
+           "contains": { "properties": { "item_id": { "const": "{{itemId}}" } }, "required": ["item_id"] } }
+```
+
+Comparing fills it in. A string that is only the variable takes its value and type
+(`"{{quantity}}"` bound to `2` is the integer 2); inside a longer string it's interpolated. A
+variable with no value throws, and so does recording two variables bound to the same value. A
+failure names the variable, `expects {{itemId}}`, not the value.
+
+### Events sent in batches
+
+An event the app sends later, such as a list flushed when the screen closes, is marked
+`"deferred": true`. It's compared when the flow ends, against everything sent since its step
+started, instead of when its step ends.
+
+### Waiting
+
+`flow` waits up to `timeout` (5 seconds) for each step's events, on a `Waiter`. The default,
+`Waiter.RealTime`, polls in real time: right for UI Automator and plain instrumentation. Compose's
+test clock only moves while the test waits on it, so a Compose test passes its own:
+
+```kotlin
+fun ComposeUiTest.waiter() = Waiter { timeout, condition ->
+    try {
+        waitUntil(timeoutMillis = timeout.inWholeMilliseconds, condition = condition)
+        true
+    } catch (_: ComposeTimeoutException) {
+        false
+    }
+}
+```
+
+### Recording
+
+The same test records the file: build the baseline with `Baseline.record("checkout")` instead of
+`parse`, run the flow, and take `toJson()`. Each step is recorded once nothing new has arrived for
+half a second. On Android, write it to the test output directory, which Gradle copies off the
+device into `build/outputs/connected_android_test_additional_output/`:
+
+```kotlin
+val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+File(output, "${baseline.name}.json").writeText(baseline.toJson())
+```
+
+Then polish it and approve it in the pull request: it's the source of truth for that flow. A file
+from Verivent 0.9 (with `"baseline": 1`) is rejected: record it again.
+
+### The report
+
+A failure names the flow, the step and each event, with the plan's messages by property path, and
+never quotes a value sent:
 
 ```text
-Baseline: 3 expected, 2 matched, 1 missing, 1 extra
-✗ missing  purchase · firebase, #2 in the baseline
-    closest: event 5
+checkout › buy
+  ✕ purchase · firebase
       value · Not the expected value · expects 49.99
-+ extra    purchase · firebase, event 5
+  ✕ checkout_started · gtm  missing
 ```
 
-Run them on an emulator or a device with `./gradlew :sample:composeApp:connectedDebugAndroidTest`.
-`recordsTheFlow` writes the recording to the app's external files. Gradle uninstalls the app after
-the run, so to keep the recording, install the APKs and run that one test by hand:
+`BaselineMismatch.diffs` carries the same as data: a `BaselineDiff` per failing step, with
+`Finding.Missing`, `Extra`, `Mismatch` (and its `PlanIssue`s), `OutOfOrder` and `StepNotRun`.
+
+### One event at a time
+
+For a check that needs no baseline:
+
+```kotlin
+lastEvent("checkout_started" on "gtm").shouldMatchPlan()
+lastEvent("purchase" on "firebase").shouldHave("currency", "EUR")
+```
+
+`lastEvent` waits for the event like `flow` does. `shouldMatchPlan` asks the tracking plan loaded
+now; `shouldHave` compares as JSON (`3` equals `3.0`, not `"3"`) and refuses a redacted property.
+
+### In the sample
+
+`sample/composeApp` checks its own analytics on a device, in `CheckoutAnalyticsTest`: the flow
+above in one go and step by step, a baseline that expects a `value` the app no longer sends, and
+the two single-event checks. The baselines are in `src/androidInstrumentedTest/resources/baselines`.
 
 ```bash
-./gradlew :sample:composeApp:installDebug :sample:composeApp:installDebugAndroidTest
-adb shell am instrument -w -e class io.github.asanre.verivent.sample.SampleFlowBaselineTest#recordsTheFlow io.github.asanre.verivent.sample.test/androidx.test.runner.AndroidJUnitRunner
-adb pull /sdcard/Android/data/io.github.asanre.verivent.sample/files/sample-flow.baseline.json
+./gradlew :sample:composeApp:connectedDebugAndroidTest   # compare
+./gradlew :sample:composeApp:recordBaselines             # record them again, into resources/baselines
 ```
+
+### With the no-op and on iOS
+
+The baseline lives in the `verivent` module. With `verivent-no-op`, `flow` and `lastEvent` always
+fail with *Verivent no-op: nothing was captured*, so a test wired to the no-op fails instead of
+passing on an empty session. On iOS, check analytics over HTTP (below).
 
 ## Over HTTP
 

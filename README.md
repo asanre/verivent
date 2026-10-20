@@ -135,9 +135,11 @@ WebViewer.start()                             // http://localhost:9394/?t=…
 ### 4. Test it
 
 ```kotlin
-// In a test: compare the session with a recorded baseline.
-Baseline.diff(readResource("checkout.baseline.json"), variables = mapOf("order_id" to order.id))
-    ?.let { fail(it) }
+// In a test: run the flow and compare what it sends with a recorded baseline.
+Baseline.parse(readResource("baselines/checkout.json")).flow {
+    tapAddToCart()
+    tapPay()
+}                                             // throws BaselineMismatch, naming the event and path
 ```
 
 ```bash
