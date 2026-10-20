@@ -72,9 +72,9 @@ registry package; see [Validator in the browser](validator-npm.md).
    rejects fails the job rather than leaving it green.
 5. Confirm the artifacts actually signed, by counting the signing tasks in the run log:
    ```bash
-   gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signKotlinMultiplatformPublication"
+   gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signJsPublication\|signKotlinMultiplatformPublication"
    ```
-   Expect **24** — one per publication across the six modules. Zero means `signAllPublications`
+   Expect **25** — one per publication across the six modules, the core's JS target included. Zero means `signAllPublications`
    did not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
@@ -91,6 +91,11 @@ registry package; see [Validator in the browser](validator-npm.md).
    ```
    The two must match. The tag on `verivent-swift` is the version **without** the `v` prefix, so
    consumers write `.package(url: "https://github.com/asanre/verivent-swift.git", from: "0.8.0")`.
+
+8. Verify the npm package of the validator is attached and loads:
+   ```bash
+   gh release download v0.8.0 -p 'verivent-*.tgz' -D /tmp/verivent-npm && tar -xzf /tmp/verivent-npm/*.tgz -C /tmp/verivent-npm && node verivent/npm/smoke.mjs /tmp/verivent-npm/package
+   ```
 
 ## If the Swift step fails after Central published
 
