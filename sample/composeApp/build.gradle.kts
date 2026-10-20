@@ -50,6 +50,9 @@ kotlin {
     }
 }
 
+// `recordBaselines` runs the device tests recording, rather than checking, the analytics baselines.
+val recordingBaselines = gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "recordBaselines" }
+
 android {
     namespace = "io.github.asanre.verivent.sample"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -60,9 +63,21 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["recordBaselines"] = recordingBaselines.toString()
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+// The tests write each recording to their output directory, which Gradle copies off the device.
+tasks.register<Copy>("recordBaselines") {
+    dependsOn("connectedDebugAndroidTest")
+    from(layout.buildDirectory.dir("outputs/connected_android_test_additional_output/debugAndroidTest/connected")) {
+        include("**/*.json")
+        eachFile { path = name }
+    }
+    includeEmptyDirs = false
+    into("src/androidInstrumentedTest/resources/baselines")
 }

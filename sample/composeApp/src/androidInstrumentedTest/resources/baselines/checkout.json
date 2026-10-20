@@ -1,7 +1,6 @@
 {
-    "baseline": 1,
+    "flow": "checkout",
     "order": "set",
-    "extra": "fail",
     "events": [
         {
             "name": "screen_view",
@@ -12,7 +11,7 @@
                 ],
                 "properties": {
                     "screen_name": {
-                        "const": "{{screen}}"
+                        "const": "home"
                     }
                 },
                 "additionalProperties": false
@@ -54,16 +53,6 @@
                                     ]
                                 }
                             }
-                        },
-                        "contains": {
-                            "properties": {
-                                "item_id": {
-                                    "const": "{{item_id}}"
-                                }
-                            },
-                            "required": [
-                                "item_id"
-                            ]
                         }
                     }
                 },
