@@ -28,7 +28,9 @@ PHONES = [
     dict(name="03b-dark-timeline.webp", width=414, left=2092, top=500),
 ]
 
-# Right of the logo the backdrop carries, in banner coordinates.
+# The app's icon (verivent-ui's verivent_ic_logo.xml), drawn from its 24-unit vector so the banner
+# can't drift from it: a lens holding a pulse, the handle to the bottom right. In banner coordinates.
+LOGO = dict(center=(382, 500), size=310)
 FONT = "/System/Library/Fonts/SFNS.ttf"
 WORDMARK = dict(text="Verivent", left=605, baseline=600, max_right=1390)
 TAGLINE = dict(lines=["Your mobile analytics,", "verified on the device."], left=227, baseline=790, size=96, leading=104)
@@ -78,6 +80,36 @@ def font(path: str, size: int, weight: str) -> ImageFont.FreeTypeFont:
     return face
 
 
+def logo(canvas: Image.Image) -> None:
+    # Drawn 4x and scaled down, since PIL strokes without antialiasing.
+    ss, origin, span = 4, 3.0, 18.1  # the icon's strokes cover 3.0..21.1 of the viewport
+    side = LOGO["size"] * ss
+    unit = side / span
+    layer = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    colour, width = (*PURPLE, 255), round(1.8 * unit)
+
+    def at(x: float, y: float) -> tuple[float, float]:
+        return (x - origin) * unit, (y - origin) * unit
+
+    def stroke(*points: tuple[float, float]) -> None:
+        draw.line([at(*p) for p in points], fill=colour, width=width, joint="curve")
+        for x, y in (at(*points[0]), at(*points[-1])):  # round caps
+            draw.ellipse([x - width / 2, y - width / 2, x + width / 2, y + width / 2], fill=colour)
+
+    (cx, cy), radius = at(10.5, 10.5), 6.6 * unit + width / 2
+    draw.ellipse([cx - radius, cy - radius, cx + radius, cy + radius], outline=colour, width=width)
+    stroke((20.2, 20.2), (15.9, 15.9))
+    stroke((6.9, 11.1), (8.8, 8.7), (10.7, 11.9), (12.6, 7.8), (14.2, 11.1))
+
+    icon = layer.resize((LOGO["size"], LOGO["size"]), Image.LANCZOS)
+    glow = icon.filter(ImageFilter.GaussianBlur(14))
+    glow.putalpha(glow.split()[3].point(lambda a: a * 0.45))
+    left, top = LOGO["center"][0] - LOGO["size"] // 2, LOGO["center"][1] - LOGO["size"] // 2
+    canvas.alpha_composite(glow, (left, top))
+    canvas.alpha_composite(icon, (left, top))
+
+
 def wordmark(canvas: Image.Image, font_path: str) -> None:
     draw = ImageDraw.Draw(canvas)
     # The largest size that keeps the wordmark clear of the screenshots.
@@ -111,6 +143,7 @@ def main(backdrop: Path, shots: Path, out: Path, font_path: str = FONT) -> None:
     bg = Image.open(backdrop).convert("RGBA")
     top = (bg.height - round(bg.width / 2)) // 2
     canvas = bg.crop((0, top, bg.width, top + round(bg.width / 2))).resize(BANNER, Image.LANCZOS)
+    logo(canvas)
     wordmark(canvas, font_path)
 
     shot = Image.open(shots / WINDOW["name"]).convert("RGBA")
