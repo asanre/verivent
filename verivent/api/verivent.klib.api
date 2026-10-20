@@ -23,6 +23,15 @@ final enum class io.github.asanre.verivent.core.model/NetworkState : kotlin/Enum
     final fun values(): kotlin/Array<io.github.asanre.verivent.core.model/NetworkState> // io.github.asanre.verivent.core.model/NetworkState.values|values#static(){}[0]
 }
 
+abstract fun interface io.github.asanre.verivent.baseline/Waiter { // io.github.asanre.verivent.baseline/Waiter|null[0]
+    abstract fun until(kotlin.time/Duration, kotlin/Function0<kotlin/Boolean>): kotlin/Boolean // io.github.asanre.verivent.baseline/Waiter.until|until(kotlin.time.Duration;kotlin.Function0<kotlin.Boolean>){}[0]
+
+    final object Companion { // io.github.asanre.verivent.baseline/Waiter.Companion|null[0]
+        final val RealTime // io.github.asanre.verivent.baseline/Waiter.Companion.RealTime|{}RealTime[0]
+            final fun <get-RealTime>(): io.github.asanre.verivent.baseline/Waiter // io.github.asanre.verivent.baseline/Waiter.Companion.RealTime.<get-RealTime>|<get-RealTime>(){}[0]
+    }
+}
+
 sealed interface io.github.asanre.verivent.core.model/TimelineEntry { // io.github.asanre.verivent.core.model/TimelineEntry|null[0]
     abstract val id // io.github.asanre.verivent.core.model/TimelineEntry.id|{}id[0]
         abstract fun <get-id>(): kotlin/String // io.github.asanre.verivent.core.model/TimelineEntry.id.<get-id>|<get-id>(){}[0]
@@ -61,6 +70,133 @@ final class io.github.asanre.verivent.analytics/AnalyticsSinkConfig { // io.gith
     final fun groupBy(kotlin/String?, kotlin/String? = ...) // io.github.asanre.verivent.analytics/AnalyticsSinkConfig.groupBy|groupBy(kotlin.String?;kotlin.String?){}[0]
     final fun logTo(kotlin/Function1<kotlin/String, kotlin/Unit> = ...) // io.github.asanre.verivent.analytics/AnalyticsSinkConfig.logTo|logTo(kotlin.Function1<kotlin.String,kotlin.Unit>){}[0]
     final fun sanitizeProperty(kotlin/Function1<kotlin/String, kotlin/Boolean>) // io.github.asanre.verivent.analytics/AnalyticsSinkConfig.sanitizeProperty|sanitizeProperty(kotlin.Function1<kotlin.String,kotlin.Boolean>){}[0]
+}
+
+final class io.github.asanre.verivent.baseline/Baseline { // io.github.asanre.verivent.baseline/Baseline|null[0]
+    final val isRecording // io.github.asanre.verivent.baseline/Baseline.isRecording|{}isRecording[0]
+        final fun <get-isRecording>(): kotlin/Boolean // io.github.asanre.verivent.baseline/Baseline.isRecording.<get-isRecording>|<get-isRecording>(){}[0]
+    final val name // io.github.asanre.verivent.baseline/Baseline.name|{}name[0]
+        final fun <get-name>(): kotlin/String // io.github.asanre.verivent.baseline/Baseline.name.<get-name>|<get-name>(){}[0]
+
+    final fun flow(io.github.asanre.verivent.baseline/Waiter = ..., kotlin.time/Duration = ..., kotlin/Function1<io.github.asanre.verivent.baseline/FlowScope, kotlin/Unit>) // io.github.asanre.verivent.baseline/Baseline.flow|flow(io.github.asanre.verivent.baseline.Waiter;kotlin.time.Duration;kotlin.Function1<io.github.asanre.verivent.baseline.FlowScope,kotlin.Unit>){}[0]
+    final fun toJson(): kotlin/String // io.github.asanre.verivent.baseline/Baseline.toJson|toJson(){}[0]
+
+    final object Companion { // io.github.asanre.verivent.baseline/Baseline.Companion|null[0]
+        final fun parse(kotlin/String): io.github.asanre.verivent.baseline/Baseline // io.github.asanre.verivent.baseline/Baseline.Companion.parse|parse(kotlin.String){}[0]
+        final fun record(kotlin/String): io.github.asanre.verivent.baseline/Baseline // io.github.asanre.verivent.baseline/Baseline.Companion.record|record(kotlin.String){}[0]
+    }
+}
+
+final class io.github.asanre.verivent.baseline/BaselineDiff { // io.github.asanre.verivent.baseline/BaselineDiff|null[0]
+    constructor <init>(kotlin/String, kotlin/String?, kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff.Finding>) // io.github.asanre.verivent.baseline/BaselineDiff.<init>|<init>(kotlin.String;kotlin.String?;kotlin.collections.List<io.github.asanre.verivent.baseline.BaselineDiff.Finding>){}[0]
+
+    final val findings // io.github.asanre.verivent.baseline/BaselineDiff.findings|{}findings[0]
+        final fun <get-findings>(): kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff.Finding> // io.github.asanre.verivent.baseline/BaselineDiff.findings.<get-findings>|<get-findings>(){}[0]
+    final val flow // io.github.asanre.verivent.baseline/BaselineDiff.flow|{}flow[0]
+        final fun <get-flow>(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.flow.<get-flow>|<get-flow>(){}[0]
+    final val passed // io.github.asanre.verivent.baseline/BaselineDiff.passed|{}passed[0]
+        final fun <get-passed>(): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.passed.<get-passed>|<get-passed>(){}[0]
+    final val step // io.github.asanre.verivent.baseline/BaselineDiff.step|{}step[0]
+        final fun <get-step>(): kotlin/String? // io.github.asanre.verivent.baseline/BaselineDiff.step.<get-step>|<get-step>(){}[0]
+
+    final fun component1(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // io.github.asanre.verivent.baseline/BaselineDiff.component2|component2(){}[0]
+    final fun component3(): kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff.Finding> // io.github.asanre.verivent.baseline/BaselineDiff.component3|component3(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff.Finding> = ...): io.github.asanre.verivent.baseline/BaselineDiff // io.github.asanre.verivent.baseline/BaselineDiff.copy|copy(kotlin.String;kotlin.String?;kotlin.collections.List<io.github.asanre.verivent.baseline.BaselineDiff.Finding>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.hashCode|hashCode(){}[0]
+    final fun render(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.render|render(){}[0]
+    final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.toString|toString(){}[0]
+
+    sealed interface Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding|null[0]
+        final class Extra : io.github.asanre.verivent.baseline/BaselineDiff.Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra|null[0]
+            constructor <init>(io.github.asanre.verivent.core.model/PlanEvent) // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.<init>|<init>(io.github.asanre.verivent.core.model.PlanEvent){}[0]
+
+            final val event // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.event|{}event[0]
+                final fun <get-event>(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.event.<get-event>|<get-event>(){}[0]
+
+            final fun component1(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.component1|component1(){}[0]
+            final fun copy(io.github.asanre.verivent.core.model/PlanEvent = ...): io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.copy|copy(io.github.asanre.verivent.core.model.PlanEvent){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Extra.toString|toString(){}[0]
+        }
+
+        final class Mismatch : io.github.asanre.verivent.baseline/BaselineDiff.Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch|null[0]
+            constructor <init>(io.github.asanre.verivent.core.model/PlanEvent, kotlin.collections/List<io.github.asanre.verivent.core.model/PlanIssue>) // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.<init>|<init>(io.github.asanre.verivent.core.model.PlanEvent;kotlin.collections.List<io.github.asanre.verivent.core.model.PlanIssue>){}[0]
+
+            final val event // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.event|{}event[0]
+                final fun <get-event>(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.event.<get-event>|<get-event>(){}[0]
+            final val issues // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.issues|{}issues[0]
+                final fun <get-issues>(): kotlin.collections/List<io.github.asanre.verivent.core.model/PlanIssue> // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.issues.<get-issues>|<get-issues>(){}[0]
+
+            final fun component1(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.component1|component1(){}[0]
+            final fun component2(): kotlin.collections/List<io.github.asanre.verivent.core.model/PlanIssue> // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.component2|component2(){}[0]
+            final fun copy(io.github.asanre.verivent.core.model/PlanEvent = ..., kotlin.collections/List<io.github.asanre.verivent.core.model/PlanIssue> = ...): io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.copy|copy(io.github.asanre.verivent.core.model.PlanEvent;kotlin.collections.List<io.github.asanre.verivent.core.model.PlanIssue>){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Mismatch.toString|toString(){}[0]
+        }
+
+        final class Missing : io.github.asanre.verivent.baseline/BaselineDiff.Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing|null[0]
+            constructor <init>(io.github.asanre.verivent.core.model/PlanEvent) // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.<init>|<init>(io.github.asanre.verivent.core.model.PlanEvent){}[0]
+
+            final val event // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.event|{}event[0]
+                final fun <get-event>(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.event.<get-event>|<get-event>(){}[0]
+
+            final fun component1(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.component1|component1(){}[0]
+            final fun copy(io.github.asanre.verivent.core.model/PlanEvent = ...): io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.copy|copy(io.github.asanre.verivent.core.model.PlanEvent){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.Missing.toString|toString(){}[0]
+        }
+
+        final class OutOfOrder : io.github.asanre.verivent.baseline/BaselineDiff.Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder|null[0]
+            constructor <init>(io.github.asanre.verivent.core.model/PlanEvent, io.github.asanre.verivent.core.model/PlanEvent?) // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.<init>|<init>(io.github.asanre.verivent.core.model.PlanEvent;io.github.asanre.verivent.core.model.PlanEvent?){}[0]
+
+            final val before // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.before|{}before[0]
+                final fun <get-before>(): io.github.asanre.verivent.core.model/PlanEvent? // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.before.<get-before>|<get-before>(){}[0]
+            final val event // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.event|{}event[0]
+                final fun <get-event>(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.event.<get-event>|<get-event>(){}[0]
+
+            final fun component1(): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.component1|component1(){}[0]
+            final fun component2(): io.github.asanre.verivent.core.model/PlanEvent? // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.component2|component2(){}[0]
+            final fun copy(io.github.asanre.verivent.core.model/PlanEvent = ..., io.github.asanre.verivent.core.model/PlanEvent? = ...): io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.copy|copy(io.github.asanre.verivent.core.model.PlanEvent;io.github.asanre.verivent.core.model.PlanEvent?){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.OutOfOrder.toString|toString(){}[0]
+        }
+
+        final class StepNotRun : io.github.asanre.verivent.baseline/BaselineDiff.Finding { // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun|null[0]
+            constructor <init>(kotlin/String) // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.<init>|<init>(kotlin.String){}[0]
+
+            final val step // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.step|{}step[0]
+                final fun <get-step>(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.step.<get-step>|<get-step>(){}[0]
+
+            final fun component1(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.component1|component1(){}[0]
+            final fun copy(kotlin/String = ...): io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.copy|copy(kotlin.String){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // io.github.asanre.verivent.baseline/BaselineDiff.Finding.StepNotRun.toString|toString(){}[0]
+        }
+    }
+}
+
+final class io.github.asanre.verivent.baseline/BaselineMismatch : kotlin/AssertionError { // io.github.asanre.verivent.baseline/BaselineMismatch|null[0]
+    constructor <init>(kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff>) // io.github.asanre.verivent.baseline/BaselineMismatch.<init>|<init>(kotlin.collections.List<io.github.asanre.verivent.baseline.BaselineDiff>){}[0]
+
+    final val diffs // io.github.asanre.verivent.baseline/BaselineMismatch.diffs|{}diffs[0]
+        final fun <get-diffs>(): kotlin.collections/List<io.github.asanre.verivent.baseline/BaselineDiff> // io.github.asanre.verivent.baseline/BaselineMismatch.diffs.<get-diffs>|<get-diffs>(){}[0]
+}
+
+final class io.github.asanre.verivent.baseline/EventCheck { // io.github.asanre.verivent.baseline/EventCheck|null[0]
+    final fun shouldHave(kotlin/String, kotlin/Any?): io.github.asanre.verivent.baseline/EventCheck // io.github.asanre.verivent.baseline/EventCheck.shouldHave|shouldHave(kotlin.String;kotlin.Any?){}[0]
+    final fun shouldMatchPlan(): io.github.asanre.verivent.baseline/EventCheck // io.github.asanre.verivent.baseline/EventCheck.shouldMatchPlan|shouldMatchPlan(){}[0]
+}
+
+final class io.github.asanre.verivent.baseline/FlowScope { // io.github.asanre.verivent.baseline/FlowScope|null[0]
+    final fun <#A1: kotlin/Any?> bound(#A1): kotlin.properties/PropertyDelegateProvider<kotlin/Any?, kotlin.properties/ReadOnlyProperty<kotlin/Any?, #A1>> // io.github.asanre.verivent.baseline/FlowScope.bound|bound(0:0){0§<kotlin.Any?>}[0]
+    final fun <#A1: kotlin/Any?> step(kotlin/String, kotlin/Function0<#A1>): #A1 // io.github.asanre.verivent.baseline/FlowScope.step|step(kotlin.String;kotlin.Function0<0:0>){0§<kotlin.Any?>}[0]
 }
 
 final class io.github.asanre.verivent.core.model/AnalyticsEntry : io.github.asanre.verivent.core.model/TimelineEntry { // io.github.asanre.verivent.core.model/AnalyticsEntry|null[0]
@@ -321,11 +457,6 @@ final value class io.github.asanre.verivent.core.model/Annotation { // io.github
     }
 }
 
-final object io.github.asanre.verivent.baseline/Baseline { // io.github.asanre.verivent.baseline/Baseline|null[0]
-    final fun diff(kotlin/String, kotlin.collections/List<io.github.asanre.verivent.core.model/TimelineEntry> = ..., kotlin.collections/Map<kotlin/String, kotlin/Any?> = ...): kotlin/String? // io.github.asanre.verivent.baseline/Baseline.diff|diff(kotlin.String;kotlin.collections.List<io.github.asanre.verivent.core.model.TimelineEntry>;kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
-    final fun record(kotlin.collections/List<io.github.asanre.verivent.core.model/TimelineEntry> = ...): kotlin/String // io.github.asanre.verivent.baseline/Baseline.record|record(kotlin.collections.List<io.github.asanre.verivent.core.model.TimelineEntry>){}[0]
-}
-
 final object io.github.asanre.verivent.core.capture/BodyCapture { // io.github.asanre.verivent.core.capture/BodyCapture|null[0]
     final fun binaryPlaceholder(kotlin/String?, kotlin/Long): io.github.asanre.verivent.core.model/BodyPreview // io.github.asanre.verivent.core.capture/BodyCapture.binaryPlaceholder|binaryPlaceholder(kotlin.String?;kotlin.Long){}[0]
     final fun isTextLike(kotlin/String?): kotlin/Boolean // io.github.asanre.verivent.core.capture/BodyCapture.isTextLike|isTextLike(kotlin.String?){}[0]
@@ -364,7 +495,9 @@ final object io.github.asanre.verivent.core/Inspector { // io.github.asanre.veri
     final fun updateNetwork(kotlin/String, kotlin/Function1<io.github.asanre.verivent.core.model/NetworkTransaction, io.github.asanre.verivent.core.model/NetworkTransaction>) // io.github.asanre.verivent.core/Inspector.updateNetwork|updateNetwork(kotlin.String;kotlin.Function1<io.github.asanre.verivent.core.model.NetworkTransaction,io.github.asanre.verivent.core.model.NetworkTransaction>){}[0]
 }
 
+final fun (kotlin/String).io.github.asanre.verivent.baseline/on(kotlin/String): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/on|on@kotlin.String(kotlin.String){}[0]
 final fun io.github.asanre.verivent.analytics/AnalyticsSink(kotlin/Function1<io.github.asanre.verivent.analytics/AnalyticsSinkConfig, kotlin/Unit> = ...): io.github.asanre.verivent.analytics/AnalyticsSink // io.github.asanre.verivent.analytics/AnalyticsSink|AnalyticsSink(kotlin.Function1<io.github.asanre.verivent.analytics.AnalyticsSinkConfig,kotlin.Unit>){}[0]
+final fun io.github.asanre.verivent.baseline/lastEvent(io.github.asanre.verivent.core.model/PlanEvent, io.github.asanre.verivent.baseline/Waiter = ..., kotlin.time/Duration = ...): io.github.asanre.verivent.baseline/EventCheck // io.github.asanre.verivent.baseline/lastEvent|lastEvent(io.github.asanre.verivent.core.model.PlanEvent;io.github.asanre.verivent.baseline.Waiter;kotlin.time.Duration){}[0]
 final fun io.github.asanre.verivent.web/encodeExportEntry(io.github.asanre.verivent.core.model/TimelineEntry, kotlin/Boolean = ...): kotlin/String // io.github.asanre.verivent.web/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.TimelineEntry;kotlin.Boolean){}[0]
 final inline fun io.github.asanre.verivent.core.internal/runSafely(kotlin/String, kotlin/Function0<kotlin/Unit>) // io.github.asanre.verivent.core.internal/runSafely|runSafely(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]
 

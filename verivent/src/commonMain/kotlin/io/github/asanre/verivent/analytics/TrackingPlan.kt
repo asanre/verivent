@@ -83,6 +83,8 @@ internal class Schema(
     private val types: List<String>,
     private val allowed: List<JsonPrimitive>?,
     private val const: JsonElement?,
+    /** How the `const` is shown in a message, when it was written as a `{{variable}}`. */
+    private val constLabel: String?,
     private val pattern: Regex?,
     val properties: Map<String, Schema>,
     val required: List<String>,
@@ -103,7 +105,7 @@ internal class Schema(
     fun valueIssue(value: JsonElement, foreign: Boolean): String? = when {
         allowed != null && (foreign || allowed.none { jsonEquals(it, value) }) ->
             "Not an allowed value · expects ${allowed.map { it.content }.joinAsChoice()}"
-        const != null && (foreign || !jsonEquals(const, value)) -> "Not the expected value · expects ${const.displayText()}"
+        const != null && (foreign || !jsonEquals(const, value)) -> "Not the expected value · expects ${constLabel ?: const.displayText()}"
         foreign -> null
         pattern != null && value is JsonPrimitive && value.isString && value.content.length > MAX_PATTERN_INPUT ->
             "Too long to check against the pattern · over $MAX_PATTERN_INPUT characters"
@@ -114,7 +116,11 @@ internal class Schema(
     }
 
     companion object {
-        fun parse(schema: JsonObject, path: String): Schema = Schema(
+        /**
+         * [template] is the same schema before its `{{variables}}` were filled in, so a message
+         * names the variable rather than the value the test bound to it.
+         */
+        fun parse(schema: JsonObject, path: String, template: JsonObject? = null): Schema = Schema(
             types = when (val type = schema["type"]) {
                 null -> emptyList()
                 is JsonArray -> type.toList()
@@ -129,12 +135,13 @@ internal class Schema(
                     ?: invalid("$path.enum must be an array")
             },
             const = schema["const"],
+            constLabel = template?.get("const")?.takeIf { it != schema["const"] }?.displayText(),
             pattern = schema["pattern"]?.let { pattern ->
                 val source = pattern.asString("$path.pattern")
                 runCatching { Regex(source) }.getOrElse { invalid("$path.pattern is not a valid regex") }
             },
             properties = schema["properties"]?.asObject("$path.properties").orEmpty()
-                .mapValues { (key, value) -> parse(value.asObject("$path.$key"), "$path.$key") },
+                .mapValues { (key, value) -> parse(value.asObject("$path.$key"), "$path.$key", template.child("properties", key)) },
             required = schema["required"]?.let { it as? JsonArray ?: invalid("$path.required must be an array") }
                 .orEmpty()
                 .map { it.asString("$path.required") },
@@ -142,13 +149,16 @@ internal class Schema(
                 (flag as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull
                     ?: invalid("$path.additionalProperties must be true or false")
             } ?: true,
-            items = schema["items"]?.let { parse(it.asObject("$path.items"), "$path.items") },
+            items = schema["items"]?.let { parse(it.asObject("$path.items"), "$path.items", template.child("items")) },
             minItems = schema["minItems"]?.let { min ->
                 (min as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull?.takeIf { it >= 0 }
                     ?: invalid("$path.minItems must be a non-negative integer")
             },
-            contains = schema["contains"]?.let { parse(it.asObject("$path.contains"), "$path.contains") },
+            contains = schema["contains"]?.let { parse(it.asObject("$path.contains"), "$path.contains", template.child("contains")) },
         )
+
+        private fun JsonObject?.child(vararg keys: String): JsonObject? =
+            keys.fold(this as JsonElement?) { node, key -> (node as? JsonObject)?.get(key) } as? JsonObject
     }
 }
 

@@ -1,39 +1,58 @@
 package io.github.asanre.verivent.baseline
 
-import io.github.asanre.verivent.core.Inspector
-import io.github.asanre.verivent.core.model.AnalyticsEntry
-import io.github.asanre.verivent.core.model.TimelineEntry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
- * Record a session's analytics as a baseline and check later sessions against it, in a test:
+ * The analytics a flow of the app must send, checked from a test:
  *
  * ```kotlin
- * val baseline = Baseline.record()                     // once, then keep the JSON with the test
- * Baseline.diff(baseline, variables = mapOf("user_id" to user.id))?.let { fail(it) }
+ * Baseline.parse(readResource("checkout.json")).flow {
+ *     tapAddToCart()
+ *     tapPay()
+ * }                                              // throws BaselineMismatch when they don't match
  * ```
  *
- * A baseline is the tracking plan's JSON Schema per event, each property recorded as a `const` of
- * the value sent. Edit it like a plan: loosen a `const` to a `type` or a `pattern`, or put
- * `"{{name}}"` in a `const` for a value the test fills in. By default it's compared as a set: every
- * recorded event must be sent and nothing else, in any order. `"order": "sequence"` asks for the
- * recorded order too, and `"extra": "allow"` lets other events through.
+ * A baseline is recorded by the same test ([record], then [toJson]), polished by hand and approved
+ * in review. Each expected event is the tracking plan's JSON Schema for its properties, recorded as
+ * a `const` of what was sent: loosen one to a `type` or a `pattern`, or put `"{{name}}"` in it for
+ * a value the test [binds][FlowScope.bound]. Events of a name and channel the baseline doesn't list
+ * are ignored; the plan covers those. A longer flow splits into [steps][FlowScope.step]: each one a
+ * set of events (or a `"sequence"`), in the order the test runs them.
  */
-object Baseline {
+class Baseline internal constructor(
+    /** The flow's name, as the file and any failure name it. */
+    val name: String,
+    private val file: BaselineFile?,
+) {
 
-    /** The analytics events among [entries] as a baseline's JSON, in the order they were captured. */
-    fun record(entries: List<TimelineEntry> = Inspector.entriesSnapshot): String =
-        recordBaseline(entries.filterIsInstance<AnalyticsEntry>())
+    private var recorded: BaselineFile? = null
+
+    /** Whether [flow] records what's sent rather than checking it. */
+    val isRecording: Boolean get() = file == null
 
     /**
-     * What tells the analytics events among [entries] apart from [baselineJson], as text to fail a
-     * test with; null when they match. Issues state what was expected, never the value sent.
+     * Runs [block] and checks, step by step, that the analytics it sends match this baseline,
+     * waiting up to [timeout] for each step's on [waiter]; or, recording, records them.
      *
-     * @throws IllegalArgumentException when [baselineJson] isn't a valid baseline, or a `{{name}}`
-     * it uses has no value in [variables].
+     * @throws BaselineMismatch when a step, or the flow as a whole, doesn't match.
+     * @throws IllegalArgumentException when the test's steps aren't the baseline's, or a
+     * `{{name}}` has no bound value.
      */
-    fun diff(
-        baselineJson: String,
-        entries: List<TimelineEntry> = Inspector.entriesSnapshot,
-        variables: Map<String, Any?> = emptyMap(),
-    ): String? = compare(BaselineFile.parse(baselineJson, variables), entries.filterIsInstance<AnalyticsEntry>())
+    fun flow(waiter: Waiter = Waiter.RealTime, timeout: Duration = 5.seconds, block: FlowScope.() -> Unit) {
+        val run = FlowRun(name, file)
+        FlowScope(run, isRecording, waiter, timeout).runFlow(block)
+        if (isRecording) recorded = run.recording()
+    }
+
+    /** The baseline as its file holds it: what the last [flow] recorded, when [isRecording]. */
+    fun toJson(): String = (file ?: checkNotNull(recorded) { "run the flow before asking for its recording" }).toJson()
+
+    companion object {
+        /** @throws IllegalArgumentException naming what is wrong with [json]. */
+        fun parse(json: String): Baseline = BaselineFile.parse(json).let { Baseline(it.name, it) }
+
+        /** A baseline for the flow [name] that [flow] fills in with what the app sends. */
+        fun record(name: String): Baseline = Baseline(name, file = null)
+    }
 }

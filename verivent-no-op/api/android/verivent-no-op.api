@@ -36,11 +36,126 @@ public final class io/github/asanre/verivent/analytics/AnalyticsSinkKt {
 }
 
 public final class io/github/asanre/verivent/baseline/Baseline {
-	public static final field INSTANCE Lio/github/asanre/verivent/baseline/Baseline;
-	public final fun diff (Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)Ljava/lang/String;
-	public static synthetic fun diff$default (Lio/github/asanre/verivent/baseline/Baseline;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Ljava/lang/String;
-	public final fun record (Ljava/util/List;)Ljava/lang/String;
-	public static synthetic fun record$default (Lio/github/asanre/verivent/baseline/Baseline;Ljava/util/List;ILjava/lang/Object;)Ljava/lang/String;
+	public static final field Companion Lio/github/asanre/verivent/baseline/Baseline$Companion;
+	public final fun flow-8Mi8wO0 (Lio/github/asanre/verivent/baseline/Waiter;JLkotlin/jvm/functions/Function1;)V
+	public static synthetic fun flow-8Mi8wO0$default (Lio/github/asanre/verivent/baseline/Baseline;Lio/github/asanre/verivent/baseline/Waiter;JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public final fun getName ()Ljava/lang/String;
+	public final fun isRecording ()Z
+	public final fun toJson ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/Baseline$Companion {
+	public final fun parse (Ljava/lang/String;)Lio/github/asanre/verivent/baseline/Baseline;
+	public final fun record (Ljava/lang/String;)Lio/github/asanre/verivent/baseline/Baseline;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lio/github/asanre/verivent/baseline/BaselineDiff;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFindings ()Ljava/util/List;
+	public final fun getFlow ()Ljava/lang/String;
+	public final fun getPassed ()Z
+	public final fun getStep ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun render ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;)V
+	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getIssues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun component2 ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBefore ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$StepNotRun : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$StepNotRun;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$StepNotRun;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$StepNotRun;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getStep ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/asanre/verivent/baseline/BaselineMismatch : java/lang/AssertionError {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getDiffs ()Ljava/util/List;
+}
+
+public final class io/github/asanre/verivent/baseline/EventCheck {
+	public final fun shouldHave (Ljava/lang/String;Ljava/lang/Object;)Lio/github/asanre/verivent/baseline/EventCheck;
+	public final fun shouldMatchPlan ()Lio/github/asanre/verivent/baseline/EventCheck;
+}
+
+public final class io/github/asanre/verivent/baseline/EventCheckKt {
+	public static final fun lastEvent-SxA4cEA (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;J)Lio/github/asanre/verivent/baseline/EventCheck;
+	public static synthetic fun lastEvent-SxA4cEA$default (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;JILjava/lang/Object;)Lio/github/asanre/verivent/baseline/EventCheck;
+	public static final fun on (Ljava/lang/String;Ljava/lang/String;)Lio/github/asanre/verivent/core/model/PlanEvent;
+}
+
+public final class io/github/asanre/verivent/baseline/FlowScope {
+	public final fun bound (Ljava/lang/Object;)Lkotlin/properties/PropertyDelegateProvider;
+	public final fun step (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
+public abstract interface class io/github/asanre/verivent/baseline/Waiter {
+	public static final field Companion Lio/github/asanre/verivent/baseline/Waiter$Companion;
+	public abstract fun until-VtjQ1oo (JLkotlin/jvm/functions/Function0;)Z
+}
+
+public final class io/github/asanre/verivent/baseline/Waiter$Companion {
+	public final fun getRealTime ()Lio/github/asanre/verivent/baseline/Waiter;
 }
 
 public final class io/github/asanre/verivent/core/Inspector {

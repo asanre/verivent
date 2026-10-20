@@ -8,6 +8,12 @@ import androidx.compose.ui.Modifier
 import io.github.asanre.verivent.analytics.AnalyticsEvent
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.baseline.Baseline
+import io.github.asanre.verivent.baseline.BaselineDiff
+import io.github.asanre.verivent.baseline.BaselineMismatch
+import io.github.asanre.verivent.baseline.EventCheck
+import io.github.asanre.verivent.baseline.Waiter
+import io.github.asanre.verivent.baseline.lastEvent
+import io.github.asanre.verivent.baseline.on
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.capture.BodyCapture
@@ -34,6 +40,8 @@ import io.github.asanre.verivent.web.WebViewer
 import io.github.asanre.verivent.web.encodeExportEntry
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.StateFlow
 
@@ -248,9 +256,34 @@ private fun export(entry: TimelineEntry) {
     val indented: String = encodeExportEntry(entry, pretty = true)
 }
 
-private fun baseline(entries: List<TimelineEntry>) {
-    val recorded: String = Baseline.record()
-    val fromEntries: String = Baseline.record(entries)
-    val diff: String? = Baseline.diff(recorded)
-    val full: String? = Baseline.diff(baselineJson = recorded, entries = entries, variables = mapOf("user_id" to 7))
+private fun baseline(issue: PlanIssue) {
+    val recording: Baseline = Baseline.record("checkout")
+    val parsed: Baseline = Baseline.parse("{}")
+    val name: String = parsed.name
+    val isRecording: Boolean = recording.isRecording
+    parsed.flow { }
+    parsed.flow(waiter = Waiter.RealTime, timeout = 5.seconds) {
+        val orderId: Int by bound(7)
+        val total: Int = step("buy") { 1 }
+    }
+    val json: String = recording.toJson()
+    val waiter: Waiter = Waiter { timeout: Duration, condition: () -> Boolean -> condition() }
+    val waited: Boolean = waiter.until(1.seconds) { true }
+
+    val event: PlanEvent = "purchase" on "firebase"
+    val findings: List<BaselineDiff.Finding> = listOf(
+        BaselineDiff.Finding.Missing(event),
+        BaselineDiff.Finding.Extra(event),
+        BaselineDiff.Finding.Mismatch(event, listOf(issue)),
+        BaselineDiff.Finding.OutOfOrder(event, before = null),
+        BaselineDiff.Finding.StepNotRun("buy"),
+    )
+    val diff = BaselineDiff(flow = "checkout", step = null, findings = findings)
+    val passed: Boolean = diff.passed
+    val rendered: String = diff.render()
+    val mismatch: AssertionError = BaselineMismatch(listOf(diff))
+    val diffs: List<BaselineDiff> = BaselineMismatch(listOf(diff)).diffs
+
+    val check: EventCheck = lastEvent(event).shouldMatchPlan().shouldHave("currency", "EUR")
+    val waitedCheck: EventCheck = lastEvent(event, waiter = Waiter.RealTime, timeout = 1.seconds)
 }

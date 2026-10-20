@@ -1,18 +1,26 @@
 package io.github.asanre.verivent.baseline
 
-import io.github.asanre.verivent.core.model.TimelineEntry
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+internal const val NOTHING_CAPTURED = "Verivent no-op: nothing was captured"
 
 /**
- * No-op mirror of the baseline. Nothing is captured, so [diff] never reports a match: a test run
- * against the no-op fails loudly instead of passing on an empty session.
+ * No-op mirror of the baseline. Nothing is captured, so [flow] never matches: a test run against
+ * the no-op fails loudly instead of passing on an empty session.
  */
-object Baseline {
+class Baseline internal constructor(val name: String) {
 
-    fun record(entries: List<TimelineEntry> = emptyList()): String = """{ "baseline": 1, "events": [] }"""
+    val isRecording: Boolean = false
 
-    fun diff(
-        baselineJson: String,
-        entries: List<TimelineEntry> = emptyList(),
-        variables: Map<String, Any?> = emptyMap(),
-    ): String? = "Verivent no-op: nothing was captured"
+    fun flow(waiter: Waiter = Waiter.RealTime, timeout: Duration = 5.seconds, block: FlowScope.() -> Unit): Unit =
+        throw AssertionError(NOTHING_CAPTURED)
+
+    fun toJson(): String = """{ "flow": "$name", "events": [] }"""
+
+    companion object {
+        fun parse(json: String): Baseline = Baseline("")
+
+        fun record(name: String): Baseline = Baseline(name)
+    }
 }
