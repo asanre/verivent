@@ -20,7 +20,8 @@ class RedactionEngine(
 ) {
 
     fun redactHeader(name: String, value: String): KeyValue {
-        val hit = DEFAULT_HEADERS.contains(name.lowercase()) || headerPredicates.anyFailClosed(name)
+        val folded = name.lowercase()
+        val hit = folded in DEFAULT_HEADERS || headerPredicates.anyFailClosed(name, folded)
         return KeyValue(name, if (hit) placeholder else value, hit)
     }
 
@@ -63,7 +64,8 @@ class RedactionEngine(
             val eq = param.indexOf('=')
             if (eq < 0) return@map param
             val name = param.substring(0, eq)
-            val hit = DEFAULT_QUERY_PARAMS.contains(name.lowercase()) || queryParamPredicates.anyFailClosed(name)
+            val folded = name.lowercase()
+            val hit = folded in DEFAULT_QUERY_PARAMS || queryParamPredicates.anyFailClosed(name, folded)
             if (!hit) return@map param
             redacted = true
             "$name=$placeholder"
@@ -83,13 +85,10 @@ class RedactionEngine(
             .getOrDefault(BODY_FAILURE_PLACEHOLDER)
     }
 
-    private fun List<(String) -> Boolean>.anyFailClosed(name: String): Boolean {
-        val folded = name.lowercase()
-        return any { predicate ->
-            runCatching { predicate(name) || (folded != name && predicate(folded)) }
-                .onFailure { DiagnosticLog.warn(TAG, "redaction predicate threw on '$name'; redacting", it) }
-                .getOrDefault(true)
-        }
+    private fun List<(String) -> Boolean>.anyFailClosed(name: String, folded: String = name.lowercase()): Boolean = any { predicate ->
+        runCatching { predicate(name) || (folded != name && predicate(folded)) }
+            .onFailure { DiagnosticLog.warn(TAG, "redaction predicate threw on '$name'; redacting", it) }
+            .getOrDefault(true)
     }
 
     companion object {

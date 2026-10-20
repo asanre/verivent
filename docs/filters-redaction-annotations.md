@@ -88,7 +88,8 @@ worth knowing:
   rather than merging into the first.
 
 Grouping only exists where events are captured: the viewers group the timeline as soon as an event
-carries a group label, and show one flat list otherwise. There is no switch to turn it off.
+carries a group label, and show one flat list otherwise. The viewers have no switch of their own: to turn
+grouping off, call `groupBy(null)` where events are captured.
 
 ## Redaction
 

@@ -4,7 +4,8 @@ The tracking plan validator is also an npm package, built from the same Kotlin s
 libraries. A web tool checks events with the same rules and the same messages as the device: what
 the inspector says on the phone, the browser says too.
 
-It's attached to every GitHub Release as `verivent-<version>.tgz`; it isn't on the npm registry.
+It's attached to every GitHub Release from 0.9.0 on as `verivent-<version>.tgz`; it isn't on the npm
+registry.
 
 ```bash
 npm install https://github.com/asanre/verivent/releases/download/v0.9.0/verivent-0.9.0.tgz

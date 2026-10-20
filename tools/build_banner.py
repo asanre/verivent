@@ -82,7 +82,7 @@ def wordmark(canvas: Image.Image, font_path: str) -> None:
     draw = ImageDraw.Draw(canvas)
     # The largest size that keeps the wordmark clear of the screenshots.
     size = 260
-    while draw.textlength(WORDMARK["text"], font=font(font_path, size, "Bold")) > WORDMARK["max_right"] - WORDMARK["left"]:
+    while size > 40 and draw.textlength(WORDMARK["text"], font=font(font_path, size, "Bold")) > WORDMARK["max_right"] - WORDMARK["left"]:
         size -= 4
     draw.text((WORDMARK["left"], WORDMARK["baseline"]), WORDMARK["text"], font=font(font_path, size, "Bold"),
               fill=(255, 255, 255), anchor="ls")
@@ -138,6 +138,8 @@ if __name__ == "__main__":
     font_path = FONT
     if "--font" in args:
         at = args.index("--font")
+        if at + 1 == len(args):
+            sys.exit("--font needs a path to a .ttf or .otf file")
         font_path = args[at + 1]
         del args[at:at + 2]
     root = Path(__file__).resolve().parent

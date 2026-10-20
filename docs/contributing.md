@@ -10,7 +10,8 @@ Everything runs through Gradle. The one command that must stay green:
 ./gradlew check
 ```
 
-It compiles every module (Android + iOS), runs the tests, and — via `:verivent-parity-check` —
+It compiles every module (Android + iOS), runs the tests, and — via `:verivent-parity-check:real` and
+`:verivent-parity-check:noop` —
 compiles a shared source file against both the real and the no-op modules, so any API drift between
 them fails the build. Run it on macOS so the Kotlin/Native iOS targets compile.
 
