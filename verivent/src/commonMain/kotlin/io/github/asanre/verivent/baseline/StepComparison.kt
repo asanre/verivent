@@ -6,9 +6,13 @@ import io.github.asanre.verivent.analytics.exportedValues
 import io.github.asanre.verivent.baseline.BaselineDiff.Finding
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.PlanEvent
+import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlinx.serialization.json.JsonObject
 
 internal val AnalyticsEntry.key get() = PlanEvent(name, channel)
+
+/** Where an entry falls in capture order: ids are a counter, so they only grow. */
+internal val TimelineEntry.order: Long get() = id.toLongOrNull() ?: 0
 
 /**
  * Pairs every [expected] event with one [sent] event it matches (same name and channel, no issue)

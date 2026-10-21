@@ -19,6 +19,8 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
 
     private val current get() = started.last()
 
+    val anyStepStarted: Boolean get() = started.isNotEmpty()
+
     /**
      * Starts the next step, null for a flow without steps.
      *
@@ -74,7 +76,7 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
         return (deferred + wholeFlow).filterNot { it.passed }
     }
 
-    fun recording(): BaselineFile = BaselineFile(name, recorded.toList(), implicit = recorded.size == 1 && recorded[0].name == null)
+    fun recording(): BaselineFile = BaselineFile(name, recorded.toList())
 
     private fun extraOverTheFlow(entries: List<AnalyticsEntry>): List<Finding> {
         val ran = started.mapNotNull { it.step }.flatMap { it.events }
@@ -84,5 +86,5 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
         return sent.flatMap { (key, count) -> List((count - expected.getValue(key)).coerceAtLeast(0)) { Finding.Extra(key) } }
     }
 
-    private fun Started.window(entries: List<AnalyticsEntry>) = entries.filter { (it.id.toLongOrNull() ?: 0) > afterId }
+    private fun Started.window(entries: List<AnalyticsEntry>) = entries.filter { it.order > afterId }
 }

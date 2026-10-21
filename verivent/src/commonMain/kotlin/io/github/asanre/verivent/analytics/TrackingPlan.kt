@@ -145,10 +145,7 @@ internal class Schema(
             required = schema["required"]?.let { it as? JsonArray ?: invalid("$path.required must be an array") }
                 .orEmpty()
                 .map { it.asString("$path.required") },
-            additionalProperties = schema["additionalProperties"]?.let { flag ->
-                (flag as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull
-                    ?: invalid("$path.additionalProperties must be true or false")
-            } ?: true,
+            additionalProperties = schema["additionalProperties"]?.asBoolean("$path.additionalProperties") ?: true,
             items = schema["items"]?.let { parse(it.asObject("$path.items"), "$path.items", template.child("items")) },
             minItems = schema["minItems"]?.let { min ->
                 (min as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull?.takeIf { it >= 0 }

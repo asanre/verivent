@@ -41,7 +41,7 @@ class Baseline internal constructor(
      */
     fun flow(waiter: Waiter = Waiter.RealTime, timeout: Duration = 5.seconds, block: FlowScope.() -> Unit) {
         val run = FlowRun(name, file)
-        FlowScope(run, isRecording, waiter, timeout).runFlow(block)
+        FlowScope(run, isRecording, waiter, timeout).apply { block(); finish() }
         if (isRecording) recorded = run.recording()
     }
 

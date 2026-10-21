@@ -1,6 +1,7 @@
 package io.github.asanre.verivent.baseline
 
 import io.github.asanre.verivent.analytics.Schema
+import io.github.asanre.verivent.analytics.asBoolean
 import io.github.asanre.verivent.analytics.asObject
 import io.github.asanre.verivent.analytics.asString
 import io.github.asanre.verivent.analytics.displayText
@@ -15,7 +16,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.addJsonObject
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -24,7 +24,10 @@ import kotlinx.serialization.json.putJsonArray
  * A baseline file: a flow's steps, each the events it expects. A flow without steps is one step,
  * written flat (`order` and `events` at the root); one with steps lists them under `steps`.
  */
-internal class BaselineFile(val name: String, val steps: List<Step>, val implicit: Boolean) {
+internal class BaselineFile(val name: String, val steps: List<Step>) {
+
+    /** A flow without steps: its one step is written flat. */
+    val implicit: Boolean get() = steps.size == 1 && steps[0].name == null
 
     /** [name] is null for the one step of a flow without steps. */
     class Step(val name: String?, val sequence: Boolean, val events: List<ExpectedEvent>)
@@ -60,7 +63,7 @@ internal class BaselineFile(val name: String, val steps: List<Step>, val implici
             val name = root["flow"].asString("flow")
             val steps = root["steps"]
             val file = when {
-                steps == null -> BaselineFile(name, listOf(parseStep(null, root, path = "")), implicit = true)
+                steps == null -> BaselineFile(name, listOf(parseStep(null, root, path = "")))
                 "events" in root || "order" in root -> invalid("events and order go inside each step when there are steps")
                 else -> {
                     val parsed = (steps as? JsonArray ?: invalid("steps must be an array")).mapIndexed { index, element ->
@@ -68,7 +71,7 @@ internal class BaselineFile(val name: String, val steps: List<Step>, val implici
                         parseStep(step["name"].asString("steps[$index].name"), step, path = "steps[$index].")
                     }
                     parsed.groupBy { it.name }.filterValues { it.size > 1 }.keys.firstOrNull()?.let { invalid("step $it is listed twice") }
-                    BaselineFile(name, parsed, implicit = false)
+                    BaselineFile(name, parsed)
                 }
             }
             return file.apply { requireDeferredOnce() }
@@ -106,9 +109,7 @@ internal class BaselineFile(val name: String, val steps: List<Step>, val implici
                     val event = element.asObject(at)
                     ExpectedEvent(
                         key = PlanEvent(event["name"].asString("$at.name"), event["channel"].asString("$at.channel")),
-                        deferred = event["deferred"]?.let { flag ->
-                            (flag as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: invalid("$at.deferred must be true or false")
-                        } ?: false,
+                        deferred = event["deferred"]?.asBoolean("$at.deferred") ?: false,
                         schema = event["schema"].asObject("$at.schema").also { validate(it, "$at.schema") },
                     )
                 },

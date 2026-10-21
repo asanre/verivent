@@ -26,7 +26,7 @@ infix fun String.on(channel: String): PlanEvent = PlanEvent(this, channel)
 fun lastEvent(event: PlanEvent, waiter: Waiter = Waiter.RealTime, timeout: Duration = 5.seconds): EventCheck {
     var found: AnalyticsEntry? = null
     waiter.until(timeout) {
-        found = Inspector.entriesSnapshot.lastOrNull { it is AnalyticsEntry && it.key == event } as AnalyticsEntry?
+        found = Inspector.entriesSnapshot.filterIsInstance<AnalyticsEntry>().lastOrNull { it.key == event }
         found != null
     }
     return EventCheck(found ?: throw AssertionError("${event.label} wasn't sent within $timeout"))

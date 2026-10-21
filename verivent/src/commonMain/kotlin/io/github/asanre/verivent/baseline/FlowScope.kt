@@ -16,7 +16,7 @@ class FlowScope internal constructor(
     private val timeout: Duration,
 ) {
     private val variables = LinkedHashMap<String, Any?>()
-    private var steps = 0
+    private val start = lastId()
 
     /**
      * Runs [action] as the baseline's next step, then waits until the events it sent match the
@@ -25,9 +25,8 @@ class FlowScope internal constructor(
      * @throws BaselineMismatch when they still don't match once the timeout runs out.
      */
     fun <T> step(name: String, action: () -> T): T {
-        run.startStep(name, lastId())
-        steps++
-        return action().also { settle() }
+        beginStep(name)
+        return action().also { endStep() }
     }
 
     /**
@@ -36,31 +35,51 @@ class FlowScope internal constructor(
      * `{{orderId}}` wherever the value was sent; comparing fills it in.
      */
     fun <T> bound(value: T): PropertyDelegateProvider<Any?, ReadOnlyProperty<Any?, T>> = PropertyDelegateProvider { _, property ->
-        variables[property.name] = value
+        bind(property.name, value)
         ReadOnlyProperty { _, _ -> value }
     }
 
-    internal fun runFlow(block: FlowScope.() -> Unit) {
-        val start = lastId()
-        block()
-        if (steps == 0) {
+    internal fun bind(name: String, value: Any?) {
+        variables[name] = value
+    }
+
+    /**
+     * [step] in two calls, for a driver that runs the app's actions itself in between: an HTTP
+     * test. [endStep] waits and checks, or records.
+     */
+    internal fun beginStep(name: String) {
+        run.startStep(name, lastId())
+    }
+
+    /** Checks what's left once the flow ends, after the one implicit step of a flow without steps. */
+    internal fun finish() {
+        if (!run.anyStepStarted) {
             run.startStep(null, start)
-            settle()
+            endStep()
         }
         if (recording) return
-        var left = run.close(analytics(), variables)
-        if (left.isNotEmpty() && left.all { it.onlyMissing }) waiter.until(timeout) { run.close(analytics(), variables).also { left = it }.none { it.onlyMissing } }
+        val left = waitWhileOnlyMissing { run.close(analytics(), variables) }
         if (left.isNotEmpty()) throw BaselineMismatch(left)
     }
 
-    private fun settle() {
+    /** @throws BaselineMismatch as [step] does. */
+    internal fun endStep() {
         if (recording) {
             waitForQuiet()
             return run.recordStep(analytics(), variables)
         }
-        var diff = run.checkStep(analytics(), variables)
-        if (diff.onlyMissing) waiter.until(timeout) { run.checkStep(analytics(), variables).also { diff = it }.let { !it.onlyMissing } }
-        if (!diff.passed) throw BaselineMismatch(listOf(diff))
+        val diff = waitWhileOnlyMissing { listOf(run.checkStep(analytics(), variables)).filterNot { it.passed } }
+        if (diff.isNotEmpty()) throw BaselineMismatch(diff)
+    }
+
+    /**
+     * The failing diffs [check] returns, checked again until one fails for a reason waiting can't
+     * fix: only an event not sent yet can still arrive, while one sent wrong or once too often stays sent.
+     */
+    private fun waitWhileOnlyMissing(check: () -> List<BaselineDiff>): List<BaselineDiff> {
+        var left = check()
+        if (left.isNotEmpty() && left.all { it.onlyMissing }) waiter.until(timeout) { check().also { left = it }.none { it.onlyMissing } }
+        return left
     }
 
     /** Until nothing new was captured for a while, or the timeout: a recording can't know what to expect. */
@@ -79,13 +98,9 @@ class FlowScope internal constructor(
 
     private fun analytics() = Inspector.entriesSnapshot.filterIsInstance<AnalyticsEntry>()
 
-    private fun lastId() = Inspector.entriesSnapshot.maxOfOrNull { it.id.toLongOrNull() ?: 0 } ?: 0
+    private fun lastId() = Inspector.entriesSnapshot.maxOfOrNull { it.order } ?: 0
 }
 
 private val QUIET = 500.milliseconds
 
-/**
- * Whether waiting could still make this diff pass: only an event not sent yet can still arrive. One
- * sent wrong, or once too often, stays sent.
- */
 private val BaselineDiff.onlyMissing get() = findings.isNotEmpty() && findings.all { it is BaselineDiff.Finding.Missing }
