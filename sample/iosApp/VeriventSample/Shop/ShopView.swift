@@ -11,7 +11,7 @@ enum Route: Hashable {
 /// The shop, a stack of its screens, and the Developer screen that opens Verivent.
 struct ShopView: View {
     @State private var path: [Route] = []
-    @State private var cart = Cart()
+    @StateObject private var shop = Shop()
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -20,13 +20,13 @@ struct ShopView: View {
                     switch route {
                     case .product(let product):
                         ProductView(product: product) {
-                            cart = cart.adding(product)
+                            shop.cart = shop.cart.adding(product)
                             path.append(.cart)
                         }
                     case .cart:
-                        CartView(cart: cart) { path.append(.payment) }
+                        CartView(shop: shop) { path.append(.payment) }
                     case .payment:
-                        PaymentView(cart: cart) { pay() }
+                        PaymentView(shop: shop) { pay() }
                     case .confirmation(let orderId):
                         ConfirmationView(orderId: orderId) { path = [] }
                     case .developer:
@@ -38,10 +38,12 @@ struct ShopView: View {
 
     private func pay() {
         let orderId = String(format: "T-%06X", Int.random(in: 0..<0x1000000))
-        ShopAnalytics.purchase(cart, orderId: orderId)
-        SampleNetwork.shared.placeOrder(cart, orderId: orderId)
-        cart = Cart()
-        path = [.confirmation(orderId)]
+        ShopAnalytics.purchase(shop.cart, orderId: orderId)
+        SampleNetwork.shared.placeOrder(shop.cart, orderId: orderId)
+        shop.cart = Cart()
+        // Pushed, not swapped in for the whole stack: replacing it shows the screens below for a
+        // moment, and they log their screen_view again.
+        path.append(.confirmation(orderId))
     }
 }
 
@@ -90,15 +92,15 @@ struct ProductView: View {
 }
 
 struct CartView: View {
-    let cart: Cart
+    @ObservedObject var shop: Shop
     let onCheckout: () -> Void
 
     var body: some View {
         List {
-            ForEach(cart.lines, id: \.product) { Text("\($0.quantity) × \($0.product.name)") }
-            Text("Total \(price(cart.total))").font(.title3)
+            ForEach(shop.cart.lines, id: \.product) { Text("\($0.quantity) × \($0.product.name)") }
+            Text("Total \(price(shop.cart.total))").font(.title3)
             Button("Checkout") {
-                ShopAnalytics.checkout(cart)
+                ShopAnalytics.checkout(shop.cart)
                 onCheckout()
             }
             .accessibilityIdentifier("cart.checkout")
@@ -109,12 +111,12 @@ struct CartView: View {
 }
 
 struct PaymentView: View {
-    let cart: Cart
+    @ObservedObject var shop: Shop
     let onPay: () -> Void
 
     var body: some View {
         List {
-            Text("Total \(price(cart.total))").font(.title3)
+            Text("Total \(price(shop.cart.total))").font(.title3)
             Button("Pay", action: onPay).accessibilityIdentifier("payment.pay")
         }
         .navigationTitle("Payment")
