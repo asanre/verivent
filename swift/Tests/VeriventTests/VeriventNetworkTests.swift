@@ -70,6 +70,30 @@ final class VeriventNetworkTests: XCTestCase {
         XCTAssertEqual(byName["x-custom"]?["value"] as? String, "██")
     }
 
+    func testThePathIsCapturedPercentEncodedAsSentLikeOnKtor() async throws {
+        let session = makeSession()
+        _ = try await session.data(from: try viewerURL(path: "/probe encoded"))
+
+        let entries = try await networkEntries(path: "/probe%20encoded")
+        XCTAssertEqual(entries.count, 1, "the path must be stored percent-encoded, as Ktor's encodedPath is")
+    }
+
+    func testAPathRuleRewritesThePathAndTheUrlButNotTheFilter() async throws {
+        var filtered: [String] = []
+        let session = makeSession(
+            redactPath: { $0.replacingOccurrences(of: "secret-token", with: "██") },
+            keepRequest: { filtered.append($0.path); return true }
+        )
+        _ = try await session.data(from: try viewerURL(path: "/probe-reset/secret-token"))
+
+        let entries = try await networkEntries(path: "/probe-reset/██")
+        let entry = try XCTUnwrap(entries.first)
+        let url = try XCTUnwrap(entry["url"] as? String)
+        XCTAssertTrue(url.contains("/probe-reset/██"), "expected the sanitized path in \(url)")
+        XCTAssertFalse(url.contains("secret-token"), "the secret must never reach the store")
+        XCTAssertEqual(filtered, ["/probe-reset/secret-token"], "the filter sees the request as sent")
+    }
+
     func testFilteredRequestIsNotCaptured() async throws {
         let path = "/probe-filtered"
         let session = makeSession(keepRequest: { $0.path != path })
@@ -172,12 +196,14 @@ final class VeriventNetworkTests: XCTestCase {
 
     private func makeSession(
         redactHeader: ((String) -> Bool)? = nil,
+        redactPath: ((String) -> String)? = nil,
         keepRequest: ((Verivent.Request) -> Bool)? = nil
     ) -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         Verivent.installNetworkInterceptor(
             on: configuration,
             redactHeader: redactHeader,
+            redactPath: redactPath,
             keepRequest: keepRequest
         )
         return URLSession(configuration: configuration)

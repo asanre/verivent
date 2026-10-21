@@ -30,6 +30,7 @@ object NativeNetwork {
         val maxContentLength: Long,
         val redaction: RedactionEngine,
         val keepRequest: ((NativeRequest) -> Boolean)?,
+        val redactPath: ((String) -> String)? = null,
     )
 
     /**
@@ -59,6 +60,7 @@ object NativeNetwork {
         redactHeader: ((String) -> Boolean)?,
         redactQueryParameter: ((String) -> Boolean)?,
         redactBody: ((String) -> String)?,
+        redactPath: ((String) -> String)?,
         keepRequest: ((NativeRequest) -> Boolean)?,
     ) {
         config = Config(
@@ -69,6 +71,7 @@ object NativeNetwork {
                 bodyTransforms = listOfNotNull(redactBody),
             ),
             keepRequest = keepRequest,
+            redactPath = redactPath,
         )
     }
 
@@ -101,14 +104,15 @@ object NativeNetwork {
                 return@runSafely
             }
             val callId = Inspector.nextId()
+            val shown = current.redactPath?.invoke(path) ?: path
             Inspector.recordNetwork(
                 NetworkTransaction(
                     id = callId,
                     timestamp = Inspector.now(),
                     method = method,
-                    url = current.redaction.redactUrl(url),
+                    url = current.redaction.redactUrl(url.withPath(path, shown)),
                     host = host,
-                    path = path,
+                    path = shown,
                     requestContentType = contentType,
                     requestHeaders = headers.toKeyValues(current.redaction),
                     requestBody = current.previewOf(body, bodyByteCount, contentType, bodyPlaceholder),
@@ -206,4 +210,11 @@ private fun NSData.toByteArray(): ByteArray {
     return ByteArray(size).apply {
         usePinned { pinned -> memcpy(pinned.addressOf(0), bytes, length) }
     }
+}
+
+/** This URL with its [path], the part right after the authority, written as [shown]. */
+private fun String.withPath(path: String, shown: String): String {
+    if (shown == path) return this
+    val start = indexOf('/', startIndex = indexOf("://").let { if (it < 0) 0 else it + 3 })
+    return if (start >= 0 && startsWith(path, start)) replaceRange(start, start + path.length, shown) else this
 }

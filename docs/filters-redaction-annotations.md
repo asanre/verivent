@@ -10,6 +10,7 @@ All configuration is plain Kotlin predicates — no annotations, no codegen.
 | `sanitizeHeader { name -> Bool }` | additive | Redact matching request/response headers. `Authorization`, `Cookie`, `Set-Cookie` are always redacted. |
 | `sanitizeQueryParameter { name -> Bool }` | additive | Redact matching query parameters **and form-body fields**. A default list of secret-ish names is always redacted. |
 | `sanitizeBody { text -> String }` | additive | Rewrite a captured body preview. Applied after the form-field redaction below. |
+| `sanitizePath { path -> String }` | additive, off by default | Rewrite the captured path, percent-encoded as sent, in the path and the URL. |
 | `filter { request -> Bool }` | additive | Keep a request only if **every** filter returns true. A `false` skips capture entirely. |
 
 ```kotlin
@@ -32,6 +33,7 @@ that **each call replaces the previous configuration** instead of adding to it.
 | `redactHeader` | `((String) -> Bool)?` | `sanitizeHeader` |
 | `redactQueryParameter` | `((String) -> Bool)?` | `sanitizeQueryParameter` |
 | `redactBody` | `((String) -> String)?` | `sanitizeBody` |
+| `redactPath` | `((String) -> String)?` | `sanitizePath` |
 | `keepRequest` | `((Verivent.Request) -> Bool)?` | `filter` |
 
 ```swift
@@ -109,8 +111,17 @@ Three things are redacted:
   `name=value&…` and run through the *same* rules as query parameters, so `POST /oauth/token` with
   `password=…&client_secret=…` is stored as `password=██&client_secret=██`. Names are matched as
   sent: a percent-encoded name (`client%5Fsecret`) doesn't match. Requests only.
+- **Path segments, only if you ask** — nothing in a path is redacted by default, since most of it
+  (`/orders/123`) is what you want to see. A path that carries a secret (`/reset/<token>`,
+  `/v1/keys/<key>`) needs a `sanitizePath` (`redactPath` on iOS) rule, which gets the path
+  percent-encoded as sent on both platforms:
 
-A predicate that throws counts as a match, so a broken rule fails closed and redacts.
+    ```kotlin
+    sanitizePath { it.replace(Regex("^/reset/[^/]+"), "/reset/██") }
+    ```
+
+A predicate that throws counts as a match, so a broken rule fails closed and redacts; a path rule
+that throws hides the whole path.
 
 ## Buffer size
 
