@@ -47,6 +47,10 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+        androidInstrumentedTest.dependencies {
+            implementation(kotlin("test-junit"))
+            implementation(libs.androidx.test.runner)
+        }
     }
 }
 
@@ -55,6 +59,7 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

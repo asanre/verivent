@@ -55,6 +55,9 @@ InspectorLauncher.showNotification(context)     // post a live, ongoing notifica
 InspectorLauncher.dismissNotification(context)  // remove it
 ```
 
+The notification lists recent paths and event names, so it is kept off the lock screen
+(`VISIBILITY_SECRET`): it shows once the device is unlocked.
+
 ### Where the Activity lands, and its label
 
 `InspectorLauncher.open(context)` and the notification both stack `InspectorActivity` **on top of your app's task**,
@@ -106,7 +109,9 @@ InspectorLauncher.dismissNotification()  // cancel and remove pending + delivere
 (idempotent; a denial is a silent no-op). It installs a delegate that presents Verivent's own
 notification as a foreground banner while forwarding everything else to whatever delegate your app
 already set. Each capture republishes a single notification (fixed identifier), so it updates in
-place instead of stacking.
+place instead of stacking. iOS has no per-notification lock-screen setting: what the lock screen
+shows follows *Settings › Notifications › Show Previews*, whose default (*When Unlocked*) hides the
+body, the paths and event names, until the device is unlocked.
 
 Tapping the notification calls `InspectorLauncher.open()`, which presents the inspector as a page sheet over
 whatever is on top — swipe it down to close. Calling it while the inspector is already on top does

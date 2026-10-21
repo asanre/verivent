@@ -1,6 +1,7 @@
 package io.github.asanre.verivent.ui
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -76,6 +77,19 @@ object InspectorLauncher {
 
     @SuppressLint("MissingPermission") // notify() is guarded by the SecurityException catch below.
     private fun notify(context: Context, lines: List<String>) {
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification(context, lines))
+        } catch (cause: SecurityException) {
+            // POST_NOTIFICATIONS not granted (API 33+); the host must request it.
+            DiagnosticLog.warn("notification", "POST_NOTIFICATIONS not granted; nothing posted", cause)
+        }
+    }
+
+    /**
+     * Kept off the lock screen entirely: its lines carry paths and event names, and with Android's
+     * default settings a private notification still shows them there.
+     */
+    internal fun notification(context: Context, lines: List<String>): Notification {
         val flags = PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         val open = PendingIntent.getActivity(
             context,
@@ -92,7 +106,7 @@ object InspectorLauncher {
         val count = Inspector.store.entries.value.size
         val style = NotificationCompat.InboxStyle()
         lines.forEach(style::addLine)
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.verivent_ic_logo)
             .setContentTitle(Inspector.title)
             .setContentText("$count ${if (count == 1) "entry" else "entries"} captured — tap to inspect")
@@ -101,13 +115,8 @@ object InspectorLauncher {
             .setOngoing(true)
             .setContentIntent(open)
             .addAction(0, "Clear", clear)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
             .build()
-        try {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        } catch (cause: SecurityException) {
-            // POST_NOTIFICATIONS not granted (API 33+); the host must request it.
-            DiagnosticLog.warn("notification", "POST_NOTIFICATIONS not granted; nothing posted", cause)
-        }
     }
 
     private fun ensureChannel(context: Context) {
