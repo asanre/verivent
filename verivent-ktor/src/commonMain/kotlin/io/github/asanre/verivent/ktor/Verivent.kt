@@ -1,6 +1,7 @@
 package io.github.asanre.verivent.ktor
 
 import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.internal.runSafely
 import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.github.asanre.verivent.core.redaction.RedactionEngine
@@ -11,6 +12,9 @@ import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.plugin
 import io.ktor.http.HttpHeaders
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.encodedPath
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
 import kotlin.coroutines.cancellation.CancellationException
@@ -35,14 +39,27 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
     )
     val maxLen = config.maxContentLength
 
+    fun shownPath(url: Url): String = config.pathTransforms.fold(url.encodedPath) { path, transform ->
+        runCatching { transform(path) }
+            .onFailure { DiagnosticLog.warn("ktor", "path sanitizer threw; hiding the path", it) }
+            .getOrDefault(RedactionEngine.DEFAULT_PLACEHOLDER)
+    }
+
+    /** [text] with [url] in it as captured: its path sanitized and its secret parameters redacted. */
+    fun redacted(text: String, url: Url): String {
+        val path = shownPath(url)
+        val shown = if (path == url.encodedPath) text else text.replace(url.toString(), URLBuilder(url).apply { encodedPath = path }.buildString())
+        return redaction.redactUrl(shown)
+    }
+
     val callIdKey = AttributeKey<String>("VeriventCallId")
     val startKey = AttributeKey<TimeSource.Monotonic.ValueTimeMark>("VeriventStart")
 
     // Only Verivent's own recording can be logged here — `cause` belongs to the host.
-    fun recordFailure(callId: String, cause: Throwable) = runSafely("ktor.record-failure") {
+    fun recordFailure(callId: String, url: Url, cause: Throwable) = runSafely("ktor.record-failure") {
         // Ktor's timeout message embeds the full URL, query string and all, so it has
         // to go through redaction like any other captured URL would.
-        val message = redaction.redactUrl(cause.message ?: cause::class.simpleName ?: "error")
+        val message = redacted(cause.message ?: cause::class.simpleName ?: "error", url)
         Inspector.updateNetwork(callId) { it.copy(error = message) }
     }
 
@@ -61,9 +78,9 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
                     id = callId,
                     timestamp = Inspector.now(),
                     method = request.method.value,
-                    url = redaction.redactUrl(url.toString()),
+                    url = redacted(url.toString(), url),
                     host = url.host,
-                    path = url.encodedPath,
+                    path = shownPath(url),
                     requestContentType = content.contentType?.toString(),
                     requestHeaders = captureRequestHeaders(request, content, redaction),
                     requestBody = captureOutgoing(content, maxLen)
@@ -85,7 +102,7 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
             } catch (cause: Throwable) {
                 if (!cause.isHostFailure()) throw cause
                 // The host's own call fails with this too: show it on the timeline, keep it out of the log.
-                recordFailure(callId, cause)
+                recordFailure(callId, response.call.request.url, cause)
                 return@runSafely
             }?.formRedactedBy(redaction, response.contentType())
                 ?.redactedBy(redaction)
@@ -109,7 +126,7 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
         try {
             execute(request)
         } catch (cause: Throwable) {
-            request.attributes.getOrNull(callIdKey)?.let { recordFailure(it, cause) }
+            request.attributes.getOrNull(callIdKey)?.let { recordFailure(it, request.url.build(), cause) }
             throw cause
         }
     }

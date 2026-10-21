@@ -8,5 +8,6 @@ class VeriventConfig {
     fun sanitizeHeader(predicate: (String) -> Boolean) = Unit
     fun sanitizeQueryParameter(predicate: (String) -> Boolean) = Unit
     fun sanitizeBody(transform: (String) -> String) = Unit
+    fun sanitizePath(transform: (String) -> String) = Unit
     fun filter(predicate: (HttpRequestBuilder) -> Boolean) = Unit
 }

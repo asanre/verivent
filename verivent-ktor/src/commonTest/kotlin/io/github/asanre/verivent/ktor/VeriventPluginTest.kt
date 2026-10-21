@@ -160,6 +160,33 @@ class VeriventPluginTest {
     }
 
     @Test
+    fun aPathIsCapturedAsSentUnlessARuleRewritesIt() = runTest {
+        client().get("https://api.test/reset/abc%20def?page=1")
+        client { sanitizePath { it.replace(Regex("^/reset/[^/]+"), "/reset/██") } }.get("https://api.test/reset/abc%20def?token=t")
+
+        val (plain, sanitized) = transactions()
+        assertEquals("/reset/abc%20def", plain.path)
+        assertEquals("https://api.test/reset/abc%20def?page=1", plain.url)
+        assertEquals("/reset/██", sanitized.path)
+        assertEquals("https://api.test/reset/██?token=██", sanitized.url)
+    }
+
+    @Test
+    fun aPathRuleAlsoCoversTheFailureMessageAndFailsClosed() = runTest {
+        val failing = HttpClient(MockEngine) {
+            engine { addHandler { request -> throw RuntimeException("no route to ${request.url}") } }
+            install(Verivent) { sanitizePath { it.replace(Regex("^/reset/[^/]+"), "/reset/██") } }
+        }
+        runCatching { failing.get("https://api.test/reset/abc") }
+        client { sanitizePath { error("broken rule") } }.get("https://api.test/reset/abc")
+
+        val (failed, broken) = transactions()
+        assertEquals("no route to https://api.test/reset/██", failed.error)
+        assertEquals("██", broken.path)
+        assertEquals("https://api.test/██", broken.url)
+    }
+
+    @Test
     fun redactsQueryParametersInCapturedUrlOnly() = runTest {
         lateinit var wireUrl: String
         val client = HttpClient(MockEngine) {

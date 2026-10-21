@@ -199,6 +199,7 @@ private fun ktorPlugin(config: VeriventConfig) {
     config.sanitizeHeader { it == "x" }
     config.sanitizeQueryParameter { it == "x" }
     config.sanitizeBody { it }
+    config.sanitizePath { it }
     config.filter { request: HttpRequestBuilder -> true }
 }
 

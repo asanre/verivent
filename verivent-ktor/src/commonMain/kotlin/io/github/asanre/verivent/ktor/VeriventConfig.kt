@@ -14,6 +14,7 @@ class VeriventConfig {
     internal val headerRedactors = mutableListOf<(String) -> Boolean>()
     internal val queryParamRedactors = mutableListOf<(String) -> Boolean>()
     internal val bodyTransforms = mutableListOf<(String) -> String>()
+    internal val pathTransforms = mutableListOf<(String) -> String>()
     internal val requestFilters = mutableListOf<(HttpRequestBuilder) -> Boolean>()
 
     /**
@@ -39,6 +40,16 @@ class VeriventConfig {
      */
     fun sanitizeBody(transform: (String) -> String) {
         bodyTransforms += transform
+    }
+
+    /**
+     * Rewrite the captured path, percent-encoded as sent, to hide a secret in it: a reset token, an
+     * API key in `/v1/keys/<key>`. Off by default, since most ids in a path (`/orders/123`) are what
+     * you want to see. Applies to the path and to the captured URL, in registration order; a
+     * transform that throws hides the whole path.
+     */
+    fun sanitizePath(transform: (String) -> String) {
+        pathTransforms += transform
     }
 
     /** Keep only requests for which every filter returns true; a false skips capture entirely. */
