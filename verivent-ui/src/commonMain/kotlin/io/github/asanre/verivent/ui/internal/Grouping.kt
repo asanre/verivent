@@ -48,13 +48,9 @@ internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean, previo
     }
     if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket.asReversed(), openedBy)
 
-    val oldest = groups.firstOrNull()
-    val continued = oldest?.takeIf { it.screen == null }?.let { headless ->
-        previous.lastOrNull()?.takeIf { group -> group.entries.any { it.id == headless.entries.first().id } }
-    }
-    if (oldest != null && continued != null) {
-        groups[0] = oldest.copy(screen = continued.screen, openedBy = continued.openedBy, key = continued.key)
-    }
+    val oldest = groups.firstOrNull()?.takeIf { it.screen == null }
+    val continued = oldest?.let { headless -> previous.lastOrNull()?.takeIf { group -> group.entries.any { it.id == headless.entries.first().id } } }
+    if (oldest != null && continued != null) groups[0] = oldest.copy(screen = continued.screen, openedBy = continued.openedBy, key = continued.key)
     return groups.asReversed()
 }
 
@@ -67,4 +63,7 @@ internal class GroupTracker {
 }
 
 /** The collapsed keys of [groups] still on the timeline; the rest were evicted with their groups. */
-internal fun Set<String>.keptFor(groups: List<TimelineGroup>): Set<String> = filterTo(HashSet()) { key -> groups.any { it.key == key } }
+internal fun Set<String>.keptFor(groups: List<TimelineGroup>): Set<String> {
+    val live = groups.mapTo(HashSet()) { it.key }
+    return filterTo(HashSet()) { it in live }
+}

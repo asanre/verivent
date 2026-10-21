@@ -182,7 +182,7 @@ class VeriventPluginTest {
 
         val (failed, broken) = transactions()
         assertEquals("no route to https://api.test/reset/██ (/reset/██)", failed.error)
-        assertEquals("██", broken.path)
+        assertEquals("/██", broken.path)
         assertEquals("https://api.test/██", broken.url)
     }
 

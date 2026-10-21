@@ -212,9 +212,5 @@ private fun NSData.toByteArray(): ByteArray {
     }
 }
 
-/** This URL with its [path], the part right after the authority, written as [shown]. */
-private fun String.withPath(path: String, shown: String): String {
-    if (shown == path) return this
-    val start = indexOf('/', startIndex = indexOf("://").let { if (it < 0) 0 else it + 3 })
-    return if (start >= 0 && startsWith(path, start)) replaceRange(start, start + path.length, shown) else this
-}
+/** Every occurrence of the [path] as sent written as [shown], as the Ktor plugin does; a bare `/` hides nothing. */
+private fun String.withPath(path: String, shown: String): String = if (shown == path || path.length < 2) this else replace(path, shown)

@@ -12,9 +12,7 @@ import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.plugin
 import io.ktor.http.HttpHeaders
-import io.ktor.http.URLBuilder
 import io.ktor.http.Url
-import io.ktor.http.encodedPath
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
 import kotlin.coroutines.cancellation.CancellationException
@@ -42,20 +40,12 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
     fun shownPath(url: Url): String = config.pathTransforms.fold(url.encodedPath) { path, transform ->
         runCatching { transform(path) }
             .onFailure { DiagnosticLog.warn("ktor", "path sanitizer threw; hiding the path", it) }
-            .getOrDefault(RedactionEngine.DEFAULT_PLACEHOLDER)
+            .getOrDefault("/${RedactionEngine.DEFAULT_PLACEHOLDER}")
     }
 
-    /** [text] with [url], or only its path, in it as captured: path sanitized, secret parameters redacted. */
-    fun redacted(text: String, url: Url): String {
-        val path = shownPath(url)
-        val shown = if (path == url.encodedPath) {
-            text
-        } else {
-            text.replace(url.toString(), URLBuilder(url).apply { encodedPath = path }.buildString())
-                .let { if (url.encodedPath.length > 1) it.replace(url.encodedPath, path) else it }
-        }
-        return redaction.redactUrl(shown)
-    }
+    /** [text], [url] or a message quoting it, as captured: its path as shown, its secret parameters redacted. */
+    fun redacted(text: String, url: Url, path: String = shownPath(url)): String =
+        redaction.redactUrl(text.withPath(url.encodedPath, path))
 
     val callIdKey = AttributeKey<String>("VeriventCallId")
     val startKey = AttributeKey<TimeSource.Monotonic.ValueTimeMark>("VeriventStart")
@@ -78,14 +68,15 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
             request.attributes.put(startKey, TimeSource.Monotonic.markNow())
 
             val url = request.url.build()
+            val path = shownPath(url)
             Inspector.recordNetwork(
                 NetworkTransaction(
                     id = callId,
                     timestamp = Inspector.now(),
                     method = request.method.value,
-                    url = redacted(url.toString(), url),
+                    url = redacted(url.toString(), url, path),
                     host = url.host,
-                    path = shownPath(url),
+                    path = path,
                     requestContentType = content.contentType?.toString(),
                     requestHeaders = captureRequestHeaders(request, content, redaction),
                     requestBody = captureOutgoing(content, maxLen)
@@ -141,3 +132,9 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
 private fun Throwable.isHostFailure(): Boolean = generateSequence(this) { it.cause }.any {
     it is CancellationException || it is HttpRequestTimeoutException || it is SocketTimeoutException
 }
+
+/**
+ * Every occurrence of the [path] as sent written as [shown]. A bare `/` is left alone: it can't hide
+ * a secret, and replacing it would rewrite the scheme's `//`.
+ */
+private fun String.withPath(path: String, shown: String): String = if (shown == path || path.length < 2) this else replace(path, shown)

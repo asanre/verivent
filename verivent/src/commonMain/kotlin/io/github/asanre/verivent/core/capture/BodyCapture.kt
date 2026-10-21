@@ -80,6 +80,7 @@ object BodyCapture {
 }
 
 private const val TAG = "capture"
+private const val MAX_WARNED_CHARSETS = 32
 
 private val TEXT_APPLICATION_SUBTYPES = setOf("json", "xml", "javascript", "x-www-form-urlencoded")
 
@@ -105,7 +106,10 @@ private fun decodeWithCharset(bytes: ByteArray, end: Int, truncated: Boolean, ch
     } ?: bytes.decodeToString(0, end).also { warnOnce(charset.name, "a body doesn't decode as ${charset.name}: shown as UTF-8") }
 }
 
-/** Charsets already warned about: a server that always declares one would otherwise flood the log. */
+/**
+ * Charsets already warned about: a server that always declares one would otherwise flood the log.
+ * Capped, since the names come from servers.
+ */
 @OptIn(ExperimentalAtomicApi::class)
 private val warnedCharsets = AtomicReference(emptySet<String>())
 
@@ -114,7 +118,7 @@ private fun warnOnce(charset: String, message: String) {
     val key = charset.lowercase()
     while (true) {
         val warned = warnedCharsets.load()
-        if (key in warned) return
+        if (key in warned || warned.size >= MAX_WARNED_CHARSETS) return
         if (warnedCharsets.compareAndSet(warned, warned + key)) return DiagnosticLog.warn(TAG, message)
     }
 }
