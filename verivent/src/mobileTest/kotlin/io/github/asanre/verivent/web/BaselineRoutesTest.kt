@@ -82,7 +82,7 @@ class BaselineRoutesTest {
     }
 
     @Test
-    fun aStepOutOfOrderOrNoFlowAtAllIsRefused() = testApplication {
+    fun aStepOutOfOrderEndsTheFlowAndNoFlowIsRefused() = testApplication {
         application { webViewerModule(token = "k") }
         assertEquals(HttpStatusCode.Conflict, client.call("/api/baseline/step?name=browse").status)
 
@@ -91,6 +91,8 @@ class BaselineRoutesTest {
 
         assertEquals(HttpStatusCode.BadRequest, outOfOrder.status)
         assertEquals("step pay runs out of order: the baseline has browse next", outOfOrder.bodyAsText())
+        // As in Kotlin, a flow that failed is over.
+        assertEquals(HttpStatusCode.Conflict, client.call("/api/baseline/step?name=browse").status)
         assertEquals(HttpStatusCode.BadRequest, client.call("/api/baseline/flow", """{ "baseline": 1 }""").status)
     }
 

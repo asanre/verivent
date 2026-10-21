@@ -81,12 +81,12 @@ private class LiveFlow(val run: FlowRun, val scope: FlowScope, val recording: Bo
 private val live = Mutex()
 private var flow: LiveFlow? = null
 
-/** Binds the call's variables, then runs [step] on the live flow. */
+/** Binds the call's variables, then runs [step] on the live flow, which ends there if it fails, as `Baseline.flow` does. */
 private suspend fun ApplicationCall.drive(step: LiveFlow.() -> String?) {
     val text = receiveText()
     live.withLock {
         val current = flow ?: return respondText("no flow: start one with POST /api/baseline/flow", status = HttpStatusCode.Conflict)
-        verdict {
+        verdict(onFailure = { flow = null }) {
             val variables = text.takeIf { it.isNotBlank() }?.let { Json.parseToJsonElement(it).jsonObject["variables"] as? JsonObject }
             variables?.forEach { (name, value) -> current.scope.bind(name, value) }
             withContext(Dispatchers.IO) { current.step() }
@@ -98,7 +98,7 @@ private suspend fun ApplicationCall.drive(step: LiveFlow.() -> String?) {
  * `{"passed": true}`, with the recording when there is one, or `{"passed": false, "report": …}` as
  * the Kotlin test's failure reads. A misuse, a step out of order say, answers 400 with its reason.
  */
-private suspend fun ApplicationCall.verdict(block: suspend () -> String?) {
+private suspend fun ApplicationCall.verdict(onFailure: () -> Unit = {}, block: suspend () -> String?) {
     val result = try {
         val recording = block()
         buildJsonObject {
@@ -106,11 +106,13 @@ private suspend fun ApplicationCall.verdict(block: suspend () -> String?) {
             recording?.let { put("recording", it) }
         }
     } catch (failure: AssertionError) {
+        onFailure()
         buildJsonObject {
             put("passed", false)
             put("report", (failure as? BaselineMismatch)?.message ?: failure.message)
         }
     } catch (invalid: IllegalArgumentException) {
+        onFailure()
         return respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
     }
     respondText(result.toString(), ContentType.Application.Json)
