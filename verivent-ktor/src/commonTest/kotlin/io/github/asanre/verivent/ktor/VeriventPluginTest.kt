@@ -172,6 +172,13 @@ class VeriventPluginTest {
     }
 
     @Test
+    fun aPathThatStartsLikeTheHostLeavesTheHostAlone() = runTest {
+        client { sanitizePath { "/██" } }.get("https://api.test/api")
+
+        assertEquals("https://api.test/██", transactions().single().url)
+    }
+
+    @Test
     fun aPathRuleAlsoCoversTheFailureMessageAndFailsClosed() = runTest {
         val failing = HttpClient(MockEngine) {
             engine { addHandler { request -> throw RuntimeException("no route to ${request.url} (${request.url.encodedPath})") } }

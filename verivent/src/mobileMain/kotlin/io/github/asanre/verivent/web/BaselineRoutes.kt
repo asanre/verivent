@@ -11,7 +11,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.request.receiveChannel
-import io.ktor.server.request.receiveText
 import io.ktor.utils.io.readRemaining
 import kotlinx.io.readByteArray
 import io.ktor.server.response.respondText
@@ -65,9 +64,8 @@ internal fun Route.baselineRoutes() {
         }
     }
     post("/api/baseline/last") {
-        val text = call.receiveText()
         call.verdict {
-            val body = Json.parseToJsonElement(text).jsonObject
+            val body = Json.parseToJsonElement(call.receiveLimited()).jsonObject
             val event = PlanEvent(body.text("name"), body.text("channel"))
             val timeout = (body["timeout"] as? JsonPrimitive)?.content?.toLongOrNull()?.milliseconds ?: 5.seconds
             val check = withContext(Dispatchers.IO) { lastEvent(event, Waiter.RealTime, timeout) }
@@ -86,11 +84,10 @@ private var flow: LiveFlow? = null
 
 /** Binds the call's variables, then runs [step] on the live flow, which ends there if it fails, as `Baseline.flow` does. */
 private suspend fun ApplicationCall.drive(step: LiveFlow.() -> String?) {
-    val text = receiveText()
     live.withLock {
         val current = flow ?: return respondText("no flow: start one with POST /api/baseline/flow", status = HttpStatusCode.Conflict)
         verdict(onFailure = { flow = null }) {
-            val variables = text.takeIf { it.isNotBlank() }?.let { Json.parseToJsonElement(it).jsonObject["variables"] as? JsonObject }
+            val variables = receiveLimited().takeIf { it.isNotBlank() }?.let { Json.parseToJsonElement(it).jsonObject["variables"] as? JsonObject }
             variables?.forEach { (name, value) -> current.scope.bind(name, value) }
             withContext(Dispatchers.IO) { current.step() }
         }
@@ -124,7 +121,7 @@ private suspend fun ApplicationCall.verdict(onFailure: () -> Unit = {}, block: s
 /** The body, up to the size a tracking plan may have: a baseline is one flow's share of a plan. */
 private suspend fun ApplicationCall.receiveLimited(): String {
     val body = receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray()
-    require(body.size <= MAX_PLAN_BYTES) { "baseline too large" }
+    require(body.size <= MAX_PLAN_BYTES) { "body too large" }
     return body.decodeToString()
 }
 

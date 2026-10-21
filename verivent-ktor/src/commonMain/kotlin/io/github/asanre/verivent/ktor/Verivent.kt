@@ -134,7 +134,8 @@ private fun Throwable.isHostFailure(): Boolean = generateSequence(this) { it.cau
 }
 
 /**
- * Every occurrence of the [path] as sent written as [shown]. A bare `/` is left alone: it can't hide
- * a secret, and replacing it would rewrite the scheme's `//`.
+ * Every occurrence of the [path] as sent written as [shown], except right after a `/`: that is the
+ * authority (`https://api.test` for the path `/api`). A bare `/` is left alone: it hides nothing.
  */
-private fun String.withPath(path: String, shown: String): String = if (shown == path || path.length < 2) this else replace(path, shown)
+private fun String.withPath(path: String, shown: String): String =
+    if (shown == path || path.length < 2) this else replace(Regex("(?<!/)" + Regex.escape(path)), Regex.escapeReplacement(shown))

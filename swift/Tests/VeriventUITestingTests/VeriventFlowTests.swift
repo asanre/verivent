@@ -10,6 +10,8 @@ final class VeriventFlowTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
+        // Another bundle's viewer may still be up in this process, and a start while one runs is ignored.
+        Verivent.stopWebViewer()
         Verivent.startWebViewer(.local, port: server.port, token: server.token)
         for _ in 0..<40 where !server.isUp() { try await Task.sleep(nanoseconds: 50_000_000) }
     }

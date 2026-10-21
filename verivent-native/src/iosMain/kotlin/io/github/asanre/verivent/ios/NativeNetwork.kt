@@ -212,5 +212,6 @@ private fun NSData.toByteArray(): ByteArray {
     }
 }
 
-/** Every occurrence of the [path] as sent written as [shown], as the Ktor plugin does; a bare `/` hides nothing. */
-private fun String.withPath(path: String, shown: String): String = if (shown == path || path.length < 2) this else replace(path, shown)
+/** Every occurrence of the [path] as sent written as [shown], but not inside the authority, as the Ktor plugin does. */
+private fun String.withPath(path: String, shown: String): String =
+    if (shown == path || path.length < 2) this else replace(Regex("(?<!/)" + Regex.escape(path)), Regex.escapeReplacement(shown))

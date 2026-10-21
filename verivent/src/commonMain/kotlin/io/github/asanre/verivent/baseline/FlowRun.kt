@@ -17,7 +17,7 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
     private val started = mutableListOf<Started>()
     private val recorded = mutableListOf<BaselineFile.Step>()
 
-    private val current get() = started.last()
+    private val current get() = started.lastOrNull() ?: invalid("no step has started in $name")
 
     val anyStepStarted: Boolean get() = started.isNotEmpty()
 

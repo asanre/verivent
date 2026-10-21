@@ -97,6 +97,17 @@ class BaselineRoutesTest {
     }
 
     @Test
+    fun endingAStepNoneStartedOrSendingBrokenJsonIsAMisuse() = testApplication {
+        application { webViewerModule(token = "k") }
+        client.call("/api/baseline/flow", steps)
+        val early = client.call("/api/baseline/step/end")
+        assertEquals(HttpStatusCode.BadRequest, early.status)
+        assertEquals("no step has started in checkout", early.bodyAsText())
+
+        assertEquals(HttpStatusCode.BadRequest, client.call("/api/baseline/last", "{ not json").status)
+    }
+
+    @Test
     fun aRecordingComesBackWhenTheFlowFinishes() = testApplication {
         application { webViewerModule(token = "k") }
         client.call("/api/baseline/flow?record=checkout&timeout=600")

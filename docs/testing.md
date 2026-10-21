@@ -1,8 +1,8 @@
 # Testing analytics
 
-Two ways to put analytics under test: compare a test's session with a recorded **baseline**, from
-Kotlin, or ask the device's web server whether any event broke the plan, from anything that speaks
-HTTP.
+Three ways to put analytics under test: compare a test's session with a recorded **baseline**, from
+Kotlin; the same baselines from an iOS UI test, with `VeriventUITesting`; or ask the device's web
+server whether any event broke the plan, from anything that speaks HTTP.
 
 ## Baseline
 
@@ -224,7 +224,9 @@ final class CheckoutAnalyticsTests: XCTestCase {
 
 `VeriventApp.launch` passes a token and a port in the launch environment; the app starts Verivent's
 server on its loopback, with that token, the first time it calls Verivent, and the test talks to it
-over the simulator's localhost, which the test runner shares. Nothing else changes in the app.
+over the simulator's localhost, which the test runner shares. Nothing else changes in the app: its
+first Verivent call, whichever it is, starts the test's server, and a `startWebViewer` of its own
+then gets that one.
 
 `flow` waits up to `timeout` (5 seconds) for each step, as the Kotlin one does, and `bind` takes the
 place of `bound`: bind a value before the step that sends it ends.

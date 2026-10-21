@@ -77,6 +77,7 @@ public enum Verivent {
     ///
     /// - Throws: when `json` isn't a valid tracking plan; the current plan stays in place.
     public static func loadTrackingPlan(_ json: String) throws {
+        _ = uiTestServer
         try NativeEvents.shared.loadTrackingPlan(json: json)
     }
 
@@ -115,7 +116,8 @@ public enum Verivent {
         port: Int? = nil,
         token: String? = nil
     ) -> String {
-        NativeViewer.shared.start(
+        _ = uiTestServer
+        return NativeViewer.shared.start(
             bind: bind.raw,
             port: port.map(Int32.init) ?? NativeViewer.shared.defaultPort,
             token: token
@@ -138,10 +140,12 @@ public enum Verivent {
     // MARK: - UI tests
 
     /// Started the first time the app touches Verivent when `VeriventUITesting` launched it, so a UI
-    /// test can check the app's analytics with no test code in the app.
+    /// test can check the app's analytics with no test code in the app. Before any viewer of the
+    /// app's own: the first one started keeps the port and the token.
     static let uiTestServer: Void = {
         let environment = ProcessInfo.processInfo.environment
         guard let token = environment["VERIVENT_UITEST_TOKEN"] else { return }
-        startWebViewer(.local, port: environment["VERIVENT_UITEST_PORT"].flatMap(Int.init), token: token)
+        let port = environment["VERIVENT_UITEST_PORT"].flatMap(Int32.init) ?? NativeViewer.shared.defaultPort
+        NativeViewer.shared.start(bind: Bind.local.raw, port: port, token: token)
     }()
 }
