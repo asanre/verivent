@@ -140,6 +140,7 @@ internal fun Application.webViewerModule(token: String? = null) {
             )
             call.respondText(encodeEntries(matching), ContentType.Application.Json)
         }
+        baselineRoutes()
         sse("/api/stream") {
             // Deltas, tracked per connection: the store holds up to 20 MB and re-encoding all of it
             // on every mutation is the host's bill to pay. `TimelineStore.update` replaces only the

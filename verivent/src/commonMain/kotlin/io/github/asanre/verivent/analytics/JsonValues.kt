@@ -67,6 +67,8 @@ private fun toJson(value: Any?, depth: Int, budget: Budget): JsonElement {
     if (value.isContainer() && (depth > MAX_DEPTH || budget.left-- <= 0)) return CUT
     return when (value) {
         null -> JsonNull
+        // Already JSON: a value bound over HTTP.
+        is JsonElement -> value
         is String -> JsonPrimitive(value)
         is Boolean -> JsonPrimitive(value)
         // Passed as is, not widened: a Float widened to Double prints 1.100000023841858.
