@@ -16,6 +16,7 @@ final class io.github.asanre.verivent.ktor/VeriventConfig { // io.github.asanre.
     final fun filter(kotlin/Function1<io.ktor.client.request/HttpRequestBuilder, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.filter|filter(kotlin.Function1<io.ktor.client.request.HttpRequestBuilder,kotlin.Boolean>){}[0]
     final fun sanitizeBody(kotlin/Function1<kotlin/String, kotlin/String>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeBody|sanitizeBody(kotlin.Function1<kotlin.String,kotlin.String>){}[0]
     final fun sanitizeHeader(kotlin/Function1<kotlin/String, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeHeader|sanitizeHeader(kotlin.Function1<kotlin.String,kotlin.Boolean>){}[0]
+    final fun sanitizePath(kotlin/Function1<kotlin/String, kotlin/String>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizePath|sanitizePath(kotlin.Function1<kotlin.String,kotlin.String>){}[0]
     final fun sanitizeQueryParameter(kotlin/Function1<kotlin/String, kotlin/Boolean>) // io.github.asanre.verivent.ktor/VeriventConfig.sanitizeQueryParameter|sanitizeQueryParameter(kotlin.Function1<kotlin.String,kotlin.Boolean>){}[0]
 }
 

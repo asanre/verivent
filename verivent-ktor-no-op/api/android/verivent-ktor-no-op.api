@@ -4,6 +4,7 @@ public final class io/github/asanre/verivent/ktor/VeriventConfig {
 	public final fun getMaxContentLength ()J
 	public final fun sanitizeBody (Lkotlin/jvm/functions/Function1;)V
 	public final fun sanitizeHeader (Lkotlin/jvm/functions/Function1;)V
+	public final fun sanitizePath (Lkotlin/jvm/functions/Function1;)V
 	public final fun sanitizeQueryParameter (Lkotlin/jvm/functions/Function1;)V
 	public final fun setMaxContentLength (J)V
 }
