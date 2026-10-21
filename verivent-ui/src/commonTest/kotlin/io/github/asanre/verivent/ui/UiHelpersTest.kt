@@ -327,4 +327,10 @@ class GroupingTest {
 
         assertEquals(setOf("3"), setOf("1", "3").keptFor(groups))
     }
+
+    @Test
+    fun anEmptyTimelineHasNoGroups() {
+        assertEquals(emptyList(), groupEntries(emptyList(), grouped = false))
+        assertEquals(emptyList(), groupEntries(emptyList(), grouped = true))
+    }
 }

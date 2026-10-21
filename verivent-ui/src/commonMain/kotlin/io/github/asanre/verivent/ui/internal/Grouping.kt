@@ -28,6 +28,7 @@ internal data class TimelineGroup(
  * instead of turning into an unnamed group that reopens.
  */
 internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean, previous: List<TimelineGroup> = emptyList()): List<TimelineGroup> {
+    if (entries.isEmpty()) return emptyList()
     if (!grouped) {
         return listOf(TimelineGroup(screen = null, entries = entries.asReversed()))
     }
