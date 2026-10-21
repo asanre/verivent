@@ -4,7 +4,7 @@ import Verivent
 
 /// Verivent itself: the inspector, the shop's tracking plan, and traffic that shows what it catches.
 struct DeveloperView: View {
-    @State private var viewerUrl: String?
+    @State private var viewerUrl: String? = viewerAddress()
     @State private var showingViewer = false
 
     var body: some View {
@@ -24,7 +24,9 @@ struct DeveloperView: View {
             }
 
             Section(header: Text("Tracking plan")) {
-                Button("Load the shop's plan") { try? Verivent.loadTrackingPlan(samplePlan) }
+                Button("Load the shop's plan") {
+                    do { try Verivent.loadTrackingPlan(samplePlan) } catch { print("Verivent sample: the shop's plan didn't load: \(error)") }
+                }
                     .accessibilityIdentifier("developer.loadPlan")
                 Button("Clear the plan") { Verivent.clearTrackingPlan() }
             }
@@ -70,6 +72,12 @@ struct DeveloperView: View {
             if Verivent.isWebViewerRunning { viewerUrl = url }
         }
     }
+}
+
+/// The running viewer's local address, token included, or nil when it isn't running.
+private func viewerAddress() -> String? {
+    guard Verivent.isWebViewerRunning, let token = Verivent.webViewerToken else { return nil }
+    return "http://localhost:9394/?t=\(token)"
 }
 
 /// The shop's tracking plan, from `sample/shared`, which the Compose sample loads too.

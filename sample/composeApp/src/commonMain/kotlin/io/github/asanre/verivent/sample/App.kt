@@ -60,6 +60,6 @@ fun SampleApp() {
         }
         is Screen.Confirmation -> ConfirmationScreen(screen.orderId) { stack = listOf(Screen.Catalog) }
         Screen.Developer -> DeveloperScreen(onBack = back) { go(Screen.Inspector) }
-        Screen.Inspector -> InspectorScreen(Modifier.fillMaxSize())
+        Screen.Inspector -> InspectorScreen(Modifier.fillMaxSize(), onClose = back)
     }
 }
