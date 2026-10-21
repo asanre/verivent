@@ -61,6 +61,7 @@ fun SampleApp() {
         Section("Analytics")
         Wide("Log screen_view") { sampler.logScreenView("home") }
         Wide("Log purchase (ecommerce)") { sampler.logPurchase() }
+        Wide("Log item list") { sampler.logItemList() }
         Wide("Log server-side (gtm)") { sampler.logServerSide() }
         Wide("Flush events to collector") { scope.launch { runCatching { sampler.flushToCollector() } } }
         Wide("Load sample tracking plan") { sampler.loadTrackingPlan() }

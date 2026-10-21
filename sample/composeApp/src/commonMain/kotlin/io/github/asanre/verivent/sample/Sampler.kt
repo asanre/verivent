@@ -71,14 +71,33 @@ class Sampler {
         )
     }
 
+    /** Long enough for `logTo` to split it on every platform; two of its 60 items break the plan. */
+    fun logItemList() {
+        analytics.log(
+            name = "view_item_list",
+            channel = "firebase",
+            properties = mapOf(
+                "item_list_name" to "catalog",
+                "items" to (1..60).map { index ->
+                    mapOf(
+                        "item_id" to if (index % 30 == 0) "sn-$index" else "SN-$index",
+                        "item_name" to "Item $index",
+                        "price" to 0.99,
+                        "index" to index,
+                    )
+                },
+            ),
+        )
+    }
+
     fun logServerSide() {
         analytics.log("checkout_started", channel = "gtm", properties = mapOf("cart_size" to 3))
     }
 
     /**
      * A plan these demo events partly break: screen_view sends a screen it doesn't list, purchase
-     * misses transaction_id, sends user_email and one item's quantity as text, the gtm events
-     * match, and the rest aren't logged.
+     * misses transaction_id, sends user_email and one item's quantity as text, view_item_list has two
+     * item ids out of pattern, the gtm events match, and the rest aren't logged.
      */
     fun loadTrackingPlan() = Inspector.loadTrackingPlan(SAMPLE_PLAN)
 
@@ -114,7 +133,13 @@ private val SAMPLE_PLAN = """
     "schema": { "required": ["item"], "properties": { "item": { "type": "string", "pattern": "^SN-[0-9]+$" } } } },
   { "name": "checkout_started", "channel": "gtm",
     "schema": { "required": ["cart_size"], "properties": { "cart_size": { "type": "integer" } } } },
-  { "name": "view_item_list", "channel": "firebase", "schema": {} },
+  { "name": "view_item_list", "channel": "firebase",
+    "schema": { "required": ["item_list_name", "items"],
+                "properties": { "item_list_name": { "type": "string" },
+                                "items": { "type": "array", "minItems": 1,
+                                           "items": { "type": "object", "required": ["item_id"],
+                                                      "properties": { "item_id": { "type": "string", "pattern": "^SN-[0-9]+$" },
+                                                                      "price": { "type": "number" } } } } } } },
   { "name": "view_item", "channel": "firebase", "schema": {} },
   { "name": "begin_checkout", "channel": "server-side", "schema": {} },
   { "name": "add_payment_info", "channel": "server-side", "schema": {} },
