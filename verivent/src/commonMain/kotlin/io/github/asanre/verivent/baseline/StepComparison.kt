@@ -41,8 +41,9 @@ internal fun compareStep(
         if (closest == null) return@map Finding.Missing(key)
         val (at, found) = closest
         taken += at
-        // One that fits but wasn't paired can only be out of a sequence's order.
-        if (found.isEmpty()) Finding.OutOfOrder(key, before = expected.getOrNull(event + 1)?.key)
+        // One that fits but wasn't paired can only be out of a sequence's order: it goes before the
+        // next expected event that did arrive in order.
+        if (found.isEmpty()) Finding.OutOfOrder(key, before = (event + 1 until expected.size).firstOrNull { pairs[it] >= 0 }?.let { expected[it].key })
         else Finding.Mismatch(key, found.map { it.toPlanIssue() })
     }
     return findings + candidates.indices.filterNot { it in taken }.map { Finding.Extra(candidates[it].key) }

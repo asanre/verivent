@@ -274,6 +274,25 @@ class BaselineTest {
     }
 
     @Test
+    fun anEventOutOfOrderIsPlacedBeforeTheNextOneThatArrived() {
+        val baseline = Baseline.parse(
+            """
+            { "flow": "checkout", "order": "sequence", "events": [
+                { "name": "add_to_cart", "channel": "firebase", "schema": {} },
+                { "name": "refund", "channel": "firebase", "schema": {} },
+                { "name": "purchase", "channel": "firebase", "schema": {} } ] }
+            """,
+        )
+
+        val failure = baseline.mismatch { purchase(); addToCart() }
+
+        assertEquals(
+            listOf(Finding.OutOfOrder("add_to_cart" on "firebase", before = "purchase" on "firebase"), Finding.Missing("refund" on "firebase")),
+            failure.diffs.single().findings,
+        )
+    }
+
+    @Test
     fun aListIsRecordedByShapeAndContainsChecksTheKnownItem() {
         val baseline = Baseline.parse(recorded { val itemId by bound("42"); purchase(itemId) })
 
