@@ -10,7 +10,10 @@ import io.github.asanre.verivent.core.model.PlanEvent
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
+import io.ktor.server.request.receiveChannel
 import io.ktor.server.request.receiveText
+import io.ktor.utils.io.readRemaining
+import kotlinx.io.readByteArray
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
@@ -39,7 +42,7 @@ internal fun Route.baselineRoutes() {
     post("/api/baseline/flow") {
         val record = call.request.queryParameters["record"]
         val run = try {
-            if (record != null) FlowRun(record, file = null) else BaselineFile.parse(call.receiveText()).let { FlowRun(it.name, it) }
+            if (record != null) FlowRun(record, file = null) else BaselineFile.parse(call.receiveLimited()).let { FlowRun(it.name, it) }
         } catch (invalid: IllegalArgumentException) {
             return@post call.respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
         }
@@ -116,6 +119,13 @@ private suspend fun ApplicationCall.verdict(onFailure: () -> Unit = {}, block: s
         return respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
     }
     respondText(result.toString(), ContentType.Application.Json)
+}
+
+/** The body, up to the size a tracking plan may have: a baseline is one flow's share of a plan. */
+private suspend fun ApplicationCall.receiveLimited(): String {
+    val body = receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray()
+    require(body.size <= MAX_PLAN_BYTES) { "baseline too large" }
+    return body.decodeToString()
 }
 
 private fun JsonObject.text(key: String): String = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content

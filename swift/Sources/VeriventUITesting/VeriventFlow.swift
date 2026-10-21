@@ -13,7 +13,7 @@ public final class VeriventFlow {
     }
 
     /// The values bound so far, as the server takes them.
-    var variables: Data { json(["variables": bound]) }
+    func variables() throws -> Data { try json(["variables": bound]) }
 
     /**
      Runs `action` as the baseline's next step, then waits until the events it sent match the step
@@ -25,7 +25,7 @@ public final class VeriventFlow {
     public func step(_ name: String, _ action: () throws -> Void) throws {
         _ = try server.post("/api/baseline/step", query: ["name": name], timeout: timeout + 10)
         try action()
-        try verdict(server.post("/api/baseline/step/end", body: variables, timeout: timeout + 10))
+        try verdict(server.post("/api/baseline/step/end", body: variables(), timeout: timeout + 10))
     }
 
     /// A value the test knows only as it runs: `name` stands for `{{name}}` in the baseline. Recording

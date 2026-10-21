@@ -58,8 +58,13 @@ public struct BaselineMismatch: Error, CustomStringConvertible, LocalizedError {
     public var errorDescription: String? { report }
 }
 
-func json(_ object: [String: Any]) -> Data {
-    (try? JSONSerialization.data(withJSONObject: object)) ?? Data("{}".utf8)
+/// [object] as JSON. Checked first: `JSONSerialization` raises an Objective-C exception, which no
+/// Swift `catch` stops, on a value JSON has no type for, a `Date` say.
+func json(_ object: [String: Any]) throws -> Data {
+    guard JSONSerialization.isValidJSONObject(object) else {
+        throw VeriventUsageError(description: "only JSON values can be sent: strings, numbers, booleans, arrays and dictionaries of them, in \(object)")
+    }
+    return try JSONSerialization.data(withJSONObject: object)
 }
 
 /// What a check answered: nothing when it passed, the report when it didn't.

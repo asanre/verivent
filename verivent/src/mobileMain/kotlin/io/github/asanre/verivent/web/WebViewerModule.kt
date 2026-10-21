@@ -45,7 +45,7 @@ private fun escapeHtml(text: String): String = buildString(text.length) {
 }
 
 // Plans are a few hundred events at most; this only stops a runaway paste from filling memory.
-private const val MAX_PLAN_BYTES = 2 * 1024 * 1024
+internal const val MAX_PLAN_BYTES = 2 * 1024 * 1024
 
 private fun planStatus(): String = buildJsonObject {
     val plan = Inspector.trackingPlan.value

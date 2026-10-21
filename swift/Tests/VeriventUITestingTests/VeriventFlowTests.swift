@@ -36,7 +36,7 @@ final class VeriventFlowTests: XCTestCase {
             Verivent.log("purchase", channel: "firebase", properties: ["value": 9.5, "transaction_id": "T-1"])
             flow.bind("orderId", "T-1")
         }
-        try verdict(server.post("/api/baseline/finish", body: flow.variables, timeout: 10))
+        try verdict(server.post("/api/baseline/finish", body: flow.variables(), timeout: 10))
     }
 
     func testAMismatchThrowsTheReport() throws {
@@ -57,6 +57,12 @@ final class VeriventFlowTests: XCTestCase {
         XCTAssertThrowsError(try flow.step("browse") {}) { error in
             XCTAssertEqual((error as? VeriventUsageError)?.description, "400: the baseline of checkout has no step browse")
         }
+    }
+
+    func testABoundValueJsonCantCarryIsRefusedInsteadOfCrashing() throws {
+        let flow = try start()
+        flow.bind("orderId", Date())
+        XCTAssertThrowsError(try flow.variables()) { XCTAssertTrue($0 is VeriventUsageError) }
     }
 
     func testOneEventIsCheckedOnItsOwn() throws {

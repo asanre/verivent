@@ -63,7 +63,7 @@ public final class VeriventApp {
         }
         let flow = VeriventFlow(server: server, timeout: timeout)
         try body(flow)
-        let answer = try server.post("/api/baseline/finish", body: flow.variables, timeout: timeout * 2 + 10)
+        let answer = try server.post("/api/baseline/finish", body: flow.variables(), timeout: timeout * 2 + 10)
         try verdict(answer)
         if let recordDir = recordDir, let recording = answer["recording"] as? String {
             let file = URL(fileURLWithPath: recordDir).appendingPathComponent("\(name).json")
