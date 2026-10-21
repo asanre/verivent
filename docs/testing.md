@@ -184,9 +184,8 @@ passing on an empty session. On iOS, check analytics over HTTP (below).
 ## Over HTTP
 
 The web viewer's server also answers whether any event broke the plan, so a black-box test
-(Maestro, Appium, a shell script in CI) can check analytics without linking any Verivent code, the
-way you would with Snowplow Micro. Start the server in the build under test with a token you know,
-and load a plan:
+(Maestro, Appium, a shell script in CI) can check analytics without linking any Verivent code.
+Start the server in the build under test with a token you know, and load a plan:
 
 ```kotlin
 if (BuildConfig.DEBUG) WebViewer.start(token = "ci")

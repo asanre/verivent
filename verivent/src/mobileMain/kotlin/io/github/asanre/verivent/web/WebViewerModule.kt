@@ -122,7 +122,7 @@ internal fun Application.webViewerModule(token: String? = null) {
             Inspector.clearTrackingPlan()
             call.respondText(planStatus(), ContentType.Application.Json)
         }
-        // Black-box test assertions, in the spirit of Snowplow Micro: a test that only speaks HTTP
+        // Black-box test assertions: a test that only speaks HTTP
         // (through `adb forward` or the simulator's localhost) asks whether any event broke the
         // plan. `POST /api/clear` resets between tests.
         get("/api/assert/all") {
