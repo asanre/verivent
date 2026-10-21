@@ -1,0 +1,14 @@
+{
+  "name": "verivent",
+  "owner": {
+    "name": "Antoni Sanchez"
+  },
+  "description": "Verivent's agent skills, from the library's own repository.",
+  "plugins": [
+    {
+      "name": "verivent",
+      "source": "./plugins/verivent",
+      "description": "Agent skills for apps that use Verivent: check the analytics an app sent against the tracking plan and the ticket, and write it up for the PR."
+    }
+  ]
+}

@@ -148,6 +148,10 @@ curl -s 'http://localhost:9394/api/assert/all?t=ci'   # {"plan":"1.4.0","total":
 See [Testing analytics](https://asanre.github.io/verivent/testing/). A web tool can run the same
 checks in the browser with the [npm package](https://asanre.github.io/verivent/validator-npm/).
 
+Coding agents can read the console lines too: the [`analytics-events` skill](https://asanre.github.io/verivent/agent-skills/)
+checks them against the plan and the ticket and writes the report for the PR
+(`/plugin marketplace add asanre/verivent`, then `/plugin install verivent@verivent`).
+
 ### Network capture
 
 ```kotlin

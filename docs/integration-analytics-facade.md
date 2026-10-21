@@ -105,6 +105,9 @@ The line is the captured entry, the same JSON the web viewer receives and every 
 redacted values stay redacted. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
 split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON back.
 
+To turn those lines into a report for a pull request, give them to an agent with the
+[`analytics-events` skill](agent-skills.md).
+
 ## Exported sessions
 
 *Export* in the inspector and the web viewer's download write the same JSON, an array of entries;

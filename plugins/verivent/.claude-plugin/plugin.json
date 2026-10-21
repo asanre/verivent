@@ -1,0 +1,8 @@
+{
+  "name": "verivent",
+  "description": "Agent skills for apps that use Verivent, the on-device analytics validator.",
+  "author": { "name": "Antoni Sanchez" },
+  "homepage": "https://asanre.github.io/verivent/",
+  "repository": "https://github.com/asanre/verivent",
+  "license": "Apache-2.0"
+}

@@ -58,5 +58,6 @@ nav:
       - Web viewer: web-viewer.md
       - Validator in the browser: validator-npm.md
       - Testing analytics: testing.md
+      - Agent skills: agent-skills.md
   - Contributing: contributing.md
   - API reference: https://asanre.github.io/verivent/api/
