@@ -10,6 +10,7 @@ let package = Package(
     platforms: [.iOS(.v14)],
     products: [
         .library(name: "Verivent", targets: ["Verivent"]),
+        .library(name: "VeriventUITesting", targets: ["VeriventUITesting"]),
     ],
     targets: [
         .binaryTarget(
@@ -18,5 +19,7 @@ let package = Package(
             checksum: "@VERIVENT_XCFRAMEWORK_CHECKSUM@"
         ),
         .target(name: "Verivent", dependencies: ["VeriventKit"]),
+        // For UI test targets: only XCTest and URLSession, nothing of Verivent in the test runner.
+        .target(name: "VeriventUITesting"),
     ]
 )

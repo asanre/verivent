@@ -182,11 +182,81 @@ that expects a price the app no longer charges, and the single-event checks. The
 ./gradlew :sample:composeApp:recordBaselines             # record them again, into sample/shared/baselines
 ```
 
-### With the no-op and on iOS
+### With the no-op
 
 The baseline lives in the `verivent` module. With `verivent-no-op`, `flow` and `lastEvent` always
 fail with *Verivent no-op: nothing was captured*, so a test wired to the no-op fails instead of
-passing on an empty session. On iOS, check analytics over HTTP (below).
+passing on an empty session.
+
+## On iOS
+
+A UI test runs in a process of its own, so it checks the app's analytics through the
+`VeriventUITesting` product of the Swift package: the same baseline files, steps, bound values and
+report as the Kotlin API. Add the product to your UI test target only; the app needs nothing but
+Verivent itself.
+
+```swift
+import VeriventUITesting
+import XCTest
+
+final class CheckoutAnalyticsTests: XCTestCase {
+
+    func testCheckoutSendsItsAnalytics() throws {
+        let app = XCUIApplication()
+        let verivent = try VeriventApp.launch(app)              // instead of app.launch()
+
+        try verivent.flow("checkout_steps") { flow in           // checkout_steps.json in the test bundle
+            try flow.step("browse") { app.buttons["catalog.item.SN-42"].tap() }
+            try flow.step("buy") {
+                app.buttons["product.addToCart"].tap()
+                app.buttons["cart.checkout"].tap()
+            }
+            try flow.step("pay") {
+                app.buttons["payment.pay"].tap()
+                flow.bind("orderId", app.staticTexts["confirmation.orderId"].label)
+            }
+        }                                                       // throws BaselineMismatch with the report
+
+        try verivent.lastEvent("purchase", on: "firebase").shouldMatchPlan().shouldHave("currency", "EUR")
+    }
+}
+```
+
+`VeriventApp.launch` passes a token and a port in the launch environment; the app starts Verivent's
+server on its loopback, with that token, the first time it calls Verivent, and the test talks to it
+over the simulator's localhost, which the test runner shares. Nothing else changes in the app.
+
+`flow` waits up to `timeout` (5 seconds) for each step, as the Kotlin one does, and `bind` takes the
+place of `bound`: bind a value before the step that sends it ends.
+
+To record, run the tests with `VERIVENT_RECORD_DIR` in the test runner's environment; each flow writes
+`<name>.json` there instead of comparing:
+
+```bash
+TEST_RUNNER_VERIVENT_RECORD_DIR="$PWD/baselines" xcodebuild test -scheme MyApp -destination "id=$SIM"
+```
+
+A recording from iOS lists each event's `required` properties in the order Swift's dictionary gave
+them; otherwise it's the file Android records, so one baseline can serve both apps. The samples do
+just that: `sample/iosApp`'s `CheckoutAnalyticsTests` checks the files in `sample/shared/baselines`
+that the Compose sample's test records.
+
+### The routes underneath
+
+`VeriventUITesting` is a client of these routes on the app's server, behind the same gate as the
+rest; a test in any other language can drive them the same way. Each `POST` answers
+`{"passed": true}`, or `{"passed": false, "report": "…"}` with the Kotlin failure's text, and a
+misuse, such as a step out of order, answers `400` with the reason. A flow that fails is over.
+
+| Route | Does |
+|---|---|
+| `POST /api/baseline/flow` | Starts a flow against the baseline in the body; `?record=<name>` records one instead. `?timeout=` in ms |
+| `POST /api/baseline/step?name=` | Starts the next step |
+| `POST /api/baseline/step/end` | Waits for the step's events and checks them, or records them |
+| `POST /api/baseline/finish` | Ends the flow; a recording comes back as `recording` |
+| `POST /api/baseline/last` | Checks the latest event: `{"name", "channel", "plan": true}` or `{"name", "channel", "property", "value"}` |
+
+`step/end` and `finish` take the values bound so far as `{"variables": {"orderId": "T-1"}}`.
 
 ## Over HTTP
 

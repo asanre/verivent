@@ -42,6 +42,7 @@ public enum Verivent {
         groupLabelProperty: String? = NativeEvents.shared.groupLabelProperty,
         logToConsole: Bool = NativeEvents.shared.logToConsole
     ) {
+        _ = uiTestServer
         NativeEvents.shared.configure(
             keepEvent: keepEvent.map { predicate in
                 { raw in KotlinBoolean(bool: predicate(Event(raw))) }
@@ -57,6 +58,7 @@ public enum Verivent {
 
     /// Record one event. Wire this to your own analytics facade, alongside the real SDK call.
     public static func log(_ name: String, channel: String, properties: [String: Any] = [:]) {
+        _ = uiTestServer
         NativeEvents.shared.log(name: name, channel: channel, properties: properties)
     }
 
@@ -132,4 +134,14 @@ public enum Verivent {
 
     /// The URL to reach this device from another machine, or nil on a `.local` bind.
     public static var lanURL: String? { NativeViewer.shared.lanUrl() }
+
+    // MARK: - UI tests
+
+    /// Started the first time the app touches Verivent when `VeriventUITesting` launched it, so a UI
+    /// test can check the app's analytics with no test code in the app.
+    static let uiTestServer: Void = {
+        let environment = ProcessInfo.processInfo.environment
+        guard let token = environment["VERIVENT_UITEST_TOKEN"] else { return }
+        startWebViewer(.local, port: environment["VERIVENT_UITEST_PORT"].flatMap(Int.init), token: token)
+    }()
 }

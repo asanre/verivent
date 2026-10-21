@@ -33,8 +33,8 @@ fails at resolution rather than at link time.
 ```bash
 ./gradlew :verivent-native:assembleVeriventKitReleaseXCFramework
 SIM=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
-(cd swift && xcodebuild test -scheme Verivent -destination "id=$SIM")            # the bridge tests
-(cd sample/iosApp && xcodebuild build -scheme VeriventSample -destination "id=$SIM")
+(cd swift && xcodebuild test -scheme Verivent-Package -destination "id=$SIM")    # bridge and UI-testing tests
+(cd sample/iosApp && xcodebuild test -scheme VeriventSample -destination "id=$SIM") # the shop's XCUITest
 (cd sample/composeApp/iosApp && xcodebuild build -scheme ComposeSample -destination "id=$SIM")
 ```
 

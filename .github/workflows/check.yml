@@ -47,6 +47,7 @@ jobs:
           udid=$(xcrun simctl list devices available -j \
             | jq -er '[.devices[][] | select(.name | test("^iPhone"))] | first | .udid')
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
-      - name: Run the bridge tests
+      - name: Run the bridge and UI-testing tests
         working-directory: swift
-        run: xcodebuild test -scheme Verivent -destination "id=${{ steps.sim.outputs.udid }}"
+        # Verivent-Package is the scheme SwiftPM generates for every target, VeriventUITesting included.
+        run: xcodebuild test -scheme Verivent-Package -destination "id=${{ steps.sim.outputs.udid }}"

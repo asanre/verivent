@@ -11,6 +11,7 @@ let package = Package(
     platforms: [.iOS(.v14)],
     products: [
         .library(name: "Verivent", targets: ["Verivent"]),
+        .library(name: "VeriventUITesting", targets: ["VeriventUITesting"]),
     ],
     targets: [
         .binaryTarget(
@@ -18,6 +19,9 @@ let package = Package(
             path: "../verivent-native/build/XCFrameworks/release/VeriventKit.xcframework"
         ),
         .target(name: "Verivent", dependencies: ["VeriventKit"]),
+        // For UI test targets: only XCTest and URLSession, nothing of Verivent in the test runner.
+        .target(name: "VeriventUITesting"),
         .testTarget(name: "VeriventTests", dependencies: ["Verivent"]),
+        .testTarget(name: "VeriventUITestingTests", dependencies: ["Verivent", "VeriventUITesting"]),
     ]
 )

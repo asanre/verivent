@@ -65,6 +65,7 @@ extension Verivent {
         redactPath: ((String) -> String)? = nil,
         keepRequest: ((Request) -> Bool)? = nil
     ) {
+        _ = uiTestServer
         NativeNetwork.shared.configure(
             maxContentLength: maxContentLength,
             redactHeader: redactHeader.map { predicate in { KotlinBoolean(bool: predicate($0)) } },

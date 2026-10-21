@@ -156,6 +156,11 @@ present(SFSafariViewController(url: url), animated: true)
 
 `sample/iosApp` does the same from SwiftUI with a `UIViewControllerRepresentable`.
 
+## Test analytics from UI tests
+
+The `VeriventUITesting` product checks the app's analytics from an XCUITest against a baseline file,
+step by step, with no test code in the app. See [Testing analytics](testing.md#on-ios).
+
 !!! note "`startWebViewer` reports bind failures asynchronously"
     The engine binds on a background coroutine, so the returned URL is not proof that the port was
     free. A failure logs a `Verivent` warning to the device console and flips `Verivent.isWebViewerRunning`
