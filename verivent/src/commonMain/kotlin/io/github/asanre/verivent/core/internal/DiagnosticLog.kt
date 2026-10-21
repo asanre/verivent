@@ -8,7 +8,11 @@ package io.github.asanre.verivent.core.internal
  */
 object DiagnosticLog {
 
+    /** Sees every warning as well, so a test can tell one was given. */
+    internal var onWarn: ((String) -> Unit)? = null
+
     fun warn(tag: String, message: String, throwable: Throwable? = null) {
+        onWarn?.invoke("[$tag] $message")
         platformLogWarn("[$tag] $message", throwable)
     }
 

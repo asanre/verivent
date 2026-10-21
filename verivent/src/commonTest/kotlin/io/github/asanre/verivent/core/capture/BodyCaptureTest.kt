@@ -1,0 +1,36 @@
+package io.github.asanre.verivent.core.capture
+
+import io.github.asanre.verivent.core.internal.DiagnosticLog
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class BodyCaptureTest {
+
+    private val warnings = mutableListOf<String>()
+
+    @BeforeTest fun listen() {
+        DiagnosticLog.onWarn = { warnings += it }
+    }
+
+    @AfterTest fun stopListening() {
+        DiagnosticLog.onWarn = null
+    }
+
+    @Test
+    fun aCharsetThePlatformDoesntKnowIsShownAsUtf8AndSaysSo() {
+        val preview = BodyCapture.textPreview("hello".encodeToByteArray(), "text/plain; charset=x-made-up", maxLength = 100)
+
+        assertEquals("hello", preview.text)
+        assertEquals(listOf("[capture] charset x-made-up isn't supported here: body shown as UTF-8"), warnings)
+    }
+
+    @Test
+    fun aBodyInItsDeclaredCharsetDecodesQuietly() {
+        BodyCapture.textPreview(byteArrayOf(0xE9.toByte()), "text/plain; charset=ISO-8859-1", maxLength = 100)
+        BodyCapture.textPreview("hi".encodeToByteArray(), "application/json", maxLength = 100)
+
+        assertEquals(emptyList(), warnings)
+    }
+}

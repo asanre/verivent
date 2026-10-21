@@ -1,11 +1,13 @@
 package io.github.asanre.verivent.core.capture
 
+import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.model.BodyPreview
 import io.ktor.http.ContentType
 import io.ktor.http.charset
 import io.ktor.utils.io.charsets.Charset
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.charsets.decode
+import io.ktor.utils.io.charsets.name
 import kotlinx.io.Buffer
 import kotlinx.io.write
 
@@ -51,7 +53,9 @@ object BodyCapture {
         byteCount: Long = bytes.size.toLong(),
     ): BodyPreview {
         val truncated = bytes.size > maxLength
-        val charset = runCatching { parse(contentType)?.charset() }.getOrNull()
+        val type = parse(contentType)
+        val charset = runCatching { type?.charset() }.getOrNull()
+        if (charset == null) type?.parameter("charset")?.let { DiagnosticLog.warn(TAG, "charset $it isn't supported here: body shown as UTF-8") }
         if (charset == null || charset == Charsets.UTF_8) {
             val end = if (truncated) bytes.utf8SnappedEnd(maxLength.toInt()) else bytes.size
             return BodyPreview(bytes.decodeToString(0, end), byteCount, truncated)
@@ -72,6 +76,8 @@ object BodyCapture {
     private fun parse(contentType: String?): ContentType? =
         contentType?.let { runCatching { ContentType.parse(it) }.getOrNull() }
 }
+
+private const val TAG = "capture"
 
 private val TEXT_APPLICATION_SUBTYPES = setOf("json", "xml", "javascript", "x-www-form-urlencoded")
 
@@ -94,5 +100,5 @@ private fun decodeWithCharset(bytes: ByteArray, end: Int, truncated: Boolean, ch
     val floor = if (truncated) (end - 3).coerceAtLeast(0) else end
     return (end downTo floor).firstNotNullOfOrNull { cut ->
         runCatching { charset.newDecoder().decode(Buffer().apply { write(bytes, 0, cut) }) }.getOrNull()
-    } ?: bytes.decodeToString(0, end)
+    } ?: bytes.decodeToString(0, end).also { DiagnosticLog.warn(TAG, "body doesn't decode as ${charset.name}: shown as UTF-8") }
 }
