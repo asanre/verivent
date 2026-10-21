@@ -15,9 +15,11 @@ compares them with the file:
 fun checkoutSendsItsAnalytics() = runAndroidComposeUiTest<MainActivity> {
     Inspector.reset()
     Baseline.parse(readResource("baselines/checkout.json")).flow(waiter()) {
-        tap("Log screen_view")
-        tap("Log purchase (ecommerce)")
-        tap("Log server-side (gtm)")
+        tap("catalog.item.SN-42")
+        tap("product.addToCart")
+        tap("cart.checkout")
+        tap("payment.pay")
+        val orderId by bound(orderIdOnScreen())
     }                                                    // throws BaselineMismatch when they don't match
 }
 ```
@@ -31,8 +33,9 @@ every property as a `const` of the value sent:
 { "flow": "checkout", "order": "set",
   "events": [
     { "name": "purchase", "channel": "firebase",
-      "schema": { "required": ["value", "currency", "user_email", "items"],
-                  "properties": { "value":      { "const": 42.5 },
+      "schema": { "required": ["transaction_id", "value", "currency", "user_email", "items"],
+                  "properties": { "transaction_id": { "const": "{{orderId}}" },
+                                  "value":      { "const": 39.9 },
                                   "currency":   { "const": "EUR" },
                                   "user_email": { "type": "string" },
                                   "items":      { "type": "array", "minItems": 1,
@@ -63,9 +66,12 @@ points of the flow is expected at each:
 
 ```kotlin
 baseline.flow(waiter()) {
-    step("browse") { tap("Log screen_view") }
-    step("buy") { tap("Log purchase (ecommerce)") }
-    step("checkout") { tap("Log server-side (gtm)") }
+    step("browse") { tap("catalog.item.SN-42") }
+    step("buy") {
+        tap("product.addToCart")
+        tap("cart.checkout")
+    }
+    step("pay") { tap("payment.pay") }
 }
 ```
 
@@ -80,13 +86,13 @@ returns what its action returns.
 `bound` names a value only the test knows, after the property it's delegated to:
 
 ```kotlin
-step("buy") {
-    val itemId by bound(firstItem().id)
-    tap("Log purchase (ecommerce)")
+step("pay") {
+    tap("payment.pay")
+    val orderId by bound(orderIdOnScreen())
 }
 ```
 
-Recording writes `"{{itemId}}"` wherever that value was sent, and for a list a `contains` with the
+Recording writes `"{{orderId}}"` wherever that value was sent, and for a list a `contains` with the
 first item holding it:
 
 ```json
@@ -97,7 +103,7 @@ first item holding it:
 Comparing fills it in. A string that is only the variable takes its value and type
 (`"{{quantity}}"` bound to `2` is the integer 2); inside a longer string it's interpolated. A
 variable with no value throws, and so does recording two variables bound to the same value. A
-failure names the variable, `expects {{itemId}}`, not the value.
+failure names the variable, `expects {{orderId}}`, not the value.
 
 ### Events sent in batches
 
@@ -143,10 +149,10 @@ A failure names the flow, the step and each event, with the plan's messages by p
 never quotes a value sent:
 
 ```text
-checkout › buy
+checkout › pay
   ✕ purchase · firebase
       value · Not the expected value · expects 49.99
-  ✕ checkout_started · gtm  missing
+  ✕ screen_view · firebase  missing
 ```
 
 `BaselineMismatch.diffs` carries the same as data: a `BaselineDiff` per failing step, with
@@ -166,13 +172,14 @@ now; `shouldHave` compares as JSON (`3` equals `3.0`, not `"3"`) and refuses a r
 
 ### In the sample
 
-`sample/composeApp` checks its own analytics on a device, in `CheckoutAnalyticsTest`: the flow
-above in one go and step by step, a baseline that expects a `value` the app no longer sends, and
-the two single-event checks. The baselines are in `src/androidInstrumentedTest/resources/baselines`.
+`sample/composeApp` checks its own analytics on a device, in `CheckoutAnalyticsTest`: buying the
+desk lamp in one go and step by step (`browse`, `buy`, `pay`, with the order id bound), a baseline
+that expects a price the app no longer charges, and the single-event checks. The baselines are in
+`sample/shared/baselines`, which the SwiftUI sample checks too.
 
 ```bash
 ./gradlew :sample:composeApp:connectedDebugAndroidTest   # compare
-./gradlew :sample:composeApp:recordBaselines             # record them again, into resources/baselines
+./gradlew :sample:composeApp:recordBaselines             # record them again, into sample/shared/baselines
 ```
 
 ### With the no-op and on iOS

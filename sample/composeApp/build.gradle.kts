@@ -8,6 +8,23 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+// The shop's plan and baselines live in sample/shared, where the SwiftUI sample reads them too.
+val shared = rootProject.layout.projectDirectory.dir("sample/shared")
+
+/** The shared tracking plan as `SAMPLE_PLAN`, for the Developer screen's "Load the shop's plan". */
+val generateSamplePlan = tasks.register("generateSamplePlan") {
+    val plan = shared.file("tracking-plan.json")
+    val out = layout.buildDirectory.dir("generated/samplePlan")
+    inputs.file(plan)
+    outputs.dir(out)
+    doLast {
+        val json = plan.asFile.readText().replace("$", "\${'$'}")
+        out.get().file("SamplePlan.kt").asFile.writeText(
+            "package io.github.asanre.verivent.sample\n\nval SAMPLE_PLAN: String = \"\"\"$json\"\"\"\n",
+        )
+    }
+}
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -23,6 +40,7 @@ kotlin {
     }
 
     sourceSets {
+        commonMain.get().kotlin.srcDir(generateSamplePlan)
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -69,6 +87,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    sourceSets.getByName("androidTest").resources.srcDir(shared)
 }
 
 // The tests write each recording to their output directory, which Gradle copies off the device.
@@ -79,5 +98,5 @@ tasks.register<Copy>("recordBaselines") {
         eachFile { path = name }
     }
     includeEmptyDirs = false
-    into("src/androidInstrumentedTest/resources/baselines")
+    into(shared.dir("baselines"))
 }

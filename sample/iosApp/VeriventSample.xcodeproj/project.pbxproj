@@ -16,6 +16,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1A0000000000000000000005 /* VeriventSample */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = VeriventSample; sourceTree = "<group>"; };
+		1A0000000000000000000013 /* shared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = shared; path = ../shared; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +35,7 @@
 			isa = PBXGroup;
 			children = (
 				1A0000000000000000000005 /* VeriventSample */,
+				1A0000000000000000000013 /* shared */,
 				1A0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -63,6 +65,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				1A0000000000000000000005 /* VeriventSample */,
+				1A0000000000000000000013 /* shared */,
 			);
 			name = VeriventSample;
 			packageProductDependencies = (
@@ -146,7 +149,7 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -167,7 +170,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

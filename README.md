@@ -208,9 +208,13 @@ visible `██` placeholder — you see that a field exists, not its value.
 
 ## Samples
 
-`sample/composeApp` is a Compose Multiplatform app (Android + iOS) that generates real Ktor traffic
-and fake analytics events across channels, loads a tracking plan those events partly break, and
-opens the inspector embedded and via notification.
+Both samples are the same small shop — catalog, product, cart, payment, confirmation — whose every
+step sends analytics, as an app's screens do. Their **Developer** screen opens Verivent, loads the
+shop's tracking plan and fires what the shop doesn't: events that break the plan and network calls
+that show redaction. The plan and the analytics baselines live in `sample/shared`, read by both, and
+the same baseline passes on Android and on iOS.
+
+`sample/composeApp` is the Compose Multiplatform shop (Android + iOS) over Ktor.
 
 ```bash
 ./gradlew :sample:composeApp:assembleDebug            # Android APK
@@ -220,7 +224,7 @@ opens the inspector embedded and via notification.
 On iOS, open `sample/composeApp/iosApp/ComposeSample.xcodeproj` and run it: a build phase compiles
 the Kotlin framework through Gradle.
 
-`sample/iosApp` is a SwiftUI app for the native-iOS Swift Package — analytics, `URLSession`
+`sample/iosApp` is the SwiftUI shop for the native-iOS Swift Package — analytics, `URLSession`
 capture and the web viewer. It links `swift/` by local path, so it exercises the sources in this repo
 rather than the last release. Assemble the XCFramework first, then open
 `sample/iosApp/VeriventSample.xcodeproj`; see [docs/contributing.md](docs/contributing.md).

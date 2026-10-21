@@ -1,0 +1,246 @@
+{
+    "flow": "checkout",
+    "order": "set",
+    "events": [
+        {
+            "name": "screen_view",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "screen_name"
+                ],
+                "properties": {
+                    "screen_name": {
+                        "const": "product"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "view_item",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "currency",
+                    "value",
+                    "items"
+                ],
+                "properties": {
+                    "currency": {
+                        "const": "EUR"
+                    },
+                    "value": {
+                        "const": 39.9
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "item_id": {
+                                    "type": "string"
+                                },
+                                "item_name": {
+                                    "type": "string"
+                                },
+                                "price": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "add_to_cart",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "currency",
+                    "value",
+                    "items"
+                ],
+                "properties": {
+                    "currency": {
+                        "const": "EUR"
+                    },
+                    "value": {
+                        "const": 39.9
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "item_id": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "screen_view",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "screen_name"
+                ],
+                "properties": {
+                    "screen_name": {
+                        "const": "cart"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "begin_checkout",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "currency",
+                    "value",
+                    "items"
+                ],
+                "properties": {
+                    "currency": {
+                        "const": "EUR"
+                    },
+                    "value": {
+                        "const": 39.9
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "item_id": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "checkout_started",
+            "channel": "gtm",
+            "schema": {
+                "required": [
+                    "cart_size"
+                ],
+                "properties": {
+                    "cart_size": {
+                        "const": 1
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "screen_view",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "screen_name"
+                ],
+                "properties": {
+                    "screen_name": {
+                        "const": "payment"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "purchase",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "currency",
+                    "value",
+                    "items",
+                    "transaction_id",
+                    "user_email"
+                ],
+                "properties": {
+                    "currency": {
+                        "const": "EUR"
+                    },
+                    "value": {
+                        "const": 39.9
+                    },
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "item_id": {
+                                    "type": "string"
+                                },
+                                "quantity": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "contains": {
+                            "properties": {
+                                "item_id": {
+                                    "const": "SN-42"
+                                },
+                                "quantity": {
+                                    "const": 1
+                                }
+                            },
+                            "required": [
+                                "item_id",
+                                "quantity"
+                            ]
+                        }
+                    },
+                    "transaction_id": {
+                        "const": "{{orderId}}"
+                    },
+                    "user_email": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        {
+            "name": "screen_view",
+            "channel": "firebase",
+            "schema": {
+                "required": [
+                    "screen_name"
+                ],
+                "properties": {
+                    "screen_name": {
+                        "const": "confirmation"
+                    }
+                },
+                "additionalProperties": false
+            }
+        }
+    ]
+}

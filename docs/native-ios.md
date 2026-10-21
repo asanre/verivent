@@ -23,7 +23,7 @@ it directly:
 ```
 
 That repository is generated on every release; the sources live in `swift/` in the main repo,
-alongside a runnable example: `sample/iosApp` is a SwiftUI app wired to everything below.
+alongside a runnable example: `sample/iosApp` is a small SwiftUI shop wired to everything below.
 
 ## Capture analytics events
 
