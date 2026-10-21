@@ -246,10 +246,7 @@ public final class VeriventURLProtocol: URLProtocol {
             VeriventURLProtocol.removeProperty(forKey: VeriventURLProtocol.handledKey, in: mutable)
             forwarded = mutable as URLRequest
         }
-        // Apple's CustomHTTPProtocol sample does exactly this: report the redirect, stop this load
-        // (the loading system starts a new protocol instance for the next hop) and end this one
-        // with NSUserCancelledError, which the client takes as "done", not as a failure the caller
-        // sees. testEachRedirectHopGetsItsOwnEntry pins it: a 200 back, the hop stored as a 302.
+        // As Apple's CustomHTTPProtocol sample does; the client doesn't surface this cancellation.
         client?.urlProtocol(self, wasRedirectedTo: forwarded, redirectResponse: response)
         task?.cancel()
         client?.urlProtocol(

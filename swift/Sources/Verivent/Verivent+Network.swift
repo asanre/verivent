@@ -8,6 +8,7 @@ extension Verivent {
         public let method: String
         public let url: String
         public let host: String
+        /// Percent-encoded as sent (`/my%20file`), as Ktor's `encodedPath` is.
         public let path: String
         public let headers: [String: String]
 

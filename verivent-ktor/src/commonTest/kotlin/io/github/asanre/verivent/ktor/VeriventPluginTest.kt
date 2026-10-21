@@ -174,14 +174,14 @@ class VeriventPluginTest {
     @Test
     fun aPathRuleAlsoCoversTheFailureMessageAndFailsClosed() = runTest {
         val failing = HttpClient(MockEngine) {
-            engine { addHandler { request -> throw RuntimeException("no route to ${request.url}") } }
+            engine { addHandler { request -> throw RuntimeException("no route to ${request.url} (${request.url.encodedPath})") } }
             install(Verivent) { sanitizePath { it.replace(Regex("^/reset/[^/]+"), "/reset/██") } }
         }
         runCatching { failing.get("https://api.test/reset/abc") }
         client { sanitizePath { error("broken rule") } }.get("https://api.test/reset/abc")
 
         val (failed, broken) = transactions()
-        assertEquals("no route to https://api.test/reset/██", failed.error)
+        assertEquals("no route to https://api.test/reset/██ (/reset/██)", failed.error)
         assertEquals("██", broken.path)
         assertEquals("https://api.test/██", broken.url)
     }

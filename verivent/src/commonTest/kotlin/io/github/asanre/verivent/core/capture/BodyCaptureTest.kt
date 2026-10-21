@@ -19,11 +19,12 @@ class BodyCaptureTest {
     }
 
     @Test
-    fun aCharsetThePlatformDoesntKnowIsShownAsUtf8AndSaysSo() {
+    fun aCharsetThePlatformDoesntKnowIsShownAsUtf8AndSaysSoOnce() {
         val preview = BodyCapture.textPreview("hello".encodeToByteArray(), "text/plain; charset=x-made-up", maxLength = 100)
+        BodyCapture.textPreview("again".encodeToByteArray(), "text/plain; charset=X-Made-Up", maxLength = 100)
 
         assertEquals("hello", preview.text)
-        assertEquals(listOf("[capture] charset x-made-up isn't supported here: body shown as UTF-8"), warnings)
+        assertEquals(listOf("[capture] charset x-made-up isn't supported here: bodies shown as UTF-8"), warnings)
     }
 
     @Test

@@ -9,6 +9,8 @@ import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.charsets.decode
 import io.ktor.utils.io.charsets.name
 import kotlinx.io.Buffer
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.io.write
 
 /**
@@ -55,7 +57,7 @@ object BodyCapture {
         val truncated = bytes.size > maxLength
         val type = parse(contentType)
         val charset = runCatching { type?.charset() }.getOrNull()
-        if (charset == null) type?.parameter("charset")?.let { DiagnosticLog.warn(TAG, "charset $it isn't supported here: body shown as UTF-8") }
+        if (charset == null) type?.parameter("charset")?.let { warnOnce(it, "charset $it isn't supported here: bodies shown as UTF-8") }
         if (charset == null || charset == Charsets.UTF_8) {
             val end = if (truncated) bytes.utf8SnappedEnd(maxLength.toInt()) else bytes.size
             return BodyPreview(bytes.decodeToString(0, end), byteCount, truncated)
@@ -100,5 +102,19 @@ private fun decodeWithCharset(bytes: ByteArray, end: Int, truncated: Boolean, ch
     val floor = if (truncated) (end - 3).coerceAtLeast(0) else end
     return (end downTo floor).firstNotNullOfOrNull { cut ->
         runCatching { charset.newDecoder().decode(Buffer().apply { write(bytes, 0, cut) }) }.getOrNull()
-    } ?: bytes.decodeToString(0, end).also { DiagnosticLog.warn(TAG, "body doesn't decode as ${charset.name}: shown as UTF-8") }
+    } ?: bytes.decodeToString(0, end).also { warnOnce(charset.name, "a body doesn't decode as ${charset.name}: shown as UTF-8") }
+}
+
+/** Charsets already warned about: a server that always declares one would otherwise flood the log. */
+@OptIn(ExperimentalAtomicApi::class)
+private val warnedCharsets = AtomicReference(emptySet<String>())
+
+@OptIn(ExperimentalAtomicApi::class)
+private fun warnOnce(charset: String, message: String) {
+    val key = charset.lowercase()
+    while (true) {
+        val warned = warnedCharsets.load()
+        if (key in warned) return
+        if (warnedCharsets.compareAndSet(warned, warned + key)) return DiagnosticLog.warn(TAG, message)
+    }
 }

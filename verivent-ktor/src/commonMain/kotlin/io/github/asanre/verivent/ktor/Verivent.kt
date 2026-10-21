@@ -45,10 +45,15 @@ val Verivent = createClientPlugin("Verivent", ::VeriventConfig) {
             .getOrDefault(RedactionEngine.DEFAULT_PLACEHOLDER)
     }
 
-    /** [text] with [url] in it as captured: its path sanitized and its secret parameters redacted. */
+    /** [text] with [url], or only its path, in it as captured: path sanitized, secret parameters redacted. */
     fun redacted(text: String, url: Url): String {
         val path = shownPath(url)
-        val shown = if (path == url.encodedPath) text else text.replace(url.toString(), URLBuilder(url).apply { encodedPath = path }.buildString())
+        val shown = if (path == url.encodedPath) {
+            text
+        } else {
+            text.replace(url.toString(), URLBuilder(url).apply { encodedPath = path }.buildString())
+                .let { if (url.encodedPath.length > 1) it.replace(url.encodedPath, path) else it }
+        }
         return redaction.redactUrl(shown)
     }
 

@@ -24,7 +24,7 @@ internal data class TimelineGroup(
  * what makes a close-and-reopen visible.
  *
  * The store evicts oldest first, so only the oldest group can lose its opening event. It then
- * continues the group of [previous] that held its newest entry, with that group's key and label,
+ * continues the oldest group of [previous], which held its newest entry, with that group's key and label,
  * instead of turning into an unnamed group that reopens.
  */
 internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean, previous: List<TimelineGroup> = emptyList()): List<TimelineGroup> {
@@ -50,7 +50,7 @@ internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean, previo
 
     val oldest = groups.firstOrNull()
     val continued = oldest?.takeIf { it.screen == null }?.let { headless ->
-        previous.firstOrNull { group -> group.entries.any { it.id == headless.entries.first().id } }
+        previous.lastOrNull()?.takeIf { group -> group.entries.any { it.id == headless.entries.first().id } }
     }
     if (oldest != null && continued != null) {
         groups[0] = oldest.copy(screen = continued.screen, openedBy = continued.openedBy, key = continued.key)
