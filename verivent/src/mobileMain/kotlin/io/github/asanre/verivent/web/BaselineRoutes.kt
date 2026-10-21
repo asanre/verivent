@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.analytics.asString
 import io.github.asanre.verivent.baseline.BaselineFile
 import io.github.asanre.verivent.baseline.BaselineMismatch
 import io.github.asanre.verivent.baseline.FlowRun
@@ -10,9 +11,6 @@ import io.github.asanre.verivent.core.model.PlanEvent
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
-import io.ktor.server.request.receiveChannel
-import io.ktor.utils.io.readRemaining
-import kotlinx.io.readByteArray
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
@@ -46,7 +44,7 @@ internal fun Route.baselineRoutes() {
             return@post call.respondText(invalid.message.orEmpty(), status = HttpStatusCode.BadRequest)
         }
         val timeout = call.request.queryParameters["timeout"]?.toLongOrNull()?.milliseconds ?: 5.seconds
-        live.withLock { flow = LiveFlow(run, FlowScope(run, recording = record != null, Waiter.RealTime, timeout), recording = record != null) }
+        live.withLock { flow = LiveFlow(run, FlowScope(run, recording = record != null, Waiter.RealTime, timeout)) }
         call.respondText("ok")
     }
     post("/api/baseline/step") {
@@ -60,23 +58,23 @@ internal fun Route.baselineRoutes() {
         call.drive {
             scope.finish()
             flow = null
-            if (recording) run.recording().toJson() else null
+            if (run.isRecording) run.recording().toJson() else null
         }
     }
     post("/api/baseline/last") {
         call.verdict {
             val body = Json.parseToJsonElement(call.receiveLimited()).jsonObject
-            val event = PlanEvent(body.text("name"), body.text("channel"))
+            val event = PlanEvent(body["name"].asString("name"), body["channel"].asString("channel"))
             val timeout = (body["timeout"] as? JsonPrimitive)?.content?.toLongOrNull()?.milliseconds ?: 5.seconds
             val check = withContext(Dispatchers.IO) { lastEvent(event, Waiter.RealTime, timeout) }
             if ((body["plan"] as? JsonPrimitive)?.booleanOrNull == true) check.shouldMatchPlan()
-            if ("property" in body) check.shouldHave(body.text("property"), body["value"])
+            if ("property" in body) check.shouldHave(body["property"].asString("property"), body["value"])
             null
         }
     }
 }
 
-private class LiveFlow(val run: FlowRun, val scope: FlowScope, val recording: Boolean)
+private class LiveFlow(val run: FlowRun, val scope: FlowScope)
 
 // CIO serves calls concurrently and a flow is a sequence: one flow, driven one call at a time.
 private val live = Mutex()
@@ -118,12 +116,5 @@ private suspend fun ApplicationCall.verdict(onFailure: () -> Unit = {}, block: s
     respondText(result.toString(), ContentType.Application.Json)
 }
 
-/** The body, up to the size a tracking plan may have: a baseline is one flow's share of a plan. */
-private suspend fun ApplicationCall.receiveLimited(): String {
-    val body = receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray()
-    require(body.size <= MAX_PLAN_BYTES) { "body too large" }
-    return body.decodeToString()
-}
-
-private fun JsonObject.text(key: String): String = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
-    ?: throw IllegalArgumentException("$key must be a string")
+/** A baseline is one flow's share of a plan, so it gets a plan's room. */
+private suspend fun ApplicationCall.receiveLimited(): String = requireNotNull(receiveUpToPlanSize()) { "body too large" }

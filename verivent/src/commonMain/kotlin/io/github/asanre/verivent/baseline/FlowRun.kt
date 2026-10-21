@@ -21,6 +21,8 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
 
     val anyStepStarted: Boolean get() = started.isNotEmpty()
 
+    val isRecording: Boolean get() = file == null
+
     /**
      * Starts the next step, null for a flow without steps.
      *

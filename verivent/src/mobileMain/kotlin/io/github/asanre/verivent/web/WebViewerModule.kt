@@ -45,7 +45,14 @@ private fun escapeHtml(text: String): String = buildString(text.length) {
 }
 
 // Plans are a few hundred events at most; this only stops a runaway paste from filling memory.
-internal const val MAX_PLAN_BYTES = 2 * 1024 * 1024
+private const val MAX_PLAN_BYTES = 2 * 1024 * 1024
+
+/**
+ * The body, or null past the size a tracking plan may have: one byte past the limit is read whether
+ * or not the client declared a length.
+ */
+internal suspend fun ApplicationCall.receiveUpToPlanSize(): String? =
+    receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray().takeIf { it.size <= MAX_PLAN_BYTES }?.decodeToString()
 
 private fun planStatus(): String = buildJsonObject {
     val plan = Inspector.trackingPlan.value
@@ -105,12 +112,8 @@ internal fun Application.webViewerModule(token: String? = null) {
             call.respondText(planStatus(), ContentType.Application.Json)
         }
         post("/api/tracking-plan") {
-            // Read one byte past the limit, whether or not the client declared a length.
-            val body = call.receiveChannel().readRemaining(MAX_PLAN_BYTES + 1L).readByteArray()
-            if (body.size > MAX_PLAN_BYTES) {
-                return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
-            }
-            val json = body.decodeToString()
+            val json = call.receiveUpToPlanSize()
+                ?: return@post call.respondText("tracking plan too large", status = HttpStatusCode.PayloadTooLarge)
             try {
                 Inspector.loadTrackingPlan(json)
             } catch (invalid: IllegalArgumentException) {
