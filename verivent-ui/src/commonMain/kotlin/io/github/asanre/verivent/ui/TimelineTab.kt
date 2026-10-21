@@ -54,10 +54,10 @@ import io.github.asanre.verivent.ui.internal.TimelineGroup
 import io.github.asanre.verivent.ui.internal.TimelineUiState
 import io.github.asanre.verivent.ui.internal.TypeFilter
 import io.github.asanre.verivent.ui.internal.breaksPlan
-import io.github.asanre.verivent.ui.internal.groupEntries
+import io.github.asanre.verivent.ui.internal.GroupTracker
+import io.github.asanre.verivent.ui.internal.keptFor
 import io.github.asanre.verivent.ui.internal.matchesFilters
 import io.github.asanre.verivent.ui.internal.planCoverage
-import io.github.asanre.verivent.ui.internal.stableKey
 
 @Composable
 internal fun TimelineTab(
@@ -80,12 +80,14 @@ internal fun TimelineTab(
     val breakingRows = remember(entries, plan) { entries.count { it.breaksPlan(plan) } }
     val coverage = remember(entries, plan) { plan?.let { planCoverage(entries, it) }.orEmpty() }
     // Group over all entries so screen headers survive filters that hide the opening event.
-    val groups = remember(entries, grouped, filters, query, plan) {
-        groupEntries(entries, grouped)
-            .mapNotNull { group ->
-                val shown = group.entries.filter { matchesFilters(it, filters, query, plan) }
-                if (shown.isEmpty()) null else group.stableKey() to group.copy(entries = shown)
-            }
+    val tracker = remember { GroupTracker() }
+    val allGroups = remember(entries, grouped) { tracker.group(entries, grouped) }
+    LaunchedEffect(allGroups) { collapsed.value = collapsed.value.keptFor(allGroups) }
+    val groups = remember(allGroups, filters, query, plan) {
+        allGroups.mapNotNull { group ->
+            val shown = group.entries.filter { matchesFilters(it, filters, query, plan) }
+            if (shown.isEmpty()) null else group.key to group.copy(entries = shown)
+        }
     }
 
     val listState = rememberLazyListState()

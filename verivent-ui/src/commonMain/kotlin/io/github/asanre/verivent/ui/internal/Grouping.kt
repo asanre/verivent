@@ -3,18 +3,16 @@ package io.github.asanre.verivent.ui.internal
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.TimelineEntry
 
-/** A screen section in the timeline: a group-opening event and everything logged until the next one. */
+/**
+ * A screen section in the timeline: a group-opening event and everything logged until the next one.
+ * [key] holds its collapse state: the id of the event that opened it, kept after that event is gone.
+ */
 internal data class TimelineGroup(
     val screen: String?,
     val entries: List<TimelineEntry>,
     val openedBy: String? = null,
+    val key: String = entries.last().id,
 )
-
-/**
- * Collapse-state key for a group. Entries are newest-first, so `last()` is the opening
- * event — stable while the group grows, unlike `first()` which changes on every new entry.
- */
-internal fun TimelineGroup.stableKey(): String = entries.last().id
 
 /**
  * Split the (chronological) entries into collapsible groups (à la Tag Assistant): every analytics
@@ -24,8 +22,12 @@ internal fun TimelineGroup.stableKey(): String = entries.last().id
  *
  * Repeated stamps are never merged: two visits to the same screen give two separate groups, which is
  * what makes a close-and-reopen visible.
+ *
+ * The store evicts oldest first, so only the oldest group can lose its opening event. It then
+ * continues the group of [previous] that held its newest entry, with that group's key and label,
+ * instead of turning into an unnamed group that reopens.
  */
-internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean): List<TimelineGroup> {
+internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean, previous: List<TimelineGroup> = emptyList()): List<TimelineGroup> {
     if (!grouped) {
         return listOf(TimelineGroup(screen = null, entries = entries.asReversed()))
     }
@@ -36,7 +38,7 @@ internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean): List<
 
     for (entry in entries) {
         if (entry is AnalyticsEntry && entry.groupLabel != null) {
-            if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket, openedBy)
+            if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket.asReversed(), openedBy)
             screen = entry.groupLabel
             openedBy = entry.name
             bucket = mutableListOf(entry)
@@ -44,7 +46,25 @@ internal fun groupEntries(entries: List<TimelineEntry>, grouped: Boolean): List<
             bucket += entry
         }
     }
-    if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket, openedBy)
+    if (bucket.isNotEmpty()) groups += TimelineGroup(screen, bucket.asReversed(), openedBy)
 
-    return groups.asReversed().map { it.copy(entries = it.entries.asReversed()) }
+    val oldest = groups.firstOrNull()
+    val continued = oldest?.takeIf { it.screen == null }?.let { headless ->
+        previous.firstOrNull { group -> group.entries.any { it.id == headless.entries.first().id } }
+    }
+    if (oldest != null && continued != null) {
+        groups[0] = oldest.copy(screen = continued.screen, openedBy = continued.openedBy, key = continued.key)
+    }
+    return groups.asReversed()
 }
+
+/** [groupEntries] with the groups it returned last time as `previous`. One per timeline. */
+internal class GroupTracker {
+    private var last = emptyList<TimelineGroup>()
+
+    fun group(entries: List<TimelineEntry>, grouped: Boolean): List<TimelineGroup> =
+        groupEntries(entries, grouped, last).also { last = it }
+}
+
+/** The collapsed keys of [groups] still on the timeline; the rest were evicted with their groups. */
+internal fun Set<String>.keptFor(groups: List<TimelineGroup>): Set<String> = filterTo(HashSet()) { key -> groups.any { it.key == key } }

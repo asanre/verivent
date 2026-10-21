@@ -11,7 +11,8 @@ import io.github.asanre.verivent.ui.internal.entriesToJsonCapped
 import io.github.asanre.verivent.ui.internal.formatBytes
 import io.github.asanre.verivent.ui.internal.formatDuration
 import io.github.asanre.verivent.ui.internal.groupEntries
-import io.github.asanre.verivent.ui.internal.stableKey
+import io.github.asanre.verivent.ui.internal.GroupTracker
+import io.github.asanre.verivent.ui.internal.keptFor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -275,7 +276,7 @@ class GroupingTest {
         )
         val groups = groupEntries(entries, grouped = true)
         assertEquals(listOf("home", "home"), groups.map { it.screen })
-        assertEquals(listOf("3", "1"), groups.map { it.stableKey() })
+        assertEquals(listOf("3", "1"), groups.map { it.key })
     }
 
     @Test
@@ -285,8 +286,8 @@ class GroupingTest {
             listOf(event("1", "screen_view", "home"), call("2"), call("3")),
             grouped = true,
         )
-        assertEquals(before.first().stableKey(), after.first().stableKey())
-        assertEquals("1", after.first().stableKey())
+        assertEquals(before.first().key, after.first().key)
+        assertEquals("1", after.first().key)
     }
 
     @Test
@@ -307,5 +308,23 @@ class GroupingTest {
         val groups = groupEntries(listOf(event("1", "page_shown", "checkout"), call("2")), grouped = true)
         assertEquals(listOf("checkout"), groups.map { it.screen })
         assertEquals(listOf("page_shown"), groups.map { it.openedBy })
+    }
+
+    @Test
+    fun aGroupKeepsItsKeyAndLabelWhenItsOpeningEventIsEvicted() {
+        val tracker = GroupTracker()
+        val before = tracker.group(listOf(event("1", "screen_view", "home"), call("2"), event("3", "screen_view", "cart"), call("4")), grouped = true)
+        // The store drops the oldest entry: the event that opened "home".
+        val after = tracker.group(listOf(call("2"), event("3", "screen_view", "cart"), call("4")), grouped = true)
+
+        assertEquals(before.map { it.key to it.screen }, after.map { it.key to it.screen })
+        assertEquals(listOf("2"), after.last().entries.map { it.id })
+    }
+
+    @Test
+    fun collapsedGroupsThatNoLongerExistAreForgotten() {
+        val groups = groupEntries(listOf(event("3", "screen_view", "cart"), call("4")), grouped = true)
+
+        assertEquals(setOf("3"), setOf("1", "3").keptFor(groups))
     }
 }
