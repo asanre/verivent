@@ -40,6 +40,7 @@ main{flex:1;overflow:hidden;display:flex;padding:16px;gap:16px}
 .detail.open{width:46%;min-width:360px;border:1px solid var(--outline-var)}
 .dback{display:none;align-items:center;gap:4px;height:32px;padding:0 10px 0 4px;margin:-6px 0 8px -8px;border:none;background:none;color:var(--on-surface);font:inherit;font-weight:600;cursor:pointer}
 @media (max-width:940px){main.has-detail .list{display:none}.detail{transition:none}.detail.open{width:100%;min-width:0}.dback{display:flex}.closebtn{display:none}}
+@media (max-width:600px){html,body{height:auto}body{display:block}main,.list,.detail.open{overflow:visible}.time{display:none}}
 .row{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--outline-var);cursor:pointer}
 .list .row:last-child{border-bottom:none}
 .row:hover{background:var(--surface-var)}
