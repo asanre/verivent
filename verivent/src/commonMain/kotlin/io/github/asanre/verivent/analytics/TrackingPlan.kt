@@ -195,6 +195,7 @@ private class Walk {
 
     private fun node(schema: Schema, value: JsonElement, path: String, depth: Int, hidden: Boolean, fact: Fact? = null) {
         if (depth > MAX_DEPTH) return add(path, "Too deeply nested to check · over $MAX_DEPTH levels")
+        if (value.isCut) return add(path, "Too many lists and maps to check · over 10,000 per event")
         when (fact) {
             Fact.Untyped -> return
             is Fact.Opaque -> {

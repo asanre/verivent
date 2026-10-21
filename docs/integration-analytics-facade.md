@@ -159,7 +159,9 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
 
     Sending 60 tracks whose `duration_ms` is a string gives one issue,
     `tracks[*].duration_ms · Expected integer, got string · 60 of 60`. A list sent as JSON text is
-    a string: *Expected array, got string*. Values nested past 64 levels aren't checked.
+    a string: *Expected array, got string*. Values nested past 64 levels aren't checked, and an
+    event converts at most 10,000 lists and maps: the rest get *Too many lists and maps to check ·
+    over 10,000 per event* and are shown and exported as `…`, which the npm validator sees as a string.
 - `pattern` isn't anchored, as in JSON Schema: `[0-9]+` accepts `"sku-42"` because it finds digits
   somewhere in it. Write `^[0-9]+$` to constrain the whole value.
 - A string over 256 characters isn't run through `pattern`: it gets the issue *Too long to check

@@ -241,4 +241,19 @@ class AnalyticsSinkTest {
         assertEquals(listOf("""[{"ms":"1"},{"ms":2}]""", "1.5"), entry.properties.map { it.value })
         assertEquals(listOf(PlanIssue("tracks[*].ms", "Expected integer, got string · 1 of 2")), entry.issues)
     }
+
+    @Test
+    fun containersPastTheBudgetAreReportedAsTooManyNotAsTheWrongType() {
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "list", "channel": "firebase",
+                 "schema": { "properties": { "items": { "type": "array", "items": { "type": "object" } } } } } ] }""",
+        )
+        // The list itself and its first 9,999 maps fit the 10,000 containers an event converts.
+        AnalyticsSink().log("list", "firebase", mapOf("items" to List(10_001) { mapOf("i" to it) }))
+
+        assertEquals(
+            listOf(PlanIssue("items[*]", "Too many lists and maps to check · over 10,000 per event · 2 of 10001")),
+            entries().single().issues,
+        )
+    }
 }

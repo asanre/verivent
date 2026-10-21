@@ -50,11 +50,18 @@ internal fun jsonType(element: JsonElement): String = when (element) {
  */
 internal const val MAX_DEPTH = 64
 
-/** Stand-in for whatever lies past [MAX_DEPTH] or past the node budget. */
+/** Containers converted per event: a map holding itself twice would otherwise double per level. */
+internal const val MAX_CONTAINERS = 10_000
+
+/**
+ * Stand-in for whatever lies past [MAX_DEPTH] or past [MAX_CONTAINERS]. The plan tells it apart by
+ * identity, not by its text, so a real `"…"` is still checked as the string it is.
+ */
 private val CUT = JsonPrimitive("…")
 
-/** Containers converted per event: a map holding itself twice would otherwise double per level. */
-private class Budget(var left: Int = 10_000)
+internal val JsonElement.isCut: Boolean get() = this === CUT
+
+private class Budget(var left: Int = MAX_CONTAINERS)
 
 private fun toJson(value: Any?, depth: Int, budget: Budget): JsonElement {
     if (value.isContainer() && (depth > MAX_DEPTH || budget.left-- <= 0)) return CUT
