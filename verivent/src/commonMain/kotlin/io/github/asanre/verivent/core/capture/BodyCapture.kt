@@ -114,6 +114,9 @@ private fun decodeWithCharset(bytes: ByteArray, end: Int, truncated: Boolean, ch
 private val warnedCharsets = AtomicReference(emptySet<String>())
 
 @OptIn(ExperimentalAtomicApi::class)
+internal fun forgetWarnedCharsets() = warnedCharsets.store(emptySet())
+
+@OptIn(ExperimentalAtomicApi::class)
 private fun warnOnce(charset: String, message: String) {
     val key = charset.lowercase()
     while (true) {

@@ -11,6 +11,7 @@ class BodyCaptureTest {
     private val warnings = mutableListOf<String>()
 
     @BeforeTest fun listen() {
+        forgetWarnedCharsets()
         DiagnosticLog.onWarn = { warnings += it }
     }
 
@@ -25,6 +26,13 @@ class BodyCaptureTest {
 
         assertEquals("hello", preview.text)
         assertEquals(listOf("[capture] charset x-made-up isn't supported here: bodies shown as UTF-8"), warnings)
+    }
+
+    @Test
+    fun charsetWarningsStopAfter32Charsets() {
+        (1..33).forEach { BodyCapture.textPreview("hi".encodeToByteArray(), "text/plain; charset=x-made-up-$it", maxLength = 100) }
+
+        assertEquals(32, warnings.size)
     }
 
     @Test
