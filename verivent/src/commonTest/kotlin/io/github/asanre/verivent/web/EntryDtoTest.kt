@@ -171,4 +171,28 @@ class EntryDtoTest {
             analytics.getValue("properties").jsonArray.map { it.jsonObject.getValue("type").jsonPrimitive.content },
         )
     }
+
+    @Test
+    fun repeatedHeadersSurviveInOrder() {
+        val json = encodeEntries(
+            listOf(
+                NetworkTransaction(
+                    "1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a", status = 200,
+                    responseHeaders = listOf(
+                        KeyValue("Set-Cookie", "a=1"),
+                        KeyValue("Set-Cookie", "b=2"),
+                        KeyValue("Content-Type", "text/plain"),
+                    ),
+                ),
+            ),
+        )
+        val headers = Json.parseToJsonElement(json).jsonArray.single()
+            .jsonObject.getValue("responseHeaders").jsonArray
+            .map { it.jsonObject.getValue("name").jsonPrimitive.content to it.jsonObject.getValue("value").jsonPrimitive.content }
+
+        assertEquals(
+            listOf("Set-Cookie" to "a=1", "Set-Cookie" to "b=2", "Content-Type" to "text/plain"),
+            headers,
+        )
+    }
 }

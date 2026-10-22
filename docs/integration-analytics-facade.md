@@ -110,10 +110,10 @@ To turn those lines into a report for a pull request, give them to an agent with
 
 ## Exported sessions
 
-*Export* in the inspector and the web viewer's download write the same JSON, an array of entries;
-the console lines carry the same entries, one per line. Each analytics property says its JSON type,
-taken before redaction, so a session can be checked again against any plan without false type
-errors:
+*Export* in the inspector and the web viewer's download write the same JSON, an array of the
+session's analytics events; the console lines carry the same events, one per line. Network calls
+stay in the live timeline and aren't exported. Each property says its JSON type, taken before
+redaction, so a session can be checked again against any plan without false type errors:
 
 ```json
 { "type": "analytics", "id": "7", "ts": 1760900000000, "name": "play", "channel": "firebase",
@@ -125,7 +125,8 @@ errors:
 ```
 
 `value` is text: a string as sent, anything else as JSON. A redacted property keeps only its type.
-Exports from before 0.9 have no `type`.
+Exports from before 0.9 have no `type`. Exports from before 0.10 can also hold network calls
+(`"type": "network"`), which the [npm validator](validator-npm.md) skips.
 
 ## Tracking plan
 

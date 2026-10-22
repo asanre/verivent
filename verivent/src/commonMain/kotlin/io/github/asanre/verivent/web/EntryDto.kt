@@ -118,12 +118,13 @@ internal fun encodeEntry(entry: TimelineEntry): String = webJson.encodeToString(
 private val prettyWebJson = Json(webJson) { prettyPrint = true }
 
 /**
- * One entry as every export writes it: the web viewer's download, the app's share and the console
- * lines all carry this same JSON, so whatever reads one session file reads them all. [pretty]
- * indents it by four spaces for a file people read.
+ * One analytics event as every export writes it: the web viewer's download, the app's share and
+ * the console lines all carry this same JSON, so whatever reads one session file reads them all.
+ * Exports carry only analytics events; network calls stay in the live timeline. [pretty] indents it
+ * by four spaces for a file people read.
  */
 @InternalVeriventApi
-fun encodeExportEntry(entry: TimelineEntry, pretty: Boolean = false): String =
+fun encodeExportEntry(entry: AnalyticsEntry, pretty: Boolean = false): String =
     (if (pretty) prettyWebJson else webJson).encodeToString(EntryDto.serializer(), entry.toDto())
 
 internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =

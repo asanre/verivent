@@ -413,14 +413,16 @@ function clearAll(){
   }).catch(function(){toast('Clear failed');});
 }
 function exportJson(){
-  var data=JSON.stringify(entries,null,2);
+  var events=entries.filter(function(e){return e.type==='analytics';});
+  if(!events.length){toast('No analytics events to export');return;}
+  var data=JSON.stringify(events,null,2);
   var blob=new Blob([data],{type:'application/json'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;a.download='verivent-export.json';
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('Exported '+entries.length+' entries');
+  toast('Exported '+events.length+' events');
 }
 function togglePause(){
   paused=!paused;

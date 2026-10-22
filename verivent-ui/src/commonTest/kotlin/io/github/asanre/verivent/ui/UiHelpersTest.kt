@@ -114,41 +114,19 @@ class FormattingTest {
 
 class ExportJsonTest {
     @Test
-    fun serializesNetworkAndAnalytics() {
-        val (json, kept) = entriesToJsonCapped(
+    fun exportCarriesOnlyTheAnalyticsEvents() {
+        val (json, kept, events) = entriesToJsonCapped(
             listOf(
-                NetworkTransaction("1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a", status = 200),
-                AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "purchase", "firebase"),
+                AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "view_item", "firebase"),
+                NetworkTransaction("2", Instant.fromEpochMilliseconds(1), "GET", "https://h/a", "h", "/a", status = 200),
+                AnalyticsEntry("3", Instant.fromEpochMilliseconds(2), "purchase", "firebase"),
             ),
         )
         assertEquals(2, kept)
-        assertTrue(json.contains("\"type\": \"network\""))
-        assertTrue(json.contains("\"type\": \"analytics\""))
-        assertTrue(json.contains("\"purchase\""))
-    }
-
-    @Test
-    fun repeatedHeadersSurviveTheExportInOrder() {
-        val (json, _) = entriesToJsonCapped(
-            listOf(
-                NetworkTransaction(
-                    "1", Instant.fromEpochMilliseconds(0), "GET", "https://h/a", "h", "/a", status = 200,
-                    responseHeaders = listOf(
-                        KeyValue("Set-Cookie", "a=1"),
-                        KeyValue("Set-Cookie", "b=2"),
-                        KeyValue("Content-Type", "text/plain"),
-                    ),
-                ),
-            ),
-        )
-        val headers = Json.parseToJsonElement(json).jsonArray.single()
-            .jsonObject.getValue("responseHeaders").jsonArray
-            .map { it.jsonObject.getValue("name").jsonPrimitive.content to it.jsonObject.getValue("value").jsonPrimitive.content }
-
-        assertEquals(
-            listOf("Set-Cookie" to "a=1", "Set-Cookie" to "b=2", "Content-Type" to "text/plain"),
-            headers,
-        )
+        assertEquals(2, events)
+        val exported = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertEquals(listOf("1", "3"), exported.map { it.getValue("id").jsonPrimitive.content })
+        assertTrue(exported.all { it.getValue("type").jsonPrimitive.content == "analytics" })
     }
 
     @Test
@@ -200,13 +178,14 @@ class ExportJsonTest {
     @Test
     fun cappedExportKeepsNewestValidJsonAndReportsCount() {
         val entries = (1..50).map {
-            NetworkTransaction(
-                "$it", Instant.fromEpochMilliseconds(it.toLong()), "GET", "https://h/$it", "h", "/$it",
-                responseBody = BodyPreview("x".repeat(500), 500, false),
+            AnalyticsEntry(
+                "$it", Instant.fromEpochMilliseconds(it.toLong()), "search", "firebase",
+                properties = listOf(KeyValue("search_term", "x".repeat(500))),
             )
         }
-        val (json, kept) = entriesToJsonCapped(entries, maxChars = 3_000)
+        val (json, kept, events) = entriesToJsonCapped(entries, maxChars = 3_000)
 
+        assertEquals(50, events)
         assertTrue(kept in 1 until 50, "expected a capped subset, kept $kept")
         assertEquals(kept, Json.parseToJsonElement(json).jsonArray.size)
         assertTrue(json.contains("\"id\": \"50\""))
@@ -216,7 +195,7 @@ class ExportJsonTest {
     @Test
     fun uncappedExportKeepsEveryEntryOldestFirst() {
         val entries = (1..5).map {
-            NetworkTransaction("$it", Instant.fromEpochMilliseconds(it.toLong()), "GET", "https://h/$it", "h", "/$it")
+            AnalyticsEntry("$it", Instant.fromEpochMilliseconds(it.toLong()), "search", "firebase")
         }
         val (json, kept) = entriesToJsonCapped(entries, maxChars = Int.MAX_VALUE)
 
@@ -227,8 +206,9 @@ class ExportJsonTest {
 
     @Test
     fun emptySessionExportsAnEmptyArray() {
-        val (json, kept) = entriesToJsonCapped(emptyList())
+        val (json, kept, events) = entriesToJsonCapped(emptyList())
         assertEquals(0, kept)
+        assertEquals(0, events)
         assertEquals(0, Json.parseToJsonElement(json).jsonArray.size)
     }
 }

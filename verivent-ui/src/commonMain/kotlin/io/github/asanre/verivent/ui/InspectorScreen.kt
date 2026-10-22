@@ -155,15 +155,15 @@ private fun InspectorContent(onClose: (() -> Unit)?) {
                         // Serialize off the main thread and cap before ClipData (binder ~1MB limit).
                         val snapshot = entries
                         scope.launch {
-                            val (text, kept) = withContext(Dispatchers.Default) {
+                            val (text, kept, events) = withContext(Dispatchers.Default) {
                                 entriesToJsonCapped(snapshot)
                             }
-                            clipboard.setText(AnnotatedString(text))
+                            if (events > 0) clipboard.setText(AnnotatedString(text))
                             snackbar.showSnackbar(
-                                if (kept < snapshot.size) {
-                                    "Copied newest $kept of ${snapshot.size} entries as JSON"
-                                } else {
-                                    "Copied ${snapshot.size} entries as JSON"
+                                when {
+                                    events == 0 -> "No analytics events to export"
+                                    kept < events -> "Copied newest $kept of $events events as JSON"
+                                    else -> "Copied $events events as JSON"
                                 },
                             )
                         }

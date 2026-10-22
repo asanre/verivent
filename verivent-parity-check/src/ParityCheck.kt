@@ -252,7 +252,7 @@ private fun screen() {
 }
 
 @OptIn(InternalVeriventApi::class)
-private fun export(entry: TimelineEntry) {
+private fun export(entry: AnalyticsEntry) {
     val json: String = encodeExportEntry(entry)
     val indented: String = encodeExportEntry(entry, pretty = true)
 }
