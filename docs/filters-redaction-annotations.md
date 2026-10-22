@@ -13,6 +13,9 @@ All configuration is plain Kotlin predicates — no annotations, no codegen.
 | `sanitizePath { path -> String }` | additive, off by default | Rewrite the captured path, percent-encoded as sent, in the path and the URL. |
 | `filter { request -> Bool }` | additive | Keep a request only if **every** filter returns true. A `false` skips capture entirely. |
 
+A body whose declared charset can't be used here is shown as UTF-8, with a warning in the log
+once per charset.
+
 ```kotlin
 install(Verivent) {
     maxContentLength = 500_000
@@ -88,6 +91,7 @@ worth knowing:
 - Reconfiguring later only affects events captured from then on — it does not regroup the buffer.
 - Each matching event opens a *new* group, so revisiting a screen shows up as a second section
   rather than merging into the first.
+- A collapsed group stays collapsed when its opening event leaves the buffer.
 
 Grouping only exists where events are captured: the viewers group the timeline as soon as an event
 carries a group label, and show one flat list otherwise. The viewers have no switch of their own: to turn
