@@ -60,11 +60,11 @@ registry package; see [Validator in the browser](validator-npm.md).
    ```
 3. Tag the release commit and push the tag:
    ```bash
-   git tag v0.8.0 && git push origin v0.8.0
+   git tag vX.Y.Z && git push origin vX.Y.Z
    ```
 4. Create the GitHub Release for that tag, which triggers `publish`:
    ```bash
-   gh release create v0.8.0 --generate-notes
+   gh release create vX.Y.Z --generate-notes
    ```
    The workflow runs `./gradlew publishAndReleaseToMavenCentral` on a macOS runner, so the iOS klibs
    are built and published alongside the Android ones, and the deployment is released without a
@@ -84,7 +84,7 @@ registry package; see [Validator in the browser](validator-npm.md).
 7. Verify the Swift package. A wrong checksum only surfaces at the consumer's first resolve, so
    compare the published manifest against the asset it points at:
    ```bash
-   gh release download v0.8.0 -p VeriventKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/VeriventKit.xcframework.zip
+   gh release download vX.Y.Z -p VeriventKit.xcframework.zip -D /tmp && swift package compute-checksum /tmp/VeriventKit.xcframework.zip
    ```
    ```bash
    curl -s https://raw.githubusercontent.com/asanre/verivent-swift/0.8.0/Package.swift | grep checksum
@@ -94,7 +94,7 @@ registry package; see [Validator in the browser](validator-npm.md).
 
 8. Verify the npm package of the validator is attached and loads:
    ```bash
-   gh release download v0.8.0 -p 'verivent-*.tgz' -D /tmp/verivent-npm && tar -xzf /tmp/verivent-npm/*.tgz -C /tmp/verivent-npm && node verivent/npm/smoke.mjs /tmp/verivent-npm/package
+   gh release download vX.Y.Z -p 'verivent-*.tgz' -D /tmp/verivent-npm && tar -xzf /tmp/verivent-npm/*.tgz -C /tmp/verivent-npm && node verivent/npm/smoke.mjs /tmp/verivent-npm/package
    ```
 
 ## If the Swift step fails after Central published
