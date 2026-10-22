@@ -184,6 +184,32 @@ class BaselineTest {
     }
 
     @Test
+    fun aRecordingDoesntDependOnTheOrderThePropertiesWereSent() {
+        val inOrder = recorded {
+            sink.log(
+                "purchase", "firebase",
+                mapOf(
+                    "currency" to "EUR",
+                    "user" to mapOf("id" to "u1", "tier" to "gold"),
+                    "items" to listOf(mapOf("id" to "42", "qty" to 2)),
+                ),
+            )
+        }
+        val reversed = recorded {
+            sink.log(
+                "purchase", "firebase",
+                mapOf(
+                    "items" to listOf(mapOf("qty" to 2, "id" to "42")),
+                    "user" to mapOf("tier" to "gold", "id" to "u1"),
+                    "currency" to "EUR",
+                ),
+            )
+        }
+
+        assertEquals(inOrder, reversed)
+    }
+
+    @Test
     fun aFailingStepIsNamed() {
         val baseline = Baseline.parse(recorded { step("browse") { screen() }; step("buy") { addToCart() } })
 

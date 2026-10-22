@@ -238,8 +238,8 @@ To record, run the tests with `VERIVENT_RECORD_DIR` in the test runner's environ
 TEST_RUNNER_VERIVENT_RECORD_DIR="$PWD/baselines" xcodebuild test -scheme MyApp -destination "id=$SIM"
 ```
 
-A recording from iOS lists each event's `required` properties in the order Swift's dictionary gave
-them; otherwise it's the file Android records, so one baseline can serve both apps. The samples do
+A recording writes every event's properties in alphabetical order, so iOS records the same file
+Android does and one baseline can serve both apps. The samples do
 just that: `sample/iosApp`'s `CheckoutAnalyticsTests` checks the files in `sample/shared/baselines`
 that the Compose sample's test records.
 

@@ -21,15 +21,18 @@ import kotlinx.serialization.json.putJsonObject
  * [sent] as the events a step expects, to be polished by hand: each property a `const` of the
  * value sent, or `{{name}}` where it's a value the test [bound][FlowScope.bound]. A redacted value
  * keeps only its type, and a list only its shape, plus a `contains` for an item holding a bound value.
+ *
+ * Keys are written in alphabetical order at every level, whatever order the properties were sent in.
  */
 internal fun recordEvents(sent: List<AnalyticsEntry>, variables: Map<String, Any?>): List<BaselineFile.ExpectedEvent> {
     val bound = Bound(variables)
     return sent.map { entry ->
         val values = exportedValues(entry.properties)
+        val properties = values.json.sortedEntries()
         val schema = buildJsonObject {
-            putJsonArray("required") { values.json.keys.forEach { add(it) } }
+            putJsonArray("required") { properties.forEach { add(it.key) } }
             putJsonObject("properties") {
-                values.json.forEach { (name, value) -> put(name, propertySchema(value, values.facts[name], bound)) }
+                properties.forEach { (name, value) -> put(name, propertySchema(value, values.facts[name], bound)) }
             }
             put("additionalProperties", false)
         }
@@ -50,7 +53,7 @@ private class Bound(variables: Map<String, Any?>) {
 
     /** [value] with every part a bound variable holds written as its template. */
     fun templated(value: JsonElement): JsonElement = templateOf(value) ?: when (value) {
-        is JsonObject -> JsonObject(value.mapValues { (_, child) -> templated(child) })
+        is JsonObject -> JsonObject(value.sortedEntries().associate { (key, child) -> key to templated(child) })
         is JsonArray -> JsonArray(value.map(::templated))
         is JsonPrimitive -> value
     }
@@ -71,7 +74,7 @@ private fun listSchema(list: JsonArray, bound: Bound): JsonObject {
     val shape = shapeOf(listOf(list))
     val known = list.firstNotNullOfOrNull { item ->
         when (item) {
-            is JsonObject -> item.entries.firstNotNullOfOrNull { (key, field) ->
+            is JsonObject -> item.sortedEntries().firstNotNullOfOrNull { (key, field) ->
                 bound.templateOf(field)?.let { template ->
                     buildJsonObject {
                         putJsonObject("properties") { putJsonObject(key) { put("const", template) } }
@@ -93,7 +96,7 @@ private fun shapeOf(values: List<JsonElement>): JsonObject {
         single == "object" -> buildJsonObject {
             put("type", "object")
             val objects = values.map { it as JsonObject }
-            val keys = objects.flatMap { it.keys }.distinct()
+            val keys = objects.flatMap { it.keys }.distinct().sorted()
             putJsonObject("properties") { keys.forEach { key -> put(key, shapeOf(objects.mapNotNull { it[key] })) } }
         }
         single == "array" -> buildJsonObject {
@@ -112,3 +115,5 @@ private fun typeSchema(types: List<String>) = buildJsonObject {
     val single = types.singleOrNull()
     if (single != null) put("type", single) else putJsonArray("type") { types.forEach { add(it) } }
 }
+
+private fun JsonObject.sortedEntries() = entries.sortedBy { it.key }
