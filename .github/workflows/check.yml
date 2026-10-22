@@ -51,3 +51,6 @@ jobs:
         working-directory: swift
         # Verivent-Package is the scheme SwiftPM generates for every target, VeriventUITesting included.
         run: xcodebuild test -scheme Verivent-Package -destination "id=${{ steps.sim.outputs.udid }}"
+      - name: Run the sample's XCUITest
+        # The shop's checkout against the shared baselines (~70 s), on the same simulator.
+        run: xcodebuild test -project sample/iosApp/VeriventSample.xcodeproj -scheme VeriventSample -destination "id=${{ steps.sim.outputs.udid }}"
