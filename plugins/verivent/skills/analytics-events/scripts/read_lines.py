@@ -5,7 +5,9 @@ Reads logcat (any format), the iOS unified log (`log stream` / `log show`), the 
 pasted text. Each event is one JSON line, the same entry every Verivent export writes; one longer
 than the console limit comes as pieces prefixed `[<id> <i>/<n>] ` that are joined here. Prints the
 events with the verdict the device stamped on each, and with --session writes them as an export
-(a JSON array of entries) that the npm validator and the web viewer read.
+(a JSON array of entries) that the npm validator and the web viewer read. Since 0.10.1 every line
+also says where it came from (`source`: platform, app version, Verivent version), which an export
+states once, in the entry that opens it.
 
     read_lines.py capture.txt [more.txt ...] [--session session.json]
     adb logcat -d -s VeriventEvent | read_lines.py -
@@ -14,6 +16,7 @@ import argparse
 import json
 import re
 import sys
+import time
 
 # The tag, then whatever the console puts between it and the message: logcat's "( 1234):" or ":",
 # or the single space NSLog leaves on iOS.
@@ -122,6 +125,29 @@ def shown(prop):
     return cut
 
 
+def sources(entries):
+    """Every distinct `source` the lines carry, in the order first seen."""
+    seen = []
+    for entry in entries:
+        if "source" in entry and entry["source"] not in seen:
+            seen.append(entry["source"])
+    return seen
+
+
+def session(entries):
+    """The entries as an export: one opening `source` entry, and the events without theirs.
+
+    Lines from more than one source (captures of two apps or devices read together) keep their own,
+    since one opener can't name them all; the note says so.
+    """
+    found = sources(entries)
+    if len(found) != 1:
+        notes = [f"the lines come from {len(found)} sources, so each event keeps its own"] if found else []
+        return entries, notes
+    opener = {"type": "source", "id": "source", "ts": int(time.time() * 1000), "source": found[0]}
+    return [opener] + [{key: value for key, value in entry.items() if key != "source"} for entry in entries], []
+
+
 def summary(entries, notes):
     events = [
         {
@@ -143,7 +169,7 @@ def summary(entries, notes):
         + ([f"entries {', '.join(map(str, untyped))} carry no property types (Verivent before 0.9)"] if untyped else [])
     )
     counts = {name: sum(event["verdict"] == name for event in events) for name in ("complies", "breaks", "not_checked")}
-    return {"events": events, "planVersions": versions, "counts": counts, "notes": notes}
+    return {"events": events, "planVersions": versions, "sources": sources(entries), "counts": counts, "notes": notes}
 
 
 def main():
@@ -170,8 +196,10 @@ def main():
     entries, notes = read(found)
     notes = unread + notes
     if args.session:
-        with open(args.session, "w", encoding="utf-8") as session:
-            json.dump(entries, session, ensure_ascii=False)
+        exported, session_notes = session(entries)
+        notes += session_notes
+        with open(args.session, "w", encoding="utf-8") as file:
+            json.dump(exported, file, ensure_ascii=False)
     json.dump(summary(entries, notes), sys.stdout, ensure_ascii=False, indent=2)
     print()
 

@@ -37,11 +37,12 @@ The script reads any of the formats above, joins the pieces of events too long f
 
 - `events[]`: `id`, `name`, `channel`, `planVersion`, `verdict`, `issues` (already as `property · message`) and the observed `properties` (`name`, `value`, `redacted`, `type`, and `size` for a list or object; long values are cut in this summary only).
 - `verdict`: `complies` (checked, no issues), `breaks` (checked, with issues) or `not_checked` (no `planVersion`: either the device had no plan loaded, or its plan doesn't define this event — the line alone can't tell which).
+- `sources`: where the lines came from (`platform`, `appVersion`, `veriventVersion`), from Verivent 0.10.1 on; empty for older lines.
 - `notes`: what went wrong reading the capture — pieces that never completed, lines that aren't JSON, events from Verivent before 0.9 (no property types), events checked against different plan versions. Carry every note into the report: a missing event is a finding too.
 
 Ids restart at 1 every time the app launches, so the same id can appear twice; the script keeps them apart. Don't deduplicate events by id.
 
-`--session` writes the events as a Verivent session export, which the web viewer opens and the npm validator reads.
+`--session` writes the events as a Verivent session export, which the web viewer opens and the npm validator reads. It opens with the lines' `source`, as an exported file does.
 
 ## 3. Decide whose verdict to report
 
@@ -96,7 +97,7 @@ Markdown, ready to paste into the PR. Write it in English unless the user writes
 ```markdown
 ### Analytics · <ticket key or flow name>
 
-Plan **<version>** · <checked on the device | re-checked with Verivent's validator against `<plan file>`> · <Android | iOS> · <N> events: <a> comply, <b> break, <c> not in the plan, <d> not checked
+Plan **<version>** · <checked on the device | re-checked with Verivent's validator against `<plan file>`> · <Android | iOS> app <appVersion> · Verivent <veriventVersion> · <N> events: <a> comply, <b> break, <c> not in the plan, <d> not checked
 
 | Event | Channel | Expected | Observed | Issues | Ticket |
 |---|---|---|---|---|---|
@@ -111,6 +112,7 @@ Plan **<version>** · <checked on the device | re-checked with Verivent's valida
 - **Expected**: what the plan requires (required properties, allowed values, types) plus anything extra the ticket asks. Keep it short.
 - **Observed**: `name=value` for the properties, with `██` for redacted ones. For arrays and objects, give the size (`items=60 items`), not the JSON. An event's `sections` (default parameters, user properties) aren't part of the plan, neither on the device nor in a re-check: leave them out, or mention them as context, never as issues.
 - **Issues**: one validator line per `<br>`, in backticks. Use `—` when there are none, `not in plan <version>` when the re-check says `not_in_plan`, and `not checked` when there is no verdict at all. Keep the last two apart in the header counts too: an event the plan doesn't define is a finding (add it to the plan or stop sending it), while an unchecked one is a gap in the evidence.
+- **Header**: platform and versions come from `sources`. With no source (lines from before 0.10.1), name the platform from the console the lines came from and leave the versions out; with more than one, name each.
 - **Notes**: the script's notes; plan/ticket disagreements; anything that wasn't verified (no re-check, untyped events, a capture that starts mid-flow); where the device and a re-check disagree.
 
 The report states facts. Fixing the code isn't part of it, unless the user asks: then the issues tell you exactly what to change.

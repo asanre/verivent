@@ -3,7 +3,7 @@ import json
 import pathlib
 import unittest
 
-from read_lines import messages, read, summary
+from read_lines import messages, read, session, summary
 
 FILES = pathlib.Path(__file__).resolve().parent / "fixtures"
 
@@ -152,6 +152,36 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(result["planVersions"], ["1.0.0", "1.1.0"])
         self.assertTrue(any("different plan versions" in note for note in result["notes"]))
         self.assertTrue(any("before 0.9" in note for note in result["notes"]))
+
+
+ANDROID = {"platform": "android", "appVersion": "1.0", "veriventVersion": "0.10.1"}
+IOS = {"platform": "ios", "appVersion": "1.0", "veriventVersion": "0.10.1"}
+
+
+class Sessions(unittest.TestCase):
+
+    def test_the_source_opens_the_session_once(self):
+        entries, _ = read(messages([entry("1", source=ANDROID), entry("2", source=ANDROID)], "capture"))
+        exported, notes = session(entries)
+        opener, *events = exported
+        self.assertEqual((opener["type"], opener["id"], opener["source"]), ("source", "source", ANDROID))
+        self.assertIsInstance(opener["ts"], int)
+        self.assertEqual([event["id"] for event in events], ["1", "2"])
+        self.assertTrue(all("source" not in event for event in events))
+        self.assertEqual(notes, [])
+
+    def test_lines_from_two_sources_keep_their_own(self):
+        entries, _ = read(messages([entry("1", source=ANDROID), entry("2", source=IOS)], "capture"))
+        exported, notes = session(entries)
+        self.assertEqual([event["source"] for event in exported], [ANDROID, IOS])
+        self.assertEqual(notes, ["the lines come from 2 sources, so each event keeps its own"])
+
+    def test_lines_from_before_0_10_1_are_written_as_they_came(self):
+        entries, _ = read(messages([entry("1")], "capture"))
+        self.assertEqual(session(entries), (entries, []))
+
+    def test_the_summary_names_the_sources(self):
+        self.assertEqual(run([entry("1", source=ANDROID), entry("2", source=ANDROID)])["sources"], [ANDROID])
 
 
 if __name__ == "__main__":
