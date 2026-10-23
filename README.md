@@ -64,16 +64,16 @@ Use the real artifacts in debug and the no-op mirrors in release so release buil
 and drop the UI/body-retention overhead:
 
 ```kotlin
-debugImplementation("io.github.asanre:verivent:0.10.0")
-releaseImplementation("io.github.asanre:verivent-no-op:0.10.0")
+debugImplementation("io.github.asanre:verivent:0.10.1")
+releaseImplementation("io.github.asanre:verivent-no-op:0.10.1")
 
 // the on-device inspector UI:
-debugImplementation("io.github.asanre:verivent-ui:0.10.0")
-releaseImplementation("io.github.asanre:verivent-ui-no-op:0.10.0")
+debugImplementation("io.github.asanre:verivent-ui:0.10.1")
+releaseImplementation("io.github.asanre:verivent-ui-no-op:0.10.1")
 
 // network capture for Ktor clients:
-debugImplementation("io.github.asanre:verivent-ktor:0.10.0")
-releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.10.0")
+debugImplementation("io.github.asanre:verivent-ktor:0.10.1")
+releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.10.1")
 ```
 
 The no-op mirrors declare the exact same classes and functions, so your call sites compile unchanged.
