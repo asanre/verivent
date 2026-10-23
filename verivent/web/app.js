@@ -412,17 +412,23 @@ function clearAll(){
     selectedId=null;toast('Cleared');render();
   }).catch(function(){toast('Clear failed');});
 }
+// The device writes the file, the same the inspector's Export does: it opens with the session's
+// source (platform and versions), which the page doesn't have. It holds every captured event, paused or not.
 function exportJson(){
-  var events=entries.filter(function(e){return e.type==='analytics';});
-  if(!events.length){toast('No analytics events to export');return;}
-  var data=JSON.stringify(events,null,2);
-  var blob=new Blob([data],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download='verivent-export.json';
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('Exported '+events.length+' events');
+  if(!entries.some(function(e){return e.type==='analytics';})){toast('No analytics events to export');return;}
+  fetch(apiUrl('/api/export')).then(function(r){
+    if(!r.ok)throw new Error('export rejected: '+r.status);
+    return r.text();
+  }).then(function(data){
+    var count=JSON.parse(data).filter(function(e){return e.type==='analytics';}).length;
+    var blob=new Blob([data],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url;a.download='verivent-export.json';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Exported '+count+' events');
+  }).catch(function(){toast('Export failed');});
 }
 function togglePause(){
   paused=!paused;

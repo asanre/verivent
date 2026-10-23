@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.BodyPreview
 import io.github.asanre.verivent.core.model.KeyValue
@@ -38,6 +39,19 @@ class EntryDtoTest {
         assertTrue(json.contains("\"redacted\":true"))
         assertTrue(json.contains("\"type\":\"analytics\""))
         assertTrue(json.contains("\"channel\":\"firebase\""))
+    }
+
+    @OptIn(InternalVeriventApi::class)
+    @Test
+    fun eventsLeaveTheSourceToTheOpener() {
+        val event = AnalyticsEntry("2", Instant.fromEpochMilliseconds(2000), "purchase", "firebase")
+        val exported = Json.parseToJsonElement(encodeExport(listOf(event))).jsonArray.map { it.jsonObject }
+        val streamed = Json.parseToJsonElement(encodeEntries(listOf(event))).jsonArray.single().jsonObject
+
+        val analytics = exported.filter { it.getValue("type").jsonPrimitive.content == "analytics" }
+        assertEquals(listOf("2"), analytics.map { it.getValue("id").jsonPrimitive.content })
+        assertTrue(analytics.none { "source" in it }, "a file states the source once, in its opener")
+        assertTrue("source" !in streamed, "the live stream doesn't carry it")
     }
 
     @Test

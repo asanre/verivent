@@ -37,6 +37,7 @@ import io.github.asanre.verivent.ui.InspectorLauncher as LauncherEntryPoints
 import io.github.asanre.verivent.ui.InspectorScreen
 import io.github.asanre.verivent.web.WebViewerBind
 import io.github.asanre.verivent.web.WebViewer
+import io.github.asanre.verivent.web.encodeExport
 import io.github.asanre.verivent.web.encodeExportEntry
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
@@ -255,6 +256,7 @@ private fun screen() {
 private fun export(entry: AnalyticsEntry) {
     val json: String = encodeExportEntry(entry)
     val indented: String = encodeExportEntry(entry, pretty = true)
+    val file: String = encodeExport(listOf(entry))
 }
 
 private fun baseline(issue: PlanIssue) {

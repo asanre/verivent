@@ -1,6 +1,8 @@
 package io.github.asanre.verivent.web
 
 import io.github.asanre.verivent.core.Inspector
+import io.github.asanre.verivent.core.InternalVeriventApi
+import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.TimelineEntry
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
@@ -78,6 +80,7 @@ private fun ApplicationCall.mutationAllowed(): Boolean {
     return request.header("X-Verivent") == "1" && (origin == null || origin == "http://$host")
 }
 
+@OptIn(InternalVeriventApi::class)
 internal fun Application.webViewerModule(token: String? = null) {
     install(SSE)
     // One gate in front of routing, so a route added later can't ship unguarded.
@@ -103,6 +106,10 @@ internal fun Application.webViewerModule(token: String? = null) {
         }
         get("/api/entries") {
             call.respondText(encodeEntries(Inspector.store.entries.value), ContentType.Application.Json)
+        }
+        get("/api/export") {
+            val events = Inspector.store.entries.value.filterIsInstance<AnalyticsEntry>()
+            call.respondText(encodeExport(events), ContentType.Application.Json)
         }
         post("/api/clear") {
             Inspector.store.clear()

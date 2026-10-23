@@ -113,6 +113,20 @@ class FormattingTest {
 }
 
 class ExportJsonTest {
+    /** The exported events, without the entry that opens the file with its source. */
+    private fun exportedEvents(json: String) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        .filter { it.getValue("type").jsonPrimitive.content != "source" }
+
+    @Test
+    fun exportOpensWithTheSourceOnce() {
+        val (json, kept) = entriesToJsonCapped(listOf(AnalyticsEntry("1", Instant.fromEpochMilliseconds(0), "view_item", "firebase")))
+        val (opener, event) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        assertEquals("source", opener.getValue("type").jsonPrimitive.content)
+        assertTrue("platform" in opener.getValue("source").jsonObject)
+        assertEquals(1, kept, "the opener isn't an event")
+        assertTrue("source" !in event)
+    }
+
     @Test
     fun exportCarriesOnlyTheAnalyticsEvents() {
         val (json, kept, events) = entriesToJsonCapped(
@@ -124,7 +138,7 @@ class ExportJsonTest {
         )
         assertEquals(2, kept)
         assertEquals(2, events)
-        val exported = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        val exported = exportedEvents(json)
         assertEquals(listOf("1", "3"), exported.map { it.getValue("id").jsonPrimitive.content })
         assertTrue(exported.all { it.getValue("type").jsonPrimitive.content == "analytics" })
     }
@@ -139,7 +153,7 @@ class ExportJsonTest {
                 ),
             ),
         )
-        val properties = Json.parseToJsonElement(json).jsonArray.single().jsonObject.getValue("properties").jsonArray
+        val properties = exportedEvents(json).single().getValue("properties").jsonArray
             .map { it.jsonObject.mapValues { (_, v) -> v.jsonPrimitive.content } }
         assertEquals(
             listOf(
@@ -163,7 +177,7 @@ class ExportJsonTest {
                 AnalyticsEntry("2", Instant.fromEpochMilliseconds(0), "view_item_list", "server-side"),
             ),
         )
-        val (withSection, without) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
+        val (withSection, without) = exportedEvents(json)
         val section = withSection.getValue("sections").jsonArray.single().jsonObject
         assertEquals("User properties", section.getValue("title").jsonPrimitive.content)
         assertEquals("false", section.getValue("properties").jsonArray.single().jsonObject.getValue("value").jsonPrimitive.content)
@@ -187,7 +201,7 @@ class ExportJsonTest {
 
         assertEquals(50, events)
         assertTrue(kept in 1 until 50, "expected a capped subset, kept $kept")
-        assertEquals(kept, Json.parseToJsonElement(json).jsonArray.size)
+        assertEquals(kept, exportedEvents(json).size)
         assertTrue(json.contains("\"id\": \"50\""))
         assertFalse(json.contains("\"id\": \"1\""))
     }
@@ -200,7 +214,7 @@ class ExportJsonTest {
         val (json, kept) = entriesToJsonCapped(entries, maxChars = Int.MAX_VALUE)
 
         assertEquals(5, kept)
-        val ids = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject.getValue("id").jsonPrimitive.content }
+        val ids = exportedEvents(json).map { it.getValue("id").jsonPrimitive.content }
         assertEquals(listOf("1", "2", "3", "4", "5"), ids)
     }
 

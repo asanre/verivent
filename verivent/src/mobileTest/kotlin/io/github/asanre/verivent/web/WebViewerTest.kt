@@ -3,6 +3,7 @@ package io.github.asanre.verivent.web
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.AnalyticsEntry
+import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.request.get
@@ -382,9 +383,20 @@ class WebViewerTest {
         application { webViewerModule(token = "secret") }
         assertEquals(HttpStatusCode.Unauthorized, client.get("/").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/entries").status)
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/api/export").status)
         assertEquals(HttpStatusCode.Unauthorized, client.post("/api/clear").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/assert/all").status)
         assertEquals(HttpStatusCode.Unauthorized, client.get("/api/assert/bad").status)
+    }
+
+    @Test
+    fun theDownloadIsTheExportFileWithOnlyTheEvents() = testApplication {
+        seedEntry()
+        Inspector.recordNetwork(NetworkTransaction("2", Instant.fromEpochMilliseconds(1), "GET", "https://h/a", "h", "/a"))
+        application { webViewerModule(token = "secret") }
+
+        val file = Json.parseToJsonElement(client.get("/api/export?t=secret").bodyAsText()).jsonArray
+        assertEquals(listOf("source", "analytics"), file.map { it.jsonObject.getValue("type").jsonPrimitive.content })
     }
 
     @Test

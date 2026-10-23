@@ -48,6 +48,14 @@ class PlanTest {
     }
 
     @Test
+    fun skipsTheEntryThatOpensAnExport() {
+        val session = """[
+            { "type": "source", "id": "source", "ts": 1, "source": { "platform": "ios", "veriventVersion": "0.10.1" } },
+            { "type": "analytics", "id": "1", "ts": 0, "name": "play", "channel": "firebase", "properties": [] } ]"""
+        assertEquals(listOf("1"), plan.checkSession(session).map { it.id })
+    }
+
+    @Test
     fun anInvalidPlanThrowsTheDevicesMessage() {
         val error = assertFailsWith<IllegalArgumentException> { Plan("""{ "events": [] }""") }
         assertEquals("version must be a string", error.message)

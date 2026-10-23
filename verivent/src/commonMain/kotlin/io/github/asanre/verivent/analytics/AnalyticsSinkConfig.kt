@@ -52,8 +52,8 @@ class AnalyticsSinkConfig {
      * argument it writes to Logcat on Android and the unified log on iOS. Pass [logger] to route
      * the lines through the host's own logging.
      *
-     * The line is the captured entry, the same JSON the web viewer receives, so redacted values stay
-     * redacted. One longer than the platform's console limit is split into pieces prefixed with
+     * The line is the event as exported, so redacted values stay redacted, plus a `source` with the
+     * platform and the app's and Verivent's versions, which a session file states once. One longer than the platform's console limit is split into pieces prefixed with
      * `[<id> <i>/<n>] `, to be joined in order.
      */
     fun logTo(logger: (String) -> Unit = ::platformConsole) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Keeps the app's context so exports can name the app's version. -->
+        <provider
+            android:name="io.github.asanre.verivent.core.internal.VeriventInitProvider"
+            android:authorities="${applicationId}.verivent.init"
+            android:exported="false" />
+    </application>
+
+</manifest>

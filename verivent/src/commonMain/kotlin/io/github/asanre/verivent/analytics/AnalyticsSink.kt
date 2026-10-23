@@ -6,7 +6,7 @@ import io.github.asanre.verivent.core.internal.runSafely
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.redaction.RedactionEngine
-import io.github.asanre.verivent.web.encodeEntry
+import io.github.asanre.verivent.web.encodeConsoleLine
 
 /**
  * Vendor-agnostic analytics sink. The host wires its own analytics facade to [log]; Verivent never
@@ -71,7 +71,7 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
     }
 
     private fun writeLines(entry: AnalyticsEntry, logger: (String) -> Unit) {
-        runCatching { consoleLines(entry.id, encodeEntry(entry), consoleMaxBytes).forEach(logger) }
+        runCatching { consoleLines(entry.id, encodeConsoleLine(entry), consoleMaxBytes).forEach(logger) }
             .onFailure { failure -> DiagnosticLog.warn(TAG, "line logger threw", failure) }
     }
 

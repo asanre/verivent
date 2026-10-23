@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.KeyValue
@@ -54,6 +55,8 @@ internal data class EntryDto(
     val sections: List<SectionDto>? = null,
     val planVersion: String? = null,
     val issues: List<IssueDto>? = null,
+    // the entry that opens an export (type "source"), and every console line
+    val source: SourceDto? = null,
 )
 
 /**
@@ -113,19 +116,44 @@ private val webJson = Json { encodeDefaults = false }
 internal fun encodeEntries(entries: List<TimelineEntry>): String =
     webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
 
-internal fun encodeEntry(entry: TimelineEntry): String = webJson.encodeToString(EntryDto.serializer(), entry.toDto())
+/** A `logTo` console line: the event as exported, plus the [source][exportSource] a file states once. */
+internal fun encodeConsoleLine(entry: AnalyticsEntry): String =
+    webJson.encodeToString(EntryDto.serializer(), entry.toDto().copy(source = exportSource))
 
 private val prettyWebJson = Json(webJson) { prettyPrint = true }
 
 /**
- * One analytics event as every export writes it: the web viewer's download, the app's share and
- * the console lines all carry this same JSON, so whatever reads one session file reads them all.
- * Exports carry only analytics events; network calls stay in the live timeline. [pretty] indents it
- * by four spaces for a file people read.
+ * One analytics event as every export writes it: [encodeExport] holds it, and a console line is it
+ * plus the source, so whatever reads one session file reads them all. Exports carry only analytics
+ * events; network calls stay in the live timeline. [pretty] indents it by four spaces for a file
+ * people read.
  */
 @InternalVeriventApi
 fun encodeExportEntry(entry: AnalyticsEntry, pretty: Boolean = false): String =
     (if (pretty) prettyWebJson else webJson).encodeToString(EntryDto.serializer(), entry.toDto())
+
+/** Must match the export's pretty-print indent, so joined entries line up as array elements. */
+private const val ARRAY_INDENT = "    "
+
+/**
+ * A session file, as the inspector's Export and the web viewer's download write it: a JSON array
+ * that opens with a `"type": "source"` entry naming the [platform and versions][SourceDto] once,
+ * then [events], each as [encodeExportEntry] writes it. The opener carries an `id` and a `ts` (when
+ * the file was written) because readers from 0.10.0 require both on every entry; they skip it as
+ * they skip anything that isn't `"analytics"`.
+ */
+@InternalVeriventApi
+fun encodeExport(events: List<AnalyticsEntry>): String {
+    val opener = exportSource?.let { source ->
+        prettyWebJson.encodeToString(
+            EntryDto.serializer(),
+            EntryDto(type = "source", id = "source", ts = Inspector.now().toEpochMilliseconds(), source = source),
+        )
+    }
+    val entries = listOfNotNull(opener) + events.map { encodeExportEntry(it, pretty = true) }
+    if (entries.isEmpty()) return "[]"
+    return entries.joinToString(",\n", prefix = "[\n", postfix = "\n]") { it.prependIndent(ARRAY_INDENT) }
+}
 
 internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))

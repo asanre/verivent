@@ -424,6 +424,7 @@ public final class io/github/asanre/verivent/core/store/TimelineStore$Companion 
 }
 
 public final class io/github/asanre/verivent/web/EntryDtoKt {
+	public static final fun encodeExport (Ljava/util/List;)Ljava/lang/String;
 	public static final fun encodeExportEntry (Lio/github/asanre/verivent/core/model/AnalyticsEntry;Z)Ljava/lang/String;
 	public static synthetic fun encodeExportEntry$default (Lio/github/asanre/verivent/core/model/AnalyticsEntry;ZILjava/lang/Object;)Ljava/lang/String;
 }
