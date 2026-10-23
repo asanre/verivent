@@ -176,6 +176,12 @@ class Sessions(unittest.TestCase):
         self.assertEqual([event["source"] for event in exported], [ANDROID, IOS])
         self.assertEqual(notes, ["the lines come from 2 sources, so each event keeps its own"])
 
+    def test_new_lines_mixed_with_old_ones_keep_their_own(self):
+        entries, _ = read(messages([entry("1"), entry("2", source=ANDROID)], "capture"))
+        exported, notes = session(entries)
+        self.assertEqual(exported, entries)
+        self.assertEqual(notes, ["some lines carry no source (Verivent before 0.10.1), so each event keeps its own"])
+
     def test_lines_from_before_0_10_1_are_written_as_they_came(self):
         entries, _ = read(messages([entry("1")], "capture"))
         self.assertEqual(session(entries), (entries, []))

@@ -137,13 +137,17 @@ def sources(entries):
 def session(entries):
     """The entries as an export: one opening `source` entry, and the events without theirs.
 
-    Lines from more than one source (captures of two apps or devices read together) keep their own,
-    since one opener can't name them all; the note says so.
+    Lines from more than one source (captures of two apps or devices read together), or new lines
+    mixed with ones from before 0.10.1, keep their own, since one opener can't vouch for them all;
+    the note says so.
     """
     found = sources(entries)
-    if len(found) != 1:
-        notes = [f"the lines come from {len(found)} sources, so each event keeps its own"] if found else []
-        return entries, notes
+    if not found:
+        return entries, []
+    if len(found) > 1:
+        return entries, [f"the lines come from {len(found)} sources, so each event keeps its own"]
+    if any("source" not in entry for entry in entries):
+        return entries, ["some lines carry no source (Verivent before 0.10.1), so each event keeps its own"]
     opener = {"type": "source", "id": "source", "ts": int(time.time() * 1000), "source": found[0]}
     return [opener] + [{key: value for key, value in entry.items() if key != "source"} for entry in entries], []
 
