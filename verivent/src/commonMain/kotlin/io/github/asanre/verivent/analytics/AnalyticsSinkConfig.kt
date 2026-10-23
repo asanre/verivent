@@ -53,8 +53,9 @@ class AnalyticsSinkConfig {
      * the lines through the host's own logging.
      *
      * The line is the event as exported, so redacted values stay redacted, plus a `source` with the
-     * platform and the app's and Verivent's versions, which a session file states once. One longer than the platform's console limit is split into pieces prefixed with
-     * `[<id> <i>/<n>] `, to be joined in order.
+     * platform and the app's and Verivent's versions, which a session file states once. One longer
+     * than the platform's console limit is split into pieces prefixed with `[<id> <i>/<n>] `, to be
+     * joined in order.
      */
     fun logTo(logger: (String) -> Unit = ::platformConsole) {
         lineLogger = logger
