@@ -65,9 +65,10 @@ timeline, type and channel filters, search, per-screen
 so the page needs no configuration of its own), and a detail panel with headers (redaction preserved), pretty-printed bodies,
 and an event's [extra parameter blocks](integration-analytics-facade.md#extra-parameter-blocks) in their own block.
 
-The download button saves the session's analytics events as a JSON file, the same
-[export](integration-analytics-facade.md#exported-sessions) the inspector writes. Network calls
-stay in the live timeline and aren't exported.
+The download button saves the session as a JSON file, the same
+[export](integration-analytics-facade.md#exported-sessions) the inspector writes: the device writes
+it, so it opens with the session's source and holds every captured event, even while the page is
+paused. Network calls stay in the live timeline and aren't exported.
 
 ## Tracking plan
 

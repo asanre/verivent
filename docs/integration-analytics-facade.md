@@ -98,11 +98,12 @@ val sink = AnalyticsSink {
 
 ```text
 adb logcat -s VeriventEvent
-VeriventEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…]}
+VeriventEvent: {"type":"analytics","id":"2","ts":…,"name":"purchase","channel":"firebase","properties":[…],"source":{"platform":"android","appVersion":"2.3.0","veriventVersion":"0.10.1"}}
 ```
 
-The line is the captured entry, the same JSON the web viewer receives and every export writes, so
-redacted values stay redacted. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
+The line is the event as every export writes it, so redacted values stay redacted, plus the
+`source` that a [session file](#exported-sessions) states once: a console has no header to keep it
+in. A line longer than the console's limit (about 3.8 KB on Android, 900 bytes on iOS) is
 split into pieces prefixed `[<id> <i>/<n>] `; join them in order to get the JSON back.
 
 To turn those lines into a report for a pull request, give them to an agent with the
@@ -110,22 +111,35 @@ To turn those lines into a report for a pull request, give them to an agent with
 
 ## Exported sessions
 
-*Export* in the inspector and the web viewer's download write the same JSON, an array of the
-session's analytics events; the console lines carry the same events, one per line. Network calls
-stay in the live timeline and aren't exported. Each property says its JSON type, taken before
-redaction, so a session can be checked again against any plan without false type errors:
+*Export* in the inspector and the web viewer's download write the same file: a JSON array that
+opens with the session's source, then its analytics events. The console lines carry the same
+events, one per line. Network calls stay in the live timeline and aren't exported.
 
 ```json
-{ "type": "analytics", "id": "7", "ts": 1760900000000, "name": "play", "channel": "firebase",
-  "properties": [
-    { "name": "count",  "value": "3",              "redacted": false, "type": "integer" },
-    { "name": "tracks", "value": "[{\"ms\":1200}]", "redacted": false, "type": "array" },
-    { "name": "email",  "value": "██",             "redacted": true,  "type": "string" } ],
-  "planVersion": "1.4.0" }
+[
+  { "type": "source", "id": "source", "ts": 1761200000000,
+    "source": { "platform": "android", "appVersion": "2.3.0", "veriventVersion": "0.10.1" } },
+  { "type": "analytics", "id": "7", "ts": 1760900000000, "name": "play", "channel": "firebase",
+    "properties": [
+      { "name": "count",  "value": "3",              "redacted": false, "type": "integer" },
+      { "name": "tracks", "value": "[{\"ms\":1200}]", "redacted": false, "type": "array" },
+      { "name": "email",  "value": "██",             "redacted": true,  "type": "string" } ],
+    "planVersion": "1.4.0" }
+]
 ```
 
-`value` is text: a string as sent, anything else as JSON. A redacted property keeps only its type.
-Exports from before 0.9 have no `type`. Exports from before 0.10 can also hold network calls
+The opener says where the session was captured: `platform` is `android` or `ios`, `appVersion` is
+the app's `versionName` on Android and its `CFBundleShortVersionString` on iOS (left out when the app
+declares none), and `veriventVersion` is the library's. Its `ts` is when the file was written. It
+carries an `id` and a `ts` like any entry, so readers that only look at `"type": "analytics"` skip
+it. On Android the core reads the app's version through a ContentProvider of its own, which the
+manifest merger adds to the debug build; `tools:node="remove"` on
+`io.github.asanre.verivent.core.internal.VeriventInitProvider` takes it out, and the version with it.
+
+Each property says its JSON type, taken before redaction, so a session can be checked again against
+any plan without false type errors. `value` is text: a string as sent, anything else as JSON. A
+redacted property keeps only its type. Exports from before 0.10.1 have no opener, and those from
+before 0.9 have no `type`. Exports from before 0.10 can also hold network calls
 (`"type": "network"`), which the [npm validator](validator-npm.md) skips.
 
 ## Tracking plan

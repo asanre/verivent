@@ -24,7 +24,8 @@ plan.events;                              // [{ name, channel }]
 plan.check("play", "firebase", JSON.stringify({ tracks }))
     ?.map((issue) => issue.line);         // ["tracks[*].duration_ms · Expected integer, got string · 60 of 60"]
 
-// A session exported from the inspector or the web viewer: a JSON array of analytics events.
+// A session exported from the inspector or the web viewer: a JSON array that opens with the
+// session's source, then its analytics events. Only the events are checked; the opener is skipped.
 // Console lines carry the same events one per line; join their pieces and wrap them in [ ] first.
 for (const event of plan.checkSession(exportJson)) {
     event.verdict;                        // "complies", "breaks" or "not_in_plan"

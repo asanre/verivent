@@ -289,8 +289,9 @@ curl -s 'http://localhost:9394/api/assert/all?t=ci'
 | `GET /api/assert/bad` | Events the loaded plan checked, with their `issues` |
 | `GET /api/assert/unplanned` | Events the loaded plan didn't check: it doesn't define them, or there's no plan |
 
-The three lists take `?name=` and `?channel=` filters and return the same JSON as the
-[export](integration-analytics-facade.md#exported-sessions). Every route sits behind the same
+The three lists take `?name=` and `?channel=` filters and return the events as the
+[export](integration-analytics-facade.md#exported-sessions) writes them, without its opening
+`source` entry. Every route sits behind the same
 gate as the viewer: the token in `?t=`, and `X-Verivent: 1` on the requests that change something.
 `POST /api/clear` resets the captured events.
 
