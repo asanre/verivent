@@ -28,6 +28,5 @@ internal fun entriesToJsonCapped(entries: List<TimelineEntry>, maxChars: Int = 4
         keptNewestFirst += event
         used += size
     }
-    if (keptNewestFirst.isEmpty()) return CappedExport("[]", 0, events.size)
     return CappedExport(encodeExport(keptNewestFirst.asReversed()), keptNewestFirst.size, events.size)
 }

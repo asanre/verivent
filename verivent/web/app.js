@@ -413,14 +413,15 @@ function clearAll(){
   }).catch(function(){toast('Clear failed');});
 }
 // The device writes the file, the same the inspector's Export does: it opens with the session's
-// source (platform and versions), which the page doesn't have. It holds every captured event, paused or not.
+// source (platform and versions), which the page doesn't have. It holds every captured event, paused
+// or not, so the device's file decides whether there is anything to export, not the page's view.
 function exportJson(){
-  if(!entries.some(function(e){return e.type==='analytics';})){toast('No analytics events to export');return;}
   fetch(apiUrl('/api/export')).then(function(r){
     if(!r.ok)throw new Error('export rejected: '+r.status);
     return r.text();
   }).then(function(data){
     var count=JSON.parse(data).filter(function(e){return e.type==='analytics';}).length;
+    if(!count){toast('No analytics events to export');return;}
     var blob=new Blob([data],{type:'application/json'});
     var url=URL.createObjectURL(blob);
     var a=document.createElement('a');

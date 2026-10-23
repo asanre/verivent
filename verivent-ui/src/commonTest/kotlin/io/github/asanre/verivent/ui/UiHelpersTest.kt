@@ -219,11 +219,11 @@ class ExportJsonTest {
     }
 
     @Test
-    fun emptySessionExportsAnEmptyArray() {
+    fun emptySessionExportsNoEvents() {
         val (json, kept, events) = entriesToJsonCapped(emptyList())
         assertEquals(0, kept)
         assertEquals(0, events)
-        assertEquals(0, Json.parseToJsonElement(json).jsonArray.size)
+        assertEquals(0, exportedEvents(json).size)
     }
 }
 

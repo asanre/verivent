@@ -390,7 +390,7 @@ class WebViewerTest {
     }
 
     @Test
-    fun theDownloadIsTheExportFileWithOnlyTheEvents() = testApplication {
+    fun theDownloadOpensWithTheSourceAndLeavesTheNetworkOut() = testApplication {
         seedEntry()
         Inspector.recordNetwork(NetworkTransaction("2", Instant.fromEpochMilliseconds(1), "GET", "https://h/a", "h", "/a"))
         application { webViewerModule(token = "secret") }

@@ -135,6 +135,8 @@ carries an `id` and a `ts` like any entry, so readers that only look at `"type":
 it. On Android the core reads the app's version through a ContentProvider of its own, which the
 manifest merger adds to the debug build; `tools:node="remove"` on
 `io.github.asanre.verivent.core.internal.VeriventInitProvider` takes it out, and the version with it.
+The provider runs in the app's main process only, so events captured in another process leave the
+version out too.
 
 Each property says its JSON type, taken before redaction, so a session can be checked again against
 any plan without false type errors. `value` is text: a string as sent, anything else as JSON. A
