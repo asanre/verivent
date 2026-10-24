@@ -8,7 +8,7 @@ It's attached to every GitHub Release from 0.9.0 on as `verivent-<version>.tgz`;
 registry.
 
 ```bash
-npm install https://github.com/asanre/verivent/releases/download/v0.10.1/verivent-0.10.1.tgz
+npm install https://github.com/asanre/verivent/releases/download/v0.11.0/verivent-0.11.0.tgz
 ```
 
 The package is an ES module with TypeScript definitions:

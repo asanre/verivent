@@ -10,16 +10,16 @@ and drop the UI/body-retention overhead:
 
 ```kotlin
 dependencies {
-    debugImplementation("io.github.asanre:verivent:0.10.1")
-    releaseImplementation("io.github.asanre:verivent-no-op:0.10.1")
+    debugImplementation("io.github.asanre:verivent:0.11.0")
+    releaseImplementation("io.github.asanre:verivent-no-op:0.11.0")
 
     // the on-device inspector UI:
-    debugImplementation("io.github.asanre:verivent-ui:0.10.1")
-    releaseImplementation("io.github.asanre:verivent-ui-no-op:0.10.1")
+    debugImplementation("io.github.asanre:verivent-ui:0.11.0")
+    releaseImplementation("io.github.asanre:verivent-ui-no-op:0.11.0")
 
     // network capture for Ktor clients:
-    debugImplementation("io.github.asanre:verivent-ktor:0.10.1")
-    releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.10.1")
+    debugImplementation("io.github.asanre:verivent-ktor:0.11.0")
+    releaseImplementation("io.github.asanre:verivent-ktor-no-op:0.11.0")
 }
 ```
 
