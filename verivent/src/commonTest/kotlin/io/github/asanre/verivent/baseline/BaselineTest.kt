@@ -402,6 +402,102 @@ class BaselineTest {
         assertEquals(json, Baseline.parse(json).toJson())
     }
 
+    private val variantsPlan = """{ "version": "1", "events": [ { "name": "ui_interaction", "channel": "firebase",
+        "schema": { "required": ["element_id"], "properties": { "element_id": { "type": "string" }, "item_id": {} } },
+        "variants": { "by": ["element_id"], "list": [
+          { "id": "share_playlist", "when": { "element_id": "playlist_share" } },
+          { "id": "like_track", "when": { "element_id": "player_like" } } ] } } ] }"""
+
+    private fun share(itemId: String = "pl_1") = sink.log("ui_interaction", "firebase", mapOf("element_id" to "playlist_share", "item_id" to itemId))
+
+    private fun like(itemId: String = "trk_1") = sink.log("ui_interaction", "firebase", mapOf("element_id" to "player_like", "item_id" to itemId))
+
+    private val ui = "ui_interaction" on "firebase"
+
+    @Test
+    fun findingsSayTheVariantOfTheLoadedPlan() {
+        val baseline = Baseline.parse(recorded { share(); like() })
+        Inspector.loadTrackingPlan(variantsPlan)
+
+        val failure = baseline.mismatch { share(itemId = "pl_2"); like(); like() }
+
+        assertEquals(
+            listOf(
+                Finding.Mismatch(ui, listOf(PlanIssue("item_id", "Not the expected value · expects pl_1")), variant = "share_playlist"),
+                Finding.Extra(ui, variant = "like_track"),
+            ),
+            failure.diffs.single().findings,
+        )
+        assertEquals(
+            """
+            checkout
+              ✕ ui_interaction · firebase › share_playlist
+                  item_id · Not the expected value · expects pl_1
+              ✕ ui_interaction · firebase › like_track  sent more times than expected
+            """.trimIndent(),
+            failure.message,
+        )
+    }
+
+    @Test
+    fun aSendOfAnotherVariantNeverExplainsTheOneMissing() {
+        val baseline = Baseline.parse(recorded { share(); like() })
+        Inspector.loadTrackingPlan(variantsPlan)
+
+        val failure = baseline.mismatch { like(); like() }
+
+        assertEquals(
+            listOf(Finding.Missing(ui, variant = "share_playlist"), Finding.Extra(ui, variant = "like_track")),
+            failure.diffs.single().findings,
+        )
+    }
+
+    @Test
+    fun withoutAPlanTheClosestSendStillExplainsTheOneMissing() {
+        val baseline = Baseline.parse(recorded { share(); like() })
+
+        val failure = baseline.mismatch { like(); like() }
+
+        assertEquals(
+            listOf(
+                Finding.Mismatch(
+                    ui,
+                    listOf(
+                        PlanIssue("element_id", "Not the expected value · expects playlist_share"),
+                        PlanIssue("item_id", "Not the expected value · expects pl_1"),
+                    ),
+                ),
+            ),
+            failure.diffs.single().findings,
+        )
+    }
+
+    @Test
+    fun aVariantOutOfOrderSaysWhichVariantItShouldPrecede() {
+        val baseline = Baseline.parse(
+            """
+            { "flow": "checkout", "order": "sequence", "events": [
+                { "name": "ui_interaction", "channel": "firebase", "schema": { "properties": { "element_id": { "const": "playlist_share" } } } },
+                { "name": "ui_interaction", "channel": "firebase", "schema": { "properties": { "element_id": { "const": "player_like" } } } } ] }
+            """,
+        )
+        Inspector.loadTrackingPlan(variantsPlan)
+
+        val failure = baseline.mismatch { like(); share() }
+
+        assertEquals(
+            listOf(Finding.OutOfOrder(ui, before = ui, variant = "share_playlist", beforeVariant = "like_track")),
+            failure.diffs.single().findings,
+        )
+        assertEquals(
+            """
+            checkout
+              ✕ ui_interaction · firebase › share_playlist  out of order, expected before ui_interaction · firebase › like_track
+            """.trimIndent(),
+            failure.message,
+        )
+    }
+
     @Test
     fun lastEventChecksOneEventOnItsOwn() {
         checkout()
@@ -412,6 +508,55 @@ class BaselineTest {
         assertEquals(
             "refund · firebase wasn't sent within 5s",
             assertFailsWith<AssertionError> { lastEvent("refund" on "firebase", now) }.message,
+        )
+    }
+
+    @Test
+    fun lastEventOfAVariantSkipsTheOtherVariantsSentAfterIt() {
+        Inspector.loadTrackingPlan(variantsPlan)
+        share()
+        like()
+
+        lastEvent(ui, now, variant = "share_playlist").shouldHave("item_id", "pl_1")
+        lastEvent(ui, now, where = mapOf("element_id" to "playlist_share")).shouldHave("item_id", "pl_1")
+        lastEvent(ui, now).shouldHave("element_id", "player_like")
+    }
+
+    @Test
+    fun lastEventSaysTheFilterItWaitedFor() {
+        Inspector.loadTrackingPlan(variantsPlan)
+        like()
+
+        assertEquals(
+            "ui_interaction · firebase › share_playlist wasn't sent within 5s",
+            assertFailsWith<AssertionError> { lastEvent(ui, now, variant = "share_playlist") }.message,
+        )
+        assertEquals(
+            "ui_interaction · firebase with element_id = playlist_share, item_id = 3 wasn't sent within 5s",
+            assertFailsWith<AssertionError> { lastEvent(ui, now, where = mapOf("element_id" to "playlist_share", "item_id" to 3)) }.message,
+        )
+    }
+
+    @Test
+    fun lastEventOfAVariantNeedsAPlanThatDefinesIt() {
+        assertEquals(
+            "ui_interaction · firebase: no tracking plan is loaded to tell its variants apart",
+            assertFailsWith<AssertionError> { lastEvent(ui, now, variant = "share_playlist") }.message,
+        )
+        Inspector.loadTrackingPlan(variantsPlan)
+        assertEquals(
+            "share_playist isn't a variant of ui_interaction · firebase in tracking plan 1: share_playlist or like_track",
+            assertFailsWith<IllegalArgumentException> { lastEvent(ui, now, variant = "share_playist") }.message,
+        )
+    }
+
+    @Test
+    fun lastEventCantFilterOnARedactedProperty() {
+        sink.log("login", "firebase", mapOf("email" to "a@b.c"))
+
+        assertEquals(
+            "email is redacted: only its type can be checked",
+            assertFailsWith<IllegalArgumentException> { lastEvent("login" on "firebase", now, where = mapOf("email" to "a@b.c")) }.message,
         )
     }
 

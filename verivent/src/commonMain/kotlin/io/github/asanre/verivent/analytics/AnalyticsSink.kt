@@ -43,9 +43,7 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
             // Checked before redaction because only the raw values still carry their types, but a
             // hidden value is only type-checked: a verdict on its enum or pattern would reveal it.
             val plan = Inspector.activePlan
-            val issues = plan?.let { checker ->
-                checker.issuesFor(name, channel, values.hiding(redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }))
-            }
+            val check = plan?.check(name, channel, values.hiding(redacted.filter { it.redacted }.mapTo(HashSet()) { it.name }))
 
             val entry = AnalyticsEntry(
                 id = Inspector.nextId(),
@@ -62,8 +60,9 @@ class AnalyticsSink internal constructor(private val config: AnalyticsSinkConfig
                             .getOrDefault(emptyList())
                     }
                     .distinct(),
-                planVersion = plan?.version?.takeIf { issues != null },
-                issues = issues.orEmpty(),
+                planVersion = plan?.version?.takeIf { check != null },
+                issues = check?.issues.orEmpty(),
+                variant = check?.variant,
             )
             Inspector.recordAnalytics(entry)
             config.lineLogger?.let { logger -> writeLines(entry, logger) }

@@ -159,6 +159,7 @@ def summary(entries, notes):
             "name": entry.get("name"),
             "channel": entry.get("channel"),
             "planVersion": entry.get("planVersion"),
+            "variant": entry.get("variant"),
             "verdict": verdict(entry),
             "issues": [f"{issue['property']} · {issue['message']}" for issue in entry.get("issues", [])],
             "properties": [shown(prop) for prop in entry.get("properties", [])],

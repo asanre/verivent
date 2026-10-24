@@ -25,25 +25,35 @@ import kotlinx.serialization.json.intOrNull
  * Each schema is a JSON Schema subset over the event's properties: `type`, `enum`, `const`,
  * `pattern`, `properties`, `required`, `additionalProperties` (true when absent, as in JSON Schema),
  * `items` (one schema for every element), `minItems` and `contains`, nested as deep as the values.
- * Other keywords are ignored.
+ * Other keywords are ignored. An event sent in several ways can also list its [EventVariants]
+ * under `variants`, next to its schema.
  */
 internal class TrackingPlan private constructor(
     val version: String,
-    private val schemas: Map<PlanEvent, Schema>,
+    private val events: Map<PlanEvent, PlannedEvent>,
 ) {
 
-    val summary = PlanSummary(version, schemas.keys.toList())
+    val summary = PlanSummary(
+        version,
+        events.keys.toList(),
+        variants = events.mapNotNull { (event, planned) -> planned.variants?.let { event to it.ids } }.toMap(),
+    )
 
     /**
-     * What breaks the plan in this event, or null when the plan doesn't define it. Findings inside
-     * lists are grouped by path, so 60 broken items are one finding.
+     * What breaks the plan in this event, and the variant it was sent as, or null when the plan
+     * doesn't define it. Findings inside lists are grouped by path, so 60 broken items are one finding.
      */
-    fun check(name: String, channel: String, values: CheckedValues): List<Finding>? =
-        schemas[PlanEvent(name, channel)]?.check(values)
+    fun check(name: String, channel: String, values: CheckedValues): PlanCheck? =
+        events[PlanEvent(name, channel)]?.let { event ->
+            val common = event.schema.check(values)
+            event.variants?.check(values, common) ?: PlanCheck(common, variant = null)
+        }
 
-    /** [check] as one [PlanIssue] per finding, as events are stamped with. */
-    fun issuesFor(name: String, channel: String, values: CheckedValues): List<PlanIssue>? =
-        check(name, channel, values)?.map { it.toPlanIssue() }
+    /** [check]'s findings as one [PlanIssue] each, as events are stamped with. */
+    fun issuesFor(name: String, channel: String, values: CheckedValues): List<PlanIssue>? = check(name, channel, values)?.issues
+
+    /** The variant of [event] that [values] were sent as, or null when it has none or none fits. */
+    fun variantOf(event: PlanEvent, values: CheckedValues): String? = events[event]?.variants?.variantOf(values)
 
     companion object {
         /** @throws IllegalArgumentException naming what is wrong with [json]. */
@@ -51,16 +61,20 @@ internal class TrackingPlan private constructor(
             val root = parseObject(json, "the document")
             val version = root["version"].asString("version")
             val events = (root["events"] as? JsonArray) ?: invalid("events must be an array")
-            val schemas = mutableMapOf<PlanEvent, Schema>()
+            val planned = mutableMapOf<PlanEvent, PlannedEvent>()
             events.forEachIndexed { index, element ->
                 val event = element.asObject("events[$index]")
                 val key = PlanEvent(event["name"].asString("events[$index].name"), event["channel"].asString("events[$index].channel"))
-                require(key !in schemas) { "${key.name} on ${key.channel} is defined twice" }
-                schemas[key] = Schema.parse(event["schema"].asObject("${key.name}.schema"), key.name)
+                require(key !in planned) { "${key.name} on ${key.channel} is defined twice" }
+                val schema = Schema.parse(event["schema"].asObject("${key.name}.schema"), key.name)
+                val variants = event["variants"]?.let { EventVariants.parse(it.asObject("${key.name}.variants"), schema, key.name) }
+                planned[key] = PlannedEvent(schema, variants)
             }
-            return TrackingPlan(version, schemas)
+            return TrackingPlan(version, planned)
         }
     }
+
+    private class PlannedEvent(val schema: Schema, val variants: EventVariants?)
 }
 
 /**
@@ -70,6 +84,11 @@ internal class TrackingPlan private constructor(
 internal data class Finding(val path: String, val message: String, val count: Int? = null, val total: Int? = null) {
 
     fun toPlanIssue() = PlanIssue(path, if (count == null) message else "$message · $count of $total")
+}
+
+/** What [TrackingPlan.check] found in one event: what breaks the plan, and the variant it was sent as. */
+internal class PlanCheck(val findings: List<Finding>, val variant: String?) {
+    val issues: List<PlanIssue> get() = findings.map { it.toPlanIssue() }
 }
 
 /** What breaks this event schema in [values]. */
@@ -244,7 +263,7 @@ private class Walk {
 }
 
 /** "a", "a or b", "a, b or c". */
-private fun List<String>.joinAsChoice(): String =
+internal fun List<String>.joinAsChoice(): String =
     if (size < 2) joinToString() else dropLast(1).joinToString(", ") + " or " + last()
 
 /**

@@ -128,6 +128,9 @@ events, one per line. Network calls stay in the live timeline and aren't exporte
 ]
 ```
 
+An event the plan tells apart by [variants](#variants) also carries `"variant"`, the id of the one it
+was sent as. Readers from before 0.11 ignore it.
+
 The opener says where the session was captured: `platform` is `android` or `ios`, `appVersion` is
 the app's `versionName` on Android and its `CFBundleShortVersionString` on iOS (left out when the app
 declares none), and `veriventVersion` is the library's. Its `ts` is when the file was written. It
@@ -200,6 +203,58 @@ it. The plan defines each event per channel with a JSON Schema subset over its p
   earlier events: they keep their `planVersion` and `issues` in the export and in console lines.
   The inspector and the web viewer only show the verdicts of the plan loaded now, so clearing or
   replacing it hides the earlier ones, and loading the same version again brings them back.
+
+### Variants
+
+A generic event is the same event, by name and channel, sent in several places or ways and told
+apart by the value of one of its properties: `ui_interaction` with an `element_id` for each element
+touched, `share` by its `method`, `select_content` by its `content_type`. Give it `variants` next to
+its `schema`, and each one says what its sends must hold on top of what every send holds:
+
+```json
+{ "name": "ui_interaction", "channel": "firebase",
+  "schema": { "required": ["element_id", "action", "item_id"],
+              "properties": { "element_id": { "type": "string" }, "action": { "type": "string" },
+                              "item_id": { "type": "string" }, "position": { "type": "integer" } } },
+  "variants": {
+    "by": ["element_id"],
+    "list": [
+      { "id": "share_playlist", "description": "Share button on a playlist",
+        "when": { "element_id": "playlist_share" },
+        "properties": { "action": { "const": "share" }, "item_id": { "pattern": "^pl_" } } },
+      { "id": "home_banner", "when": { "element_id": "home_hero_banner" },
+        "required": ["position"],
+        "properties": { "item_id": { "pattern": "^bnr_" } } } ] } }
+```
+
+These are the variants of one event in the tracking plan, not the variants of an A/B test: a
+parameter such as `experiment_variant` is a property like any other.
+
+- Every variant sends the same properties, as Firebase asks of events with the same name. A
+  variant only narrows them: `properties` takes `const`, `enum` and `pattern` for a property the
+  schema already has, and `required` makes one it already has required. It never adds one.
+- `by` names the properties that tell variants apart, one or several. Each must be in the schema's
+  `properties` and `required`, so a send without it says *Required, but not sent*. Every `when` sets
+  a plain value for exactly those properties, and no two variants share a `when`.
+- `id` names the variant in messages, in the inspector and in exports. A variant's other keys, such
+  as `description`, are ignored. The plan is rejected, with a message naming the event and the
+  variant, for anything else: a property the schema lacks, a keyword other than `const`, `enum` or
+  `pattern`, a `by` that isn't required, two variants with the same `id` or `when`.
+- A send is checked against the schema first, then against its variant. What breaks the variant
+  says which one by its id, never by the value sent: `item_id · For share_playlist: Doesn't match the
+  pattern ^pl_`. A property the schema already rejects isn't reported again.
+- A send no variant fits gets one issue on the property that tells them apart, listing what the
+  plan expects: `element_id · Not a planned variant · expects playlist_share or home_hero_banner`.
+  With several properties in `by` it goes on the first: `element_id · Not a planned variant of
+  element_id + action · expects playlist_share + share or …`.
+- When a property in `by` is redacted, picking a variant would reveal its value: only the schema is
+  checked, and the send gets `element_id · Redacted: can't tell which variant, only the common part
+  was checked`.
+- The event carries `variant`, the id of the one it was sent as, null when none fits. The inspector
+  and the web viewer count coverage per variant, plus a row for sends no variant fits.
+- An event without `variants` is checked as before, and a plan can mix both. Verivent before 0.11
+  ignores `variants` and only checks the schema: it misses what a variant narrows, but never reports
+  an issue the plan doesn't have.
 
 Load it whichever way suits who is testing:
 

@@ -35,9 +35,10 @@ python3 ${CLAUDE_SKILL_DIR}/scripts/read_lines.py capture.txt --session <tmp>/se
 
 The script reads any of the formats above, joins the pieces of events too long for one console line (`[<id> <i>/<n>] `, joined by id), undoes the unified log's escaping, and prints JSON:
 
-- `events[]`: `id`, `name`, `channel`, `planVersion`, `verdict`, `issues` (already as `property · message`) and the observed `properties` (`name`, `value`, `redacted`, `type`, and `size` for a list or object; long values are cut in this summary only).
+- `events[]`: `id`, `name`, `channel`, `planVersion`, `variant`, `verdict`, `issues` (already as `property · message`) and the observed `properties` (`name`, `value`, `redacted`, `type`, and `size` for a list or object; long values are cut in this summary only).
 - `verdict`: `complies` (checked, no issues), `breaks` (checked, with issues) or `not_checked` (no `planVersion`: either the device had no plan loaded, or its plan doesn't define this event — the line alone can't tell which).
 - `sources`: where the lines came from (`platform`, `appVersion`, `veriventVersion`), from Verivent 0.10.1 on; empty for older lines.
+- `variant`: for an event the plan sends in several ways (a generic event, such as one `ui_interaction` told apart by `element_id`), the id of the plan's variant it was sent as, from Verivent 0.11 on. Null when the plan has no variants for it, when none fits (its issues then say `Not a planned variant`), or when the property that tells them apart is redacted. These are the tracking plan's variants of one event, not the variants of an A/B test.
 - `notes`: what went wrong reading the capture — pieces that never completed, lines that aren't JSON, events from Verivent before 0.9 (no property types), events checked against different plan versions. Carry every note into the report: a missing event is a finding too.
 
 Ids restart at 1 every time the app launches, so the same id can appear twice; the script keeps them apart. Don't deduplicate events by id.
@@ -55,7 +56,7 @@ The device's verdict is the one the app itself showed, computed on the values as
 | The user gave a plan with another `version` (they want to know if the events meet the new plan), or some events are `not_checked` and a plan is available | Re-check with Verivent's validator (below). |
 | Events are `not_checked` and there is no plan to re-check with | Report them as not checked, and say why it can't be settled: no plan loaded on the device, or the plan doesn't define them. Don't invent a verdict from your own reading of the schema. |
 
-A plan is a JSON file with `version` and `events: [{name, channel, schema}]`. If the user says "the plan" without a path, look for it in their repo (often loaded with `Inspector.loadTrackingPlan` / `Verivent.loadTrackingPlan`) before asking.
+A plan is a JSON file with `version` and `events: [{name, channel, schema}]`, and `variants` on an event sent in several ways. If the user says "the plan" without a path, look for it in their repo (often loaded with `Inspector.loadTrackingPlan` / `Verivent.loadTrackingPlan`) before asking.
 
 ### Re-checking with the validator
 
@@ -63,7 +64,7 @@ A plan is a JSON file with `version` and `events: [{name, channel, schema}]`. If
 node ${CLAUDE_SKILL_DIR}/scripts/check_session.mjs --validator <dir> plan.json <tmp>/session.json
 ```
 
-It runs Verivent's own validator (the npm package, from 0.9.0) over the session, so the messages are the device's. It prints `planVersion` and, per event, `verdict` (`complies`, `breaks` or `not_in_plan`), `issues` and `untyped`. If the plan file itself is broken, it prints the validator's error for it: report that and stop.
+It runs Verivent's own validator (the npm package, from 0.9.0) over the session, so the messages are the device's. It prints `planVersion` and, per event, `verdict` (`complies`, `breaks` or `not_in_plan`), `variant` (found again by this plan, from the npm package 0.11.0 on), `issues` and `untyped`. If the plan file itself is broken, it prints the validator's error for it: report that and stop.
 
 `<dir>` is the package. Find it in this order:
 
@@ -78,6 +79,8 @@ What the re-check can't see: a redacted value is only checked for its type (the 
 ## 4. Read the ticket
 
 The ticket can be a file, pasted text, or an issue you can fetch with a Jira or Linear tool. Pull out, per event: name, channel, the properties it should carry, and any value it pins down (an exact value, a format, "integer", "never sent"). Ignore the rest of the ticket.
+
+A ticket that asks for one generic event in several places ("`ui_interaction` when sharing a playlist and when liking a track") asks for one event per place: match each to its variant, by the variant id or by the value that tells them apart (`element_id = playlist_share`), and compare them one by one.
 
 For each event, compare the ticket with what was observed. The **Ticket** column only ever says one of:
 
@@ -108,7 +111,7 @@ Plan **<version>** · <checked on the device | re-checked with Verivent's valida
 - …
 ```
 
-- **Rows**: one per event and channel. Collapse identical repeats into one row with `×N` after the name. Keep separate rows when the same event has different results, such as before and after the plan was loaded.
+- **Rows**: one per event, channel and variant. Write an event with a variant as `` `ui_interaction › share_playlist` ``, and one no variant fits as `` `ui_interaction › no planned variant` ``. Collapse identical repeats into one row with `×N` after the name. Keep separate rows when the same event has different results, such as before and after the plan was loaded.
 - **Expected**: what the plan requires (required properties, allowed values, types) plus anything extra the ticket asks. Keep it short.
 - **Observed**: `name=value` for the properties, with `██` for redacted ones. For arrays and objects, give the size (`items=60 items`), not the JSON. An event's `sections` (default parameters, user properties) aren't part of the plan, neither on the device nor in a re-check: leave them out, or mention them as context, never as issues.
 - **Issues**: one validator line per `<br>`, in backticks. Use `—` when there are none, `not in plan <version>` when the re-check says `not_in_plan`, and `not checked` when there is no verdict at all. Keep the last two apart in the header counts too: an event the plan doesn't define is a finding (add it to the plan or stop sending it), while an unchecked one is a gap in the evidence.

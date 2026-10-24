@@ -305,22 +305,32 @@ function refreshPlan(){
   fetch(apiUrl('/api/tracking-plan')).then(function(r){return r.ok?r.json():null;})
     .then(function(s){if(seq===planSeq)showPlan(s);}).catch(function(){});
 }
-// Same as the inspector's planCoverage: every event the plan defines, against the captures checked by
-// this same version (events stamped by an earlier plan say nothing about this one). Verdict 0 breaks,
-// 1 matches, 2 not seen; ordered by verdict, then plan order.
+// Same as the inspector's planCoverage: every event the plan defines, and each variant of one it tells
+// apart by them, against the captures checked by this same version (events stamped by an earlier plan
+// say nothing about this one). An event with variants also counts the captures no variant fits, when
+// there are any. Verdict 0 breaks, 1 matches, 2 not seen; ordered by verdict, then plan order.
 function planCoverage(list,p){
   var checked=Object.create(null);
   list.forEach(function(e){
     if(e.type!=='analytics'||e.planVersion!==p.version)return;
-    var key=e.name+'\u0000'+e.channel;
+    var key=e.name+'\u0000'+e.channel+'\u0000'+(e.variant||'');
     var c=checked[key]||(checked[key]={captured:0,breaking:0});
     c.captured++;
     if(breaksPlan(e))c.breaking++;
   });
-  return p.events.map(function(ev,i){
-    var c=checked[ev.name+'\u0000'+ev.channel]||{captured:0,breaking:0};
-    return {event:ev,captured:c.captured,breaking:c.breaking,verdict:c.breaking?0:(c.captured?1:2),order:i};
-  }).sort(function(a,b){return (a.verdict-b.verdict)||(a.order-b.order);});
+  var rows=[];
+  function add(ev,variant,label,always){
+    var c=checked[ev.name+'\u0000'+ev.channel+'\u0000'+variant];
+    if(!c&&!always)return;
+    c=c||{captured:0,breaking:0};
+    rows.push({event:ev,label:label,captured:c.captured,breaking:c.breaking,verdict:c.breaking?0:(c.captured?1:2),order:rows.length});
+  }
+  p.events.forEach(function(ev){
+    if(!ev.variants){add(ev,'',ev.name,true);return;}
+    ev.variants.forEach(function(v){add(ev,v,ev.name+' › '+v,true);});
+    add(ev,'',ev.name+' › no planned variant',false);
+  });
+  return rows.sort(function(a,b){return (a.verdict-b.verdict)||(a.order-b.order);});
 }
 function countVerdicts(cov){var n=[0,0,0];cov.forEach(function(c){n[c.verdict]++;});return n;}
 function planChipHtml(cov){
@@ -331,7 +341,7 @@ function planChipHtml(cov){
 var UNSEEN_PREVIEW=3,VERDICT_CLASS=['breaks','matches','unseen'];
 function coverageRowHtml(c){
   var meta=c.verdict===0?(c.breaking+' of '+c.captured):(c.verdict===1?(c.captured+' seen'):'not seen');
-  return "<div class='covrow "+VERDICT_CLASS[c.verdict]+"'><span class='cdot "+VERDICT_CLASS[c.verdict]+"'></span><code class='mono'>"+esc(c.event.name)+"</code><span class='cmeta'>"+esc(c.event.channel)+" · "+meta+"</span></div>";
+  return "<div class='covrow "+VERDICT_CLASS[c.verdict]+"'><span class='cdot "+VERDICT_CLASS[c.verdict]+"'></span><code class='mono'>"+esc(c.label)+"</code><span class='cmeta'>"+esc(c.event.channel)+" · "+meta+"</span></div>";
 }
 function planSummaryHtml(cov){
   if(!plan)return "<div class='pintro'><b>Check events against the plan</b><span>Load the analytics team's tracking plan and every event it defines, captured from then on, is checked for missing or wrong parameters.</span></div>";

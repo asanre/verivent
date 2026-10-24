@@ -29,6 +29,12 @@ data class AnalyticsEntry(
     val planVersion: String? = null,
     /** What breaks the plan in this event's properties, stamped at capture alongside [planVersion]. */
     val issues: List<PlanIssue> = emptyList(),
+    /**
+     * The id of the plan's variant this event was sent as, for an event the plan tells apart by the
+     * value of a property (a generic event). Null when the plan has no variants for it, or when none
+     * fits the values sent or the property that tells them apart is redacted: then [issues] say so.
+     */
+    val variant: String? = null,
 ) : TimelineEntry {
 
     /** Approximate retained size, cached — see [NetworkTransaction.approxBytes]. */
@@ -39,7 +45,7 @@ data class AnalyticsEntry(
                 sections.entries.sumOf { (title, section) ->
                     title.length + section.sumOf { it.name.length + it.value.length }
                 } +
-                (planVersion?.length ?: 0) + issues.sumOf { it.property.length + it.message.length }
+                (planVersion?.length ?: 0) + (variant?.length ?: 0) + issues.sumOf { it.property.length + it.message.length }
             ).toLong()
     }
 }

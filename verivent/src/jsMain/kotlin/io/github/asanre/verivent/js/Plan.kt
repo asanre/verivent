@@ -31,7 +31,7 @@ class Plan(json: String) {
      * when the plan doesn't define it.
      */
     fun check(name: String, channel: String, propertiesJson: String): Array<Issue>? =
-        plan.check(name, channel, CheckedValues(parseObject(propertiesJson, "the properties")))?.toIssues()
+        plan.check(name, channel, CheckedValues(parseObject(propertiesJson, "the properties")))?.findings?.toIssues()
 
     /** Every analytics event of an exported session (the JSON array the exports write), checked again. */
     fun checkSession(exportJson: String): Array<SessionEvent> =
@@ -40,18 +40,19 @@ class Plan(json: String) {
                 val name = entry.name?.takeIf { entry.type == "analytics" } ?: return@mapNotNull null
                 val channel = entry.channel ?: return@mapNotNull null
                 val properties = entry.properties.orEmpty().map { it.toKeyValue() }
-                val findings = plan.check(name, channel, exportedValues(properties))
+                val check = plan.check(name, channel, exportedValues(properties))
                 SessionEvent(
                     id = entry.id,
                     name = name,
                     channel = channel,
                     verdict = when {
-                        findings == null -> "not_in_plan"
-                        findings.isEmpty() -> "complies"
+                        check == null -> "not_in_plan"
+                        check.findings.isEmpty() -> "complies"
                         else -> "breaks"
                     },
-                    issues = findings.orEmpty().toIssues(),
+                    issues = check?.findings.orEmpty().toIssues(),
                     untyped = properties.any { it.type == null },
+                    variant = check?.variant,
                 )
             }
             .toTypedArray()
@@ -75,7 +76,9 @@ class Issue(val path: String, val message: String, val count: Int?, val total: I
 
 /**
  * [verdict] is `complies`, `breaks` or `not_in_plan`. [untyped] flags an export from before 0.9,
- * whose properties carry no type and so are only checked for presence.
+ * whose properties carry no type and so are only checked for presence. [variant] is the id of the
+ * plan's variant the event was sent as, found again by this plan; null when the plan has no
+ * variants for it, none fits, or the property that tells them apart is redacted.
  */
 @JsExport
 class SessionEvent(
@@ -85,6 +88,7 @@ class SessionEvent(
     val verdict: String,
     val issues: Array<Issue>,
     val untyped: Boolean,
+    val variant: String?,
 )
 
 private fun List<Finding>.toIssues(): Array<Issue> = map { Issue(it.path, it.message, it.count, it.total) }.toTypedArray()

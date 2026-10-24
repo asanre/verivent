@@ -48,6 +48,24 @@ class PlanTest {
     }
 
     @Test
+    fun aSessionSaysTheVariantEachEventWasSentAsByTheseRulesNotTheStampedOne() {
+        val plan = Plan(
+            """{ "version": "2.0.0", "events": [ { "name": "ui_interaction", "channel": "firebase",
+                 "schema": { "required": ["element_id"], "properties": { "element_id": { "type": "string" }, "action": {} } },
+                 "variants": { "by": ["element_id"], "list": [
+                   { "id": "share_playlist", "when": { "element_id": "playlist_share" }, "properties": { "action": { "const": "share" } } } ] } } ] }""",
+        )
+        fun sent(id: String, element: String, action: String) =
+            """{ "type": "analytics", "id": "$id", "ts": 0, "name": "ui_interaction", "channel": "firebase", "variant": "stale",
+                 "properties": [ { "name": "element_id", "value": "$element", "redacted": false, "type": "string" },
+                                 { "name": "action", "value": "$action", "redacted": false, "type": "string" } ] }"""
+        val events = plan.checkSession("[${sent("1", "playlist_share", "share")}, ${sent("2", "playlist_share", "tap")}, ${sent("3", "cart_icon", "tap")}]")
+        assertEquals(listOf("share_playlist", "share_playlist", null), events.map { it.variant })
+        assertEquals(listOf("action · For share_playlist: Not the expected value · expects share"), events[1].issues.map { it.line })
+        assertEquals(listOf("element_id · Not a planned variant · expects playlist_share"), events[2].issues.map { it.line })
+    }
+
+    @Test
     fun skipsTheEntryThatOpensAnExport() {
         val session = """[
             { "type": "source", "id": "source", "ts": 1, "source": { "platform": "ios", "veriventVersion": "0.10.1" } },

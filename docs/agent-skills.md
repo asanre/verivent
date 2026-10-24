@@ -59,3 +59,6 @@ The report is a Markdown table, ready for the pull request:
 |---|---|---|---|---|---|
 | `purchase` | firebase | value, currency, transaction_id, items[].item_id, items[].quantity (integer) | value=42.5, currency=EUR, user_email=██, items=2 items | `transaction_id · Required, but not sent`<br>`user_email · Not in the plan for this event`<br>`items[*].quantity · Expected integer, got string · 1 of 2` | Differs from the ticket: expected transaction_id, observed none |
 | `begin_checkout` | server-side | value, currency | — | — | Not observed |
+
+A generic event gets one row per [variant](integration-analytics-facade.md#variants), named
+`ui_interaction › share_playlist`, so a ticket that asks for it in two places is checked place by place.

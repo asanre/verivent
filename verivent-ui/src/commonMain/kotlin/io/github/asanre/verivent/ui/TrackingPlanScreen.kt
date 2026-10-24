@@ -358,7 +358,7 @@ private fun CoverageGroup(title: String, titleColor: Color, dot: Color?, events:
             val mark = Modifier.size(8.dp).clip(CircleShape)
             Box(if (dot != null) mark.background(dot) else mark.border(1.5.dp, scheme.outline, CircleShape))
             Text(
-                coverage.event.name,
+                coverage.label,
                 style = codeTextStyle,
                 color = if (dot != null) scheme.onSurface else scheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),

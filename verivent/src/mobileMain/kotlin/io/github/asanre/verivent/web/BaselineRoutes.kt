@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.analytics.asObject
 import io.github.asanre.verivent.analytics.asString
 import io.github.asanre.verivent.baseline.BaselineFile
 import io.github.asanre.verivent.baseline.BaselineMismatch
@@ -66,7 +67,9 @@ internal fun Route.baselineRoutes() {
             val body = Json.parseToJsonElement(call.receiveLimited()).jsonObject
             val event = PlanEvent(body["name"].asString("name"), body["channel"].asString("channel"))
             val timeout = (body["timeout"] as? JsonPrimitive)?.content?.toLongOrNull()?.milliseconds ?: 5.seconds
-            val check = withContext(Dispatchers.IO) { lastEvent(event, Waiter.RealTime, timeout) }
+            val variant = body["variant"]?.asString("variant")
+            val where = body["where"]?.asObject("where").orEmpty()
+            val check = withContext(Dispatchers.IO) { lastEvent(event, Waiter.RealTime, timeout, variant, where) }
             if ((body["plan"] as? JsonPrimitive)?.booleanOrNull == true) check.shouldMatchPlan()
             if ("property" in body) check.shouldHave(body["property"].asString("property"), body["value"])
             null

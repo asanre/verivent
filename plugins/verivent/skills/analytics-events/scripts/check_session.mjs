@@ -41,6 +41,7 @@ const events = plan.checkSession(await readFile(sessionPath, 'utf8')).map((event
   name: event.name,
   channel: event.channel,
   verdict: event.verdict,
+  variant: event.variant,
   issues: Array.from(event.issues, (issue) => issue.line),
   untyped: event.untyped,
 }));

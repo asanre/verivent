@@ -55,6 +55,7 @@ internal data class EntryDto(
     val sections: List<SectionDto>? = null,
     val planVersion: String? = null,
     val issues: List<IssueDto>? = null,
+    val variant: String? = null,
     // the entry that opens an export (type "source"), and every console line
     val source: SourceDto? = null,
 )
@@ -108,6 +109,7 @@ internal fun TimelineEntry.toDto(): EntryDto = when (this) {
             ?.map { (title, section) -> SectionDto(title, section.map { it.toDto() }) },
         planVersion = planVersion,
         issues = issues.takeIf { it.isNotEmpty() }?.map { IssueDto(it.property, it.message) },
+        variant = variant,
     )
 }
 

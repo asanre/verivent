@@ -71,49 +71,63 @@ public abstract interface class io/github/asanre/verivent/baseline/BaselineDiff$
 }
 
 public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
-	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
-	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Extra;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getVariant ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
-	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;)V
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
 	public final fun component2 ()Ljava/util/List;
-	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;Ljava/lang/String;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Mismatch;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
 	public final fun getIssues ()Ljava/util/List;
+	public final fun getVariant ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
-	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
-	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$Missing;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getVariant ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder : io/github/asanre/verivent/baseline/BaselineDiff$Finding {
-	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;)V
+	public fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/github/asanre/verivent/core/model/PlanEvent;
 	public final fun component2 ()Lio/github/asanre/verivent/core/model/PlanEvent;
-	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;Ljava/lang/String;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/core/model/PlanEvent;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/BaselineDiff$Finding$OutOfOrder;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBefore ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getBeforeVariant ()Ljava/lang/String;
 	public final fun getEvent ()Lio/github/asanre/verivent/core/model/PlanEvent;
+	public final fun getVariant ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -140,8 +154,8 @@ public final class io/github/asanre/verivent/baseline/EventCheck {
 }
 
 public final class io/github/asanre/verivent/baseline/EventCheckKt {
-	public static final fun lastEvent-SxA4cEA (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;J)Lio/github/asanre/verivent/baseline/EventCheck;
-	public static synthetic fun lastEvent-SxA4cEA$default (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;JILjava/lang/Object;)Lio/github/asanre/verivent/baseline/EventCheck;
+	public static final fun lastEvent-1Y68eR8 (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;JLjava/lang/String;Ljava/util/Map;)Lio/github/asanre/verivent/baseline/EventCheck;
+	public static synthetic fun lastEvent-1Y68eR8$default (Lio/github/asanre/verivent/core/model/PlanEvent;Lio/github/asanre/verivent/baseline/Waiter;JLjava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lio/github/asanre/verivent/baseline/EventCheck;
 	public static final fun on (Ljava/lang/String;Ljava/lang/String;)Lio/github/asanre/verivent/core/model/PlanEvent;
 }
 
@@ -203,10 +217,11 @@ public final class io/github/asanre/verivent/core/internal/RunSafelyKt {
 }
 
 public final class io/github/asanre/verivent/core/model/AnalyticsEntry : io/github/asanre/verivent/core/model/TimelineEntry {
-	public fun <init> (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/util/List;
+	public final fun component11 ()Ljava/lang/String;
 	public final fun component2 ()Lkotlin/time/Instant;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
@@ -215,8 +230,8 @@ public final class io/github/asanre/verivent/core/model/AnalyticsEntry : io/gith
 	public final fun component7 ()Ljava/lang/String;
 	public final fun component8 ()Ljava/util/Map;
 	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;)Lio/github/asanre/verivent/core/model/AnalyticsEntry;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/AnalyticsEntry;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/github/asanre/verivent/core/model/AnalyticsEntry;
+	public final fun copy (Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;)Lio/github/asanre/verivent/core/model/AnalyticsEntry;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/AnalyticsEntry;Ljava/lang/String;Lkotlin/time/Instant;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/github/asanre/verivent/core/model/AnalyticsEntry;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAnnotations ()Ljava/util/List;
 	public final fun getChannel ()Ljava/lang/String;
@@ -228,6 +243,7 @@ public final class io/github/asanre/verivent/core/model/AnalyticsEntry : io/gith
 	public final fun getProperties ()Ljava/util/List;
 	public final fun getSections ()Ljava/util/Map;
 	public fun getTimestamp ()Lkotlin/time/Instant;
+	public final fun getVariant ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -367,13 +383,16 @@ public final class io/github/asanre/verivent/core/model/PlanIssue {
 }
 
 public final class io/github/asanre/verivent/core/model/PlanSummary {
-	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;)Lio/github/asanre/verivent/core/model/PlanSummary;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/PlanSummary;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lio/github/asanre/verivent/core/model/PlanSummary;
+	public final fun component3 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)Lio/github/asanre/verivent/core/model/PlanSummary;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/core/model/PlanSummary;Ljava/lang/String;Ljava/util/List;Ljava/util/Map;ILjava/lang/Object;)Lio/github/asanre/verivent/core/model/PlanSummary;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvents ()Ljava/util/List;
+	public final fun getVariants ()Ljava/util/Map;
 	public final fun getVersion ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

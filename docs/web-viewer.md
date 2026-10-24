@@ -77,7 +77,9 @@ like the inspector does:
 
 - The header chip reads *Plan x.y · n break it*, or *No plan*. It opens the plan panel, where you
   see the loaded version and its coverage (the events the plan defines that break it, match it or
-  haven't been seen yet), clear it, or load another one: drop the JSON file, pick it, or paste it.
+  haven't been seen yet, each [variant](integration-analytics-facade.md#variants) of a generic
+  event on its own row as `name › variant`, plus a row for sends no variant fits), clear it, or load
+  another one: drop the JSON file, pick it, or paste it.
   An invalid plan is rejected inline and leaves the loaded one untouched.
 - *Breaks plan · n* filters the timeline down to the events that break the loaded plan.
 - An event row carries `✕ n` when it breaks the plan and `✓` when it matches. Its detail lists the

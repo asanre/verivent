@@ -14,4 +14,5 @@ data class AnalyticsEntry(
     val sections: Map<String, List<KeyValue>> = emptyMap(),
     val planVersion: String? = null,
     val issues: List<PlanIssue> = emptyList(),
+    val variant: String? = null,
 ) : TimelineEntry

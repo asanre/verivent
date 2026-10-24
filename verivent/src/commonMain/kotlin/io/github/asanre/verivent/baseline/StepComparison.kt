@@ -1,6 +1,8 @@
 package io.github.asanre.verivent.baseline
 
+import io.github.asanre.verivent.analytics.CheckedValues
 import io.github.asanre.verivent.analytics.Schema
+import io.github.asanre.verivent.analytics.TrackingPlan
 import io.github.asanre.verivent.analytics.check
 import io.github.asanre.verivent.analytics.exportedValues
 import io.github.asanre.verivent.baseline.BaselineDiff.Finding
@@ -17,18 +19,24 @@ internal val TimelineEntry.order: Long get() = id.toLongOrNull() ?: 0
 /**
  * Pairs every [expected] event with one [sent] event it matches (same name and channel, no issue)
  * and reports what's left. Sent events whose name and channel nothing expects are ignored: the plan
- * covers those. An expected event left over is explained by the closest sent one nobody took.
+ * covers those. An expected event left over is explained by the closest sent one nobody took, never
+ * by one of another of [plan]'s variants: each says its variant, as [plan] tells them apart.
  */
 internal fun compareStep(
     expected: List<BaselineFile.ExpectedEvent>,
     sequence: Boolean,
     sent: List<AnalyticsEntry>,
     variables: Map<String, Any?>,
+    plan: TrackingPlan?,
 ): List<Finding> {
     val keys = expected.mapTo(HashSet()) { it.key }
     val candidates = sent.filter { it.key in keys }
-    val schemas = expected.map { Schema.parse(it.schema.filledIn(variables) as JsonObject, it.key.name, template = it.schema) }
+    val filled = expected.map { it.schema.filledIn(variables) as JsonObject }
+    val schemas = expected.zip(filled) { event, schema -> Schema.parse(schema, event.key.name, template = event.schema) }
     val values = candidates.map { exportedValues(it.properties) }
+    // An expected event is the variant its fixed values are: the baseline records each one sent as a `const`.
+    val expectedVariants = expected.indices.map { plan?.variantOf(expected[it].key, CheckedValues(filled[it].consts())) }
+    val sentVariants = candidates.indices.map { plan?.variantOf(candidates[it].key, values[it]) }
     // What breaks each expected event in each candidate of its name and channel, null for the rest.
     val issues = expected.indices.map { event ->
         candidates.indices.map { at -> values[at].takeIf { candidates[at].key == expected[event].key }?.let(schemas[event]::check) }
@@ -39,19 +47,34 @@ internal fun compareStep(
 
     val findings = expected.indices.filter { pairs[it] < 0 }.map { event ->
         val key = expected[event].key
+        val variant = expectedVariants[event]
         val closest = issues[event].withIndex()
-            .mapNotNull { (at, found) -> found?.takeIf { at !in taken }?.let { at to it } }
+            .mapNotNull { (at, found) -> found?.takeIf { at !in taken && sentVariants[at].isSameAs(variant) }?.let { at to it } }
             .minByOrNull { (_, found) -> found.size }
-        if (closest == null) return@map Finding.Missing(key)
+        if (closest == null) return@map Finding.Missing(key, variant)
         val (at, found) = closest
         taken += at
         // One that fits but wasn't paired can only be out of a sequence's order: it goes before the
         // next expected event that did arrive in order.
-        if (found.isEmpty()) Finding.OutOfOrder(key, before = (event + 1 until expected.size).firstOrNull { pairs[it] >= 0 }?.let { expected[it].key })
-        else Finding.Mismatch(key, found.map { it.toPlanIssue() })
+        if (found.isEmpty()) {
+            val next = (event + 1 until expected.size).firstOrNull { pairs[it] >= 0 }
+            Finding.OutOfOrder(key, before = next?.let { expected[it].key }, variant, beforeVariant = next?.let { expectedVariants[it] })
+        } else {
+            Finding.Mismatch(key, found.map { it.toPlanIssue() }, variant)
+        }
     }
-    return findings + candidates.indices.filterNot { it in taken }.map { Finding.Extra(candidates[it].key) }
+    return findings + candidates.indices.filterNot { it in taken }.map { Finding.Extra(candidates[it].key, sentVariants[it]) }
 }
+
+/** A variant unknown on either side, with no plan or none fitting, could be the other. */
+private fun String?.isSameAs(other: String?) = this == null || other == null || this == other
+
+/** The top-level properties a schema fixes with a `const`, as the values they stand for. */
+private fun JsonObject.consts(): JsonObject = JsonObject(
+    (this["properties"] as? JsonObject).orEmpty()
+        .mapNotNull { (name, schema) -> (schema as? JsonObject)?.get("const")?.let { name to it } }
+        .toMap(),
+)
 
 /**
  * Expected events matched in their order, as many as possible: the longest common subsequence, so

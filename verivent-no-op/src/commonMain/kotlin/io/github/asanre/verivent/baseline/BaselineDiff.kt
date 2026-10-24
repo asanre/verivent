@@ -8,13 +8,18 @@ data class BaselineDiff(val flow: String, val step: String?, val findings: List<
     val passed: Boolean get() = findings.isEmpty()
 
     sealed interface Finding {
-        data class Missing(val event: PlanEvent) : Finding
+        data class Missing(val event: PlanEvent, val variant: String? = null) : Finding
 
-        data class Extra(val event: PlanEvent) : Finding
+        data class Extra(val event: PlanEvent, val variant: String? = null) : Finding
 
-        data class Mismatch(val event: PlanEvent, val issues: List<PlanIssue>) : Finding
+        data class Mismatch(val event: PlanEvent, val issues: List<PlanIssue>, val variant: String? = null) : Finding
 
-        data class OutOfOrder(val event: PlanEvent, val before: PlanEvent?) : Finding
+        data class OutOfOrder(
+            val event: PlanEvent,
+            val before: PlanEvent?,
+            val variant: String? = null,
+            val beforeVariant: String? = null,
+        ) : Finding
 
         data class StepNotRun(val step: String) : Finding
     }

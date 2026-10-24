@@ -26,6 +26,7 @@ import io.ktor.sse.ServerSentEvent
 import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.delay
 import kotlinx.io.readByteArray
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -64,6 +65,7 @@ private fun planStatus(): String = buildJsonObject {
             addJsonObject {
                 put("name", event.name)
                 put("channel", event.channel)
+                plan?.variants?.get(event)?.let { ids -> putJsonArray("variants") { ids.forEach { add(it) } } }
             }
         }
     }

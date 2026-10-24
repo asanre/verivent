@@ -2,6 +2,7 @@ package io.github.asanre.verivent.baseline
 
 import io.github.asanre.verivent.analytics.invalid
 import io.github.asanre.verivent.baseline.BaselineDiff.Finding
+import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 
 /**
@@ -53,7 +54,7 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
     fun checkStep(entries: List<AnalyticsEntry>, variables: Map<String, Any?>): BaselineDiff {
         val step = checkNotNull(current.step) { "a recording has nothing to check" }
         val immediate = step.events.filterNot { it.deferred }
-        return BaselineDiff(name, step.name, compareStep(immediate, step.sequence, current.window(entries), variables))
+        return BaselineDiff(name, step.name, compareStep(immediate, step.sequence, current.window(entries), variables, Inspector.activePlan))
     }
 
     fun recordStep(entries: List<AnalyticsEntry>, variables: Map<String, Any?>) {
@@ -71,7 +72,7 @@ internal class FlowRun(private val name: String, private val file: BaselineFile?
         val deferred = started.mapNotNull { run ->
             val step = run.step ?: return@mapNotNull null
             val events = step.events.filter { it.deferred }.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-            BaselineDiff(name, step.name, compareStep(events, sequence = false, run.window(entries), variables))
+            BaselineDiff(name, step.name, compareStep(events, sequence = false, run.window(entries), variables, Inspector.activePlan))
         }
         val notRun = file.steps.drop(started.size).mapNotNull { it.name }.map { Finding.StepNotRun(it) }
         val wholeFlow = BaselineDiff(name, null, notRun + extraOverTheFlow(entries))

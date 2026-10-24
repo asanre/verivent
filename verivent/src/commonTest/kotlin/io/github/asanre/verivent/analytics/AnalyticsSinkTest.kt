@@ -202,6 +202,27 @@ class AnalyticsSinkTest {
     }
 
     @Test
+    fun aLoadedPlanStampsTheVariantAnEventWasSentAs() {
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "ui_interaction", "channel": "firebase",
+                 "schema": { "required": ["element_id"], "properties": { "element_id": { "type": "string" }, "action": {} } },
+                 "variants": { "by": ["element_id"], "list": [
+                   { "id": "share_playlist", "when": { "element_id": "playlist_share" }, "properties": { "action": { "const": "share" } } } ] } } ] }""",
+        )
+        AnalyticsSink().log("ui_interaction", "firebase", mapOf("element_id" to "playlist_share", "action" to "tap"))
+        AnalyticsSink { sanitizeProperty { it == "element_id" } }.log("ui_interaction", "firebase", mapOf("element_id" to "playlist_share"))
+
+        val (sent, redacted) = entries()
+        assertEquals("share_playlist", sent.variant)
+        assertEquals(listOf(PlanIssue("action", "For share_playlist: Not the expected value · expects share")), sent.issues)
+        assertNull(redacted.variant)
+        assertEquals(
+            listOf(PlanIssue("element_id", "Redacted: can't tell which variant, only the common part was checked")),
+            redacted.issues,
+        )
+    }
+
+    @Test
     fun withoutAPlanNothingIsStamped() {
         AnalyticsSink().log("search", "firebase")
         val entry = entries().single()

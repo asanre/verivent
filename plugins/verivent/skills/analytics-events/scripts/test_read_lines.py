@@ -145,6 +145,10 @@ class Verdicts(unittest.TestCase):
         self.assertEqual([event["verdict"] for event in result["events"]], ["complies", "breaks", "not_checked"])
         self.assertEqual(result["events"][1]["issues"], ["q · Required, but not sent"])
 
+    def test_the_variant_comes_from_the_line(self):
+        result = run([entry("1", planVersion="1.0.0", variant="share_playlist"), entry("2", planVersion="1.0.0")])
+        self.assertEqual([event["variant"] for event in result["events"]], ["share_playlist", None])
+
     def test_untyped_lines_and_mixed_plan_versions_are_noted(self):
         old = json.loads(entry("1", planVersion="1.0.0"))
         del old["properties"][0]["type"]

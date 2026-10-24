@@ -148,6 +148,25 @@ class BaselineRoutesTest {
     }
 
     @Test
+    fun oneEventIsPickedByVariantOrByValue() = testApplication {
+        application { webViewerModule(token = "k") }
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "ui_interaction", "channel": "firebase",
+                 "schema": { "required": ["element_id"], "properties": { "element_id": { "type": "string" } } },
+                 "variants": { "by": ["element_id"], "list": [
+                   { "id": "share_playlist", "when": { "element_id": "playlist_share" } },
+                   { "id": "like_track", "when": { "element_id": "player_like" } } ] } } ] }""",
+        )
+        sink.log("ui_interaction", "firebase", mapOf("element_id" to "playlist_share", "item_id" to "pl_1"))
+        sink.log("ui_interaction", "firebase", mapOf("element_id" to "player_like", "item_id" to "trk_1"))
+
+        val byVariant = """{ "name": "ui_interaction", "channel": "firebase", "variant": "share_playlist", "property": "item_id", "value": "pl_1" }"""
+        assertTrue(client.call("/api/baseline/last", byVariant).passed())
+        val byValue = """{ "name": "ui_interaction", "channel": "firebase", "where": { "element_id": "playlist_share" }, "property": "item_id", "value": "pl_1" }"""
+        assertTrue(client.call("/api/baseline/last", byValue).passed())
+    }
+
+    @Test
     fun everyBaselineRouteIsBehindTheGate() = testApplication {
         application { webViewerModule(token = "k") }
         listOf("/api/baseline/flow", "/api/baseline/step", "/api/baseline/step/end", "/api/baseline/finish", "/api/baseline/last").forEach { path ->

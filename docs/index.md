@@ -18,7 +18,9 @@ or in a CI test. Issues name the property and what the plan expected, never the 
 
 - **Tracking plan on the device** — a JSON Schema subset per event and channel, nested as deep as
   your values: `type`, `enum`, `const`, `pattern`, `required`, `additionalProperties`, `items`,
-  `minItems` and `contains`. Checked at capture, on the values your code passed.
+  `minItems` and `contains`. Checked at capture, on the values your code passed. A generic event,
+  sent in many places and told apart by a property, gets rules and coverage per
+  [variant](integration-analytics-facade.md#variants).
 - **Vendor-agnostic** — your analytics facade calls `log`; Verivent never talks to an analytics SDK.
 - **Everywhere you look** — the on-device inspector, the web viewer on your Mac, one JSON line per
   event in the console, and one export format shared by all of them.

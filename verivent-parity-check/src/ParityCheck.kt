@@ -75,6 +75,8 @@ private fun inspector(txn: NetworkTransaction, event: AnalyticsEntry) {
     val planEventName: String = planEvent.name
     val planEventChannel: String = planEvent.channel
     val summary: PlanSummary = PlanSummary(version = "1", events = listOf(planEvent))
+    val withVariants: PlanSummary = PlanSummary(version = "1", events = listOf(planEvent), variants = mapOf(planEvent to listOf("v")))
+    val summaryVariants: Map<PlanEvent, List<String>> = withVariants.variants
     val title: String = Inspector.title
     val id: String = Inspector.nextId()
     val now: Instant = Inspector.now()
@@ -135,7 +137,9 @@ private fun model() {
         sections = mapOf("User properties" to listOf(kv)),
         planVersion = "1.0.0",
         issues = listOf(PlanIssue(property = "k", message = "Required, but not sent")),
+        variant = "home_banner",
     )
+    val entryVariant: String? = event.variant
     val entryPlanVersion: String? = event.planVersion
     val issues: List<PlanIssue> = event.issues
     val issueProperty: String = issues.first().property
@@ -276,9 +280,11 @@ private fun baseline(issue: PlanIssue) {
     val event: PlanEvent = "purchase" on "firebase"
     val findings: List<BaselineDiff.Finding> = listOf(
         BaselineDiff.Finding.Missing(event),
-        BaselineDiff.Finding.Extra(event),
-        BaselineDiff.Finding.Mismatch(event, listOf(issue)),
+        BaselineDiff.Finding.Missing(event, variant = "share_playlist"),
+        BaselineDiff.Finding.Extra(event, variant = "share_playlist"),
+        BaselineDiff.Finding.Mismatch(event, listOf(issue), variant = "share_playlist"),
         BaselineDiff.Finding.OutOfOrder(event, before = null),
+        BaselineDiff.Finding.OutOfOrder(event, before = event, variant = "share_playlist", beforeVariant = "like_track"),
         BaselineDiff.Finding.StepNotRun("buy"),
     )
     val diff = BaselineDiff(flow = "checkout", step = null, findings = findings)
@@ -289,4 +295,5 @@ private fun baseline(issue: PlanIssue) {
 
     val check: EventCheck = lastEvent(event).shouldMatchPlan().shouldHave("currency", "EUR")
     val waitedCheck: EventCheck = lastEvent(event, waiter = Waiter.RealTime, timeout = 1.seconds)
+    val variantCheck: EventCheck = lastEvent(event, variant = "share_playlist", where = mapOf("item_id" to "pl_42"))
 }

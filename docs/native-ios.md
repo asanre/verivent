@@ -68,7 +68,8 @@ try Verivent.loadTrackingPlan(planJSON)   // throws on an invalid plan; Verivent
 ```
 
 The format and what the verdict means are in
-[the analytics integration guide](integration-analytics-facade.md#tracking-plan). Without the
+[the analytics integration guide](integration-analytics-facade.md#tracking-plan), generic events
+told apart by [variants](integration-analytics-facade.md#variants) included. Without the
 Compose inspector, paste the plan in the web viewer instead.
 
 ## Capture network traffic

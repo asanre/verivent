@@ -31,11 +31,16 @@ for (const event of plan.checkSession(exportJson)) {
     event.verdict;                        // "complies", "breaks" or "not_in_plan"
     event.issues;                         // [{ path, message, count, total, line }]
     event.untyped;                        // exported before 0.9: properties only checked for presence
+    event.variant;                        // "share_playlist": the plan's variant it was sent as, or null
 }
 ```
 
 `count` and `total` are set when the path goes through a list: `count` of the `total` items break
 it. A redacted property in an exported session is only checked for its type, as on the device.
+
+`variant` is found again by this plan, from 0.11.0 on, whatever the export says: for an event the plan
+tells apart by [variants](integration-analytics-facade.md#variants), the id of the one it was sent
+as; null when it has none for that event, none fits, or the property that tells them apart is redacted.
 
 The JS target only exists for this package: apps written in Kotlin/JS aren't a supported target of
 the `verivent` artifact, and the no-op modules don't have it.

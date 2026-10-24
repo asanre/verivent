@@ -22,7 +22,8 @@ the console or in a CI test.
    you use.
 2. **Load the tracking plan.** It's a subset of JSON Schema per event and channel: `type`, `enum`,
    `const`, `pattern`, `required`, `additionalProperties`, nested `properties`, `items`, `minItems`
-   and `contains`.
+   and `contains`. A generic event, sent in many places and told apart by a property, can add
+   [variants](https://asanre.github.io/verivent/integration-analytics-facade/#variants) with rules of their own.
 3. **Every event gets its verdict when it's captured**, on the values your code passed and before
    anything is redacted. Issues name the property and what the plan expected, never the value:
    `items[*].quantity · Expected integer, got string · 1 of 2`.

@@ -23,4 +23,18 @@ assert.deepEqual(plan.check('play', 'firebase', '{}').map((i) => i.line), ['trac
 assert.equal(plan.check('search', 'firebase', '{}'), null);
 assert.throws(() => new Plan('{"events":[]}'), { message: 'version must be a string' });
 
+const generic = new Plan(JSON.stringify({
+  version: '2.0.0',
+  events: [{ name: 'ui_interaction', channel: 'firebase',
+    schema: { required: ['element_id'], properties: { element_id: { type: 'string' }, item_id: {} } },
+    variants: { by: ['element_id'], list: [{ id: 'share_playlist', when: { element_id: 'playlist_share' }, properties: { item_id: { pattern: '^pl_' } } }] } }],
+}));
+const sent = (element, item) => ({ type: 'analytics', id: element, ts: 0, name: 'ui_interaction', channel: 'firebase', properties: [
+  { name: 'element_id', value: element, redacted: false, type: 'string' }, { name: 'item_id', value: item, redacted: false, type: 'string' }] });
+const [share, unplanned] = generic.checkSession(JSON.stringify([sent('playlist_share', 'trk_1'), sent('cart_icon', 'x')]));
+assert.equal(share.variant, 'share_playlist');
+assert.deepEqual(Array.from(share.issues, (i) => i.line), ["item_id · For share_playlist: Doesn't match the pattern ^pl_"]);
+assert.equal(unplanned.variant, null);
+assert.deepEqual(Array.from(unplanned.issues, (i) => i.line), ['element_id · Not a planned variant · expects playlist_share']);
+
 console.log(`verivent ${plan.version}: npm package checks events with the device's messages`);

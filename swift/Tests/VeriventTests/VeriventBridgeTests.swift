@@ -77,6 +77,24 @@ final class VeriventBridgeTests: XCTestCase {
         XCTAssertNil(undefined["planVersion"], "an event the plan doesn't define isn't checked")
     }
 
+    func testTrackingPlanStampsTheVariantAnEventWasSentAs() async throws {
+        Verivent.configure()
+        try Verivent.loadTrackingPlan("""
+        { "version": "1.0.0", "events": [ { "name": "plan_tap", "channel": "firebase",
+          "schema": { "required": ["element_id"], "properties": { "element_id": { "type": "string" }, "action": {} } },
+          "variants": { "by": ["element_id"], "list": [
+            { "id": "share_playlist", "when": { "element_id": "playlist_share" }, "properties": { "action": { "const": "share" } } } ] } } ] }
+        """)
+        defer { Verivent.clearTrackingPlan() }
+
+        Verivent.log("plan_tap", channel: "firebase", properties: ["element_id": "playlist_share", "action": "tap"])
+
+        let tap = try await fetchEntry(named: "plan_tap")
+        XCTAssertEqual(tap["variant"] as? String, "share_playlist")
+        let issues = tap["issues"] as? [[String: String]]
+        XCTAssertEqual(issues, [["property": "action", "message": "For share_playlist: Not the expected value · expects share"]])
+    }
+
     /// Types are only checked on the values Kotlin receives, so this pins how Swift numbers and
     /// booleans arrive across the bridge.
     func testSwiftValueTypesSatisfyTheirJsonSchemaTypes() async throws {

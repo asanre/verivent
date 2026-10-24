@@ -158,6 +158,20 @@ checkout › pay
 `BaselineMismatch.diffs` carries the same as data: a `BaselineDiff` per failing step, with
 `Finding.Missing`, `Extra`, `Mismatch` (and its `PlanIssue`s), `OutOfOrder` and `StepNotRun`.
 
+A step can expect the same event several times, one per [variant](integration-analytics-facade.md#variants)
+of a generic event: each expected event fixes the values that tell them apart, so each pairs only
+with a send of its own variant. With the plan loaded, the findings say which variant, by its id
+(`variant`, and `beforeVariant` on `OutOfOrder`), and a send of another variant never explains the
+one missing:
+
+```text
+checkout › share
+  ✕ ui_interaction · firebase › share_playlist  missing
+  ✕ ui_interaction · firebase › like_track  sent more times than expected
+```
+
+Without a plan, the variant is null and the closest send explains a missing one, as for any event.
+
 ### One event at a time
 
 For a check that needs no baseline:
@@ -169,6 +183,17 @@ lastEvent("purchase" on "firebase").shouldHave("currency", "EUR")
 
 `lastEvent` waits for the event like `flow` does. `shouldMatchPlan` asks the tracking plan loaded
 now; `shouldHave` compares as JSON (`3` equals `3.0`, not `"3"`) and refuses a redacted property.
+
+For a generic event, the latest send overall may be another variant fired right after the one under
+test. Pick it by variant, as the plan loaded at capture told it, or by the values it was sent with:
+
+```kotlin
+lastEvent("ui_interaction" on "firebase", variant = "share_playlist").shouldMatchPlan()
+lastEvent("ui_interaction" on "firebase", where = mapOf("element_id" to "playlist_share")).shouldHave("item_id", "pl_42")
+```
+
+`variant` needs a plan that defines it, and throws on an id the plan doesn't have; `where` compares
+like `shouldHave` and refuses a redacted property.
 
 ### In the sample
 
@@ -229,7 +254,9 @@ first Verivent call, whichever it is, starts the test's server, and a `startWebV
 then gets that one.
 
 `flow` waits up to `timeout` (5 seconds) for each step, as the Kotlin one does, and `bind` takes the
-place of `bound`: bind a value before the step that sends it ends.
+place of `bound`: bind a value before the step that sends it ends. `lastEvent` picks a generic
+event's variant the same way: `verivent.lastEvent("ui_interaction", on: "firebase", variant: "share_playlist")`,
+or `where: ["element_id": "playlist_share"]`.
 
 To record, run the tests with `VERIVENT_RECORD_DIR` in the test runner's environment; each flow writes
 `<name>.json` there instead of comparing:
@@ -256,7 +283,7 @@ misuse, such as a step out of order, answers `400` with the reason. A flow that 
 | `POST /api/baseline/step?name=` | Starts the next step |
 | `POST /api/baseline/step/end` | Waits for the step's events and checks them, or records them |
 | `POST /api/baseline/finish` | Ends the flow; a recording comes back as `recording` |
-| `POST /api/baseline/last` | Checks the latest event: `{"name", "channel", "plan": true}` or `{"name", "channel", "property", "value"}` |
+| `POST /api/baseline/last` | Checks the latest event: `{"name", "channel", "plan": true}` or `{"name", "channel", "property", "value"}`, of a variant with `"variant"` or sent with the values in `"where": {…}` |
 
 `step/end` and `finish` take the values bound so far as `{"variables": {"orderId": "T-1"}}`.
 

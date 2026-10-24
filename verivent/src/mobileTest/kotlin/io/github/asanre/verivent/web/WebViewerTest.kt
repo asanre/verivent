@@ -140,9 +140,25 @@ class WebViewerTest {
         val event = status.getValue("events").jsonArray.single().jsonObject
         assertEquals("search", event.getValue("name").jsonPrimitive.content)
         assertEquals("firebase", event.getValue("channel").jsonPrimitive.content)
+        assertTrue("variants" !in event)
 
         client.post("/api/tracking-plan/clear") { header("X-Verivent", "1") }
         assertNull(Inspector.trackingPlan.value)
+    }
+
+    @Test
+    fun thePlansStatusListsTheVariantsOfAnEventThatHasThem() = testApplication {
+        application { webViewerModule() }
+        Inspector.loadTrackingPlan(
+            """{ "version": "1", "events": [ { "name": "ui_interaction", "channel": "firebase",
+                 "schema": { "required": ["element_id"], "properties": { "element_id": {} } },
+                 "variants": { "by": ["element_id"], "list": [
+                   { "id": "share_playlist", "when": { "element_id": "playlist_share" } },
+                   { "id": "like_track", "when": { "element_id": "player_like" } } ] } } ] }""",
+        )
+        val status = Json.parseToJsonElement(client.get("/api/tracking-plan").bodyAsText()).jsonObject
+        val event = status.getValue("events").jsonArray.single().jsonObject
+        assertEquals(listOf("share_playlist", "like_track"), event.getValue("variants").jsonArray.map { it.jsonPrimitive.content })
     }
 
     @Test
