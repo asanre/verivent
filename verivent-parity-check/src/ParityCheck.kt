@@ -33,6 +33,7 @@ import io.github.asanre.verivent.core.redaction.RedactionEngine
 import io.github.asanre.verivent.core.store.TimelineStore
 import io.github.asanre.verivent.ktor.Verivent as VeriventPlugin
 import io.github.asanre.verivent.ktor.VeriventConfig
+import io.github.asanre.verivent.sync.VeriventSync
 import io.github.asanre.verivent.ui.InspectorLauncher as LauncherEntryPoints
 import io.github.asanre.verivent.ui.InspectorScreen
 import io.github.asanre.verivent.web.WebViewerBind
@@ -240,6 +241,11 @@ private fun webServer() {
     val lanUrl: String? = WebViewer.lanUrl()
     WebViewer.stop()
     val defaultPort: Int = WebViewer.DEFAULT_PORT
+}
+
+private fun workspace() {
+    VeriventSync.connect("https://key:vv_key@project.supabase.co")
+    VeriventSync.disconnect()
 }
 
 private fun androidEntryPoints(context: Context) {

@@ -34,6 +34,7 @@ kotlin {
                 implementation(projects.verivent)
                 implementation(projects.veriventUi)
                 implementation(projects.veriventKtor)
+                implementation(projects.veriventSync)
                 implementation(libs.ktor.client.core)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(compose.runtime)

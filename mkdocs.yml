@@ -56,6 +56,7 @@ nav:
       - Filters, redaction & annotations: filters-redaction-annotations.md
       - Analytics facade: integration-analytics-facade.md
       - Web viewer: web-viewer.md
+      - Connect a workspace: workspace.md
       - Validator in the browser: validator-npm.md
       - Testing analytics: testing.md
       - Agent skills: agent-skills.md

@@ -1,0 +1,12 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <verivent-root:verivent-sync>
+final object io.github.asanre.verivent.sync/VeriventSync { // io.github.asanre.verivent.sync/VeriventSync|null[0]
+    final fun connect(kotlin/String) // io.github.asanre.verivent.sync/VeriventSync.connect|connect(kotlin.String){}[0]
+    final fun disconnect() // io.github.asanre.verivent.sync/VeriventSync.disconnect|disconnect(){}[0]
+}

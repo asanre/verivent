@@ -44,6 +44,7 @@ or in a CI test. Issues name the property and what the plan expected, never the 
 | `verivent` | The analytics sink, the tracking plan, the baseline, the web viewer, the store and redaction |
 | `verivent-ui` | Compose Multiplatform inspector UI and the live notifications |
 | `verivent-ktor` | Ktor client plugin that captures traffic |
+| `verivent-sync` | Optional connection to a workspace: sends its sessions, loads the published plan |
 | `verivent-*-no-op` | Empty mirrors with the identical API for release builds |
 
 `verivent-ui` is the only artifact that depends on Compose — leave it out and you get the web viewer

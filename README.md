@@ -8,8 +8,8 @@
 
 **Your mobile analytics, verified on the device.** Verivent checks every analytics event your app
 sends against your team's tracking plan, on the phone, with the real values and without uploading
-anything. A broken event shows up wherever you are testing: in the app, in a desktop browser, in
-the console or in a CI test.
+anything unless you connect a workspace. A broken event shows up wherever you are testing: in the
+app, in a desktop browser, in the console or in a CI test.
 
 ![Verivent: the inspector and the web viewer flagging events that break the tracking plan](docs/assets/banner.webp)
 
@@ -39,7 +39,7 @@ request next to the events it should have produced.
 Analytics breaks quietly: a renamed parameter or a number sent as text reaches the dashboard weeks
 later. Tools that validate in their cloud need the events uploaded first; a separate collector has
 to be run and pointed at. Verivent gives the verdict on the device, while you're testing, with
-values that never leave it, and without a vendor SDK in the loop.
+values that stay on it unless you connect a workspace, and without a vendor SDK in the loop.
 
 ## Modules
 
@@ -48,9 +48,11 @@ values that never leave it, and without a vendor SDK in the loop.
 | `verivent` | The analytics sink, the tracking plan, the baseline, the web viewer, the store and redaction |
 | `verivent-ui` | Compose Multiplatform inspector and live notifications (brings `verivent`) |
 | `verivent-ktor` | Ktor client plugin that captures traffic (brings `verivent`) |
+| `verivent-sync` | Optional: connects the app to a workspace, which receives its sessions and hands it the published plan (brings `verivent`) |
 | `verivent-no-op` | Release mirror of `verivent`: identical API, captures nothing |
 | `verivent-ui-no-op` | Release mirror of the inspector: renders nothing |
 | `verivent-ktor-no-op` | Release mirror of the Ktor plugin |
+| `verivent-sync-no-op` | Release mirror of the workspace connection: connects to nothing |
 
 `verivent-ui` is the only artifact that depends on Compose. Leave it out if you inspect from the web
 viewer, and Compose never enters your dependency graph.

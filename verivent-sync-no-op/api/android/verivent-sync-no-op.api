@@ -1,0 +1,6 @@
+public final class io/github/asanre/verivent/sync/VeriventSync {
+	public static final field INSTANCE Lio/github/asanre/verivent/sync/VeriventSync;
+	public final fun connect (Ljava/lang/String;)V
+	public final fun disconnect ()V
+}
+

@@ -15,6 +15,7 @@ dependencies {
     dokka(projects.verivent)
     dokka(projects.veriventUi)
     dokka(projects.veriventKtor)
+    dokka(projects.veriventSync)
 }
 
 dokka {
