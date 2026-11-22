@@ -167,6 +167,11 @@ step by step, with no test code in the app. See [Testing analytics](testing.md#o
     free. A failure logs a `Verivent` warning to the device console and flips `Verivent.isWebViewerRunning`
     back to false; a success logs the same URL. Check it a moment later, or just try the URL.
 
+## Connect a workspace
+
+`Verivent.connect(_:)` sends every analytics event to the team's workspace and validates with the
+plan it published. Call it inside `#if DEBUG`. See [Connect a workspace](workspace.md).
+
 ## Release builds
 
 This is the one place the Swift Package is weaker than the Gradle artifacts. SPM has no

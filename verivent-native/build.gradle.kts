@@ -25,6 +25,7 @@ kotlin {
             // exported ObjC surface is what leaves the Compose UI unreachable, so Kotlin/Native's
             // dead-code elimination can strip it from the release binary.
             implementation(projects.verivent)
+            implementation(projects.veriventSync)
         }
     }
 }

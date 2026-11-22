@@ -88,6 +88,26 @@ public enum Verivent {
     /// Version of the loaded tracking plan, or `nil` when none is loaded.
     public static var trackingPlanVersion: String? { NativeEvents.shared.trackingPlanVersion }
 
+    // MARK: - Workspace
+
+    /// Send every analytics event captured from now on to the team's workspace, as a new session,
+    /// and validate with the plan it published unless you loaded one with `loadTrackingPlan`.
+    /// Copy `connection` from the workspace's Connect page. Call it in debug builds only: the
+    /// Swift package has no release mirror.
+    ///
+    /// Once connected nothing reaches your app: failures go to the unified log and are retried, and
+    /// a connection the workspace revoked stops it. Network calls are never sent.
+    ///
+    /// - Throws: when `connection` isn't one; nothing changes then.
+    public static func connect(_ connection: String) throws {
+        try NativeSync.shared.connect(connection: connection)
+    }
+
+    /// Stop sending to the workspace. What was sent stays there.
+    public static func disconnect() {
+        NativeSync.shared.disconnect()
+    }
+
     // MARK: - Web viewer
 
     /// Where the viewer listens. `.lan` and `.host` are reachable off-device; `.local` is loopback

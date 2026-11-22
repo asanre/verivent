@@ -77,6 +77,13 @@ final class VeriventBridgeTests: XCTestCase {
         XCTAssertNil(undefined["planVersion"], "an event the plan doesn't define isn't checked")
     }
 
+    func testConnectRejectsWhatIsNotAConnectionAndTakesOne() throws {
+        XCTAssertThrowsError(try Verivent.connect("vv_123"))
+        // Nothing listens on port 9: the connection only retries in the background, never throws.
+        XCTAssertNoThrow(try Verivent.connect("http://pk:vv_key@127.0.0.1:9"))
+        Verivent.disconnect()
+    }
+
     func testTrackingPlanStampsTheVariantAnEventWasSentAs() async throws {
         Verivent.configure()
         try Verivent.loadTrackingPlan("""
