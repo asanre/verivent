@@ -16,6 +16,7 @@ kotlin {
     }
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
+        optIn.add("io.github.asanre.verivent.core.InternalVeriventApi")
     }
     androidTarget {
         compilerOptions {
@@ -41,6 +42,8 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+            // Only to check its own client never carries the capture plugin.
+            implementation(projects.veriventKtor)
         }
     }
 }

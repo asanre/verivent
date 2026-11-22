@@ -1,9 +1,6 @@
-@file:OptIn(InternalVeriventApi::class)
-
 package io.github.asanre.verivent.sync
 
 import io.github.asanre.verivent.core.Inspector
-import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.web.SourceDto
@@ -30,16 +27,16 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * One connection to a workspace for the life of [run]: first the published plan, then every analytics
- * event captured, in batches, under the [session] this run names. Whatever goes wrong is logged and
+ * event captured, in batches, under the session [source] names: this run of the app. Whatever goes wrong is logged and
  * retried later; only a key the workspace no longer knows stops it.
  */
 internal class WorkspaceSync(
     private val connection: Connection,
     private val client: HttpClient,
-    private val session: String,
+    private val source: SourceDto = requireNotNull(exportSource) { "Verivent writes no sessions on this platform" },
     private val interval: Duration = 5.seconds,
 ) {
-    private val source: SourceDto = requireNotNull(exportSource) { "Verivent writes no sessions on this platform" }
+    private val session: String = requireNotNull(source.session) { "the source names no session" }
 
     // Ids grow with every capture, so the highest one sent marks everything before it as sent.
     private var sentUpTo = 0L
@@ -91,7 +88,8 @@ internal class WorkspaceSync(
         put("key", connection.key)
         put("session", session)
         put("platform", source.platform)
-        put("app_version", source.appVersion)
+        // The server takes 1 to 80 characters, and refusing the version would refuse every batch.
+        put("app_version", source.appVersion?.trim()?.takeIf { it.isNotEmpty() }?.take(80))
         put("library_version", source.veriventVersion)
         putJsonArray("events") { batch.forEach { add(exportEntryJson(it)) } }
     }

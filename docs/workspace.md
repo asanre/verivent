@@ -17,8 +17,9 @@ Copy the connection from the workspace's **Connect** page and connect when the a
 VeriventSync.connect("https://<api key>:<connection key>@<project>")
 ```
 
-Each `connect` starts a new session in the workspace. `VeriventSync.disconnect()` stops sending;
-what was sent stays.
+Each run of the app is one session in the workspace; connecting again in the same run carries on
+with it. A connection that isn't one is logged and changes nothing. `VeriventSync.disconnect()`
+stops sending; what was sent stays.
 
 ### Native iOS
 
@@ -26,7 +27,7 @@ The Swift package carries it too. It has no release mirror, so connect in debug 
 
 ```swift
 #if DEBUG
-try? Verivent.connect("https://<api key>:<connection key>@<project>")
+Verivent.connect("https://<api key>:<connection key>@<project>")
 #endif
 ```
 
@@ -53,7 +54,9 @@ the workspace can check the session against the draft.
 
 It ships inside the debug build, so treat it as public: it can only add events to that workspace
 and read its published plan. A member revokes it on the Connect page and the app stops sending at
-once. The workspace caps how much it takes: 200 events a call, 5,000 a session and 20,000 an hour.
+once. The workspace caps how much it takes: 200 events a call, 100 new sessions, 20,000 events and
+50 MB an hour, and 200,000 events in all. A session keeps its first 5,000 events, and an event over
+100 KB is left out; the rest of its batch still goes.
 
 ## When something fails
 

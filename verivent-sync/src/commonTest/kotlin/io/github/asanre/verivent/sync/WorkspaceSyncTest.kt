@@ -3,6 +3,8 @@ package io.github.asanre.verivent.sync
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.NetworkTransaction
+import io.github.asanre.verivent.web.SourceDto
+import io.github.asanre.verivent.web.exportSource
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockEngineConfig
@@ -19,6 +21,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -61,14 +64,14 @@ class WorkspaceSyncTest {
     }
 
     /** Starts the sync, lets its first round run and hands [block] the scope to move time on. */
-    private fun syncing(block: suspend TestScope.() -> Unit) = runTest {
+    private fun syncing(source: SourceDto? = null, block: suspend TestScope.() -> Unit) = runTest {
         // On the test's clock, so a request finishes inside the virtual time it was sent in.
         val engine = MockEngine(MockEngineConfig().apply {
             dispatcher = StandardTestDispatcher(testScheduler)
             addHandler { answer(it) }
         })
         val client = HttpClient(engine)
-        val job = launch { WorkspaceSync(connection, client, session = "s-1").run() }
+        val job = launch { (if (source == null) WorkspaceSync(connection, client) else WorkspaceSync(connection, client, source)).run() }
         runCurrent()
         block()
         job.cancel()
@@ -87,7 +90,6 @@ class WorkspaceSyncTest {
             assertEquals(listOf("screen_view", "purchase"), batch.events)
             assertEquals("pk", batch.apiKey)
             assertEquals("vv_key", batch.body.getValue("key").jsonPrimitive.content)
-            assertEquals("s-1", batch.body.getValue("session").jsonPrimitive.content)
             assertTrue(batch.body.getValue("library_version").jsonPrimitive.content.isNotEmpty())
             assertTrue(batch.body.getValue("platform").jsonPrimitive.content.isNotEmpty())
         }
@@ -160,6 +162,35 @@ class WorkspaceSyncTest {
             sink.log("purchase", "firebase")
             advanceTimeBy(6.seconds)
             assertEquals(listOf(listOf("screen_view"), listOf("purchase")), sent.map { it.events })
+        }
+    }
+
+    @Test
+    fun namesTheSessionAfterThisRunOfTheApp() {
+        sink.log("screen_view", "firebase")
+        syncing {
+            advanceTimeBy(6.seconds)
+            assertEquals(exportSource?.session, sent.single().body.getValue("session").jsonPrimitive.content)
+        }
+    }
+
+    @Test
+    fun sendsAnAppVersionTheServerTakes() {
+        sink.log("screen_view", "firebase")
+        val blank = SourceDto(platform = "android", appVersion = "  ", veriventVersion = "0.12.0", session = "s-1")
+        syncing(source = blank) {
+            advanceTimeBy(6.seconds)
+            assertEquals(JsonNull, sent.single().body.getValue("app_version"))
+        }
+    }
+
+    @Test
+    fun cutsAnAppVersionTooLongForTheServer() {
+        sink.log("screen_view", "firebase")
+        val long = SourceDto(platform = "android", appVersion = "1.0-" + "x".repeat(100), veriventVersion = "0.12.0", session = "s-1")
+        syncing(source = long) {
+            advanceTimeBy(6.seconds)
+            assertEquals(80, sent.single().body.getValue("app_version").jsonPrimitive.content.length)
         }
     }
 

@@ -11,8 +11,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /**
  * Connects this app to a Verivent workspace, so the team sees its sessions without anyone exporting a
@@ -20,8 +18,8 @@ import kotlin.uuid.Uuid
  * loaded its own), and every analytics event captured goes to the workspace, as redacted as the app
  * shows it. Network calls stay on the device. Nothing is sent until [connect] is called.
  *
- * It never throws into the app once connected: failures go to Verivent's diagnostics log and are
- * retried, and a connection key the workspace revoked stops it.
+ * It never throws into the app: failures go to Verivent's diagnostics log and are retried, and a
+ * connection key the workspace revoked stops it.
  */
 @OptIn(ExperimentalAtomicApi::class)
 object VeriventSync {
@@ -34,16 +32,19 @@ object VeriventSync {
     private val running = AtomicReference<Job?>(null)
 
     /**
-     * Start sending to the workspace that [connection] names, as a new session; a connection already
-     * running ends first. Copy [connection] from the workspace's Connect page.
-     *
-     * @throws IllegalArgumentException when [connection] isn't one; nothing changes then.
+     * Start sending to the workspace that [connection] names; a connection already running ends
+     * first. Each run of the app is one session in the workspace, and connecting again in the same
+     * run carries on with it. Copy [connection] from the workspace's Connect page; one that isn't a
+     * connection is logged and changes nothing.
      */
-    @OptIn(ExperimentalUuidApi::class)
     fun connect(connection: String) {
-        val parsed = parseConnection(connection)
+        val parsed = runCatching { parseConnection(connection) }
+            .getOrElse { failure ->
+                DiagnosticLog.warn(TAG, failure.message.orEmpty())
+                return
+            }
         val job = scope.launch(start = CoroutineStart.LAZY) {
-            syncHttpClient().use { client -> WorkspaceSync(parsed, client, session = Uuid.random().toString()).run() }
+            syncHttpClient().use { client -> WorkspaceSync(parsed, client).run() }
         }
         running.exchange(job)?.cancel()
         job.start()
