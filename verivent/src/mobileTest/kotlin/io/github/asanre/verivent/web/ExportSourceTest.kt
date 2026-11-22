@@ -54,6 +54,18 @@ class ExportSourceTest {
     }
 
     @Test
+    fun theSourceNamesItsFormatAndThisRunOfTheApp() {
+        val event = AnalyticsEntry("1", Instant.fromEpochMilliseconds(1000), "screen_view", "firebase")
+        fun sourceOf(file: String) = Json.parseToJsonElement(file).jsonArray.first().jsonObject.getValue("source").jsonObject
+
+        val first = sourceOf(encodeExport(listOf(event)))
+        val again = sourceOf(encodeExport(listOf(event)))
+        assertEquals("1", first.text("schema"))
+        assertTrue(Regex("[0-9a-f-]{36}").matches(first.text("session")), "got '${first.text("session")}'")
+        assertEquals(first.text("session"), again.text("session"), "every export of one run names the same session")
+    }
+
+    @Test
     fun theVersionIsTheReleasedOne() {
         assertTrue(Regex("""\d+\.\d+\.\d+(-\S+)?""").matches(VERIVENT_VERSION), "got '$VERIVENT_VERSION'")
     }

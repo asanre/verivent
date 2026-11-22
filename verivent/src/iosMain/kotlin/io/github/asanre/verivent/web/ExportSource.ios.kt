@@ -10,5 +10,6 @@ actual val exportSource: SourceDto? by lazy {
         platform = "ios",
         appVersion = NSBundle.mainBundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String,
         veriventVersion = VERIVENT_VERSION,
+        session = processSession,
     )
 }

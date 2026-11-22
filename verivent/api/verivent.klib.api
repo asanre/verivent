@@ -457,19 +457,25 @@ final class io.github.asanre.verivent.core.store/TimelineStore { // io.github.as
 }
 
 final class io.github.asanre.verivent.web/SourceDto { // io.github.asanre.verivent.web/SourceDto|null[0]
-    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String) // io.github.asanre.verivent.web/SourceDto.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String){}[0]
+    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String, kotlin/String? = ..., kotlin/Int = ...) // io.github.asanre.verivent.web/SourceDto.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
 
     final val appVersion // io.github.asanre.verivent.web/SourceDto.appVersion|{}appVersion[0]
         final fun <get-appVersion>(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.appVersion.<get-appVersion>|<get-appVersion>(){}[0]
     final val platform // io.github.asanre.verivent.web/SourceDto.platform|{}platform[0]
         final fun <get-platform>(): kotlin/String // io.github.asanre.verivent.web/SourceDto.platform.<get-platform>|<get-platform>(){}[0]
+    final val schema // io.github.asanre.verivent.web/SourceDto.schema|{}schema[0]
+        final fun <get-schema>(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.schema.<get-schema>|<get-schema>(){}[0]
+    final val session // io.github.asanre.verivent.web/SourceDto.session|{}session[0]
+        final fun <get-session>(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.session.<get-session>|<get-session>(){}[0]
     final val veriventVersion // io.github.asanre.verivent.web/SourceDto.veriventVersion|{}veriventVersion[0]
         final fun <get-veriventVersion>(): kotlin/String // io.github.asanre.verivent.web/SourceDto.veriventVersion.<get-veriventVersion>|<get-veriventVersion>(){}[0]
 
     final fun component1(): kotlin/String // io.github.asanre.verivent.web/SourceDto.component1|component1(){}[0]
     final fun component2(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.component2|component2(){}[0]
     final fun component3(): kotlin/String // io.github.asanre.verivent.web/SourceDto.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String = ...): io.github.asanre.verivent.web/SourceDto // io.github.asanre.verivent.web/SourceDto.copy|copy(kotlin.String;kotlin.String?;kotlin.String){}[0]
+    final fun component4(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.component4|component4(){}[0]
+    final fun component5(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.component5|component5(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/String? = ..., kotlin/Int = ...): io.github.asanre.verivent.web/SourceDto // io.github.asanre.verivent.web/SourceDto.copy|copy(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/SourceDto.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // io.github.asanre.verivent.web/SourceDto.toString|toString(){}[0]
