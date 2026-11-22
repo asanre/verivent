@@ -59,6 +59,8 @@ kotlin {
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
         optIn.add("kotlin.concurrent.atomics.ExperimentalAtomicApi")
+        // Its own modules' shared surface; only hosts have to opt in.
+        optIn.add("io.github.asanre.verivent.core.InternalVeriventApi")
     }
     androidTarget {
         compilerOptions {

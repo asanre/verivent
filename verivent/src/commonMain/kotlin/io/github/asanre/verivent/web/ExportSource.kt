@@ -1,5 +1,6 @@
 package io.github.asanre.verivent.web
 
+import io.github.asanre.verivent.core.InternalVeriventApi
 import kotlinx.serialization.Serializable
 
 /**
@@ -7,8 +8,10 @@ import kotlinx.serialization.Serializable
  * states it on every event, because a console has no header to keep. [appVersion] is left out when
  * the app doesn't declare one.
  */
+@InternalVeriventApi
 @Serializable
-internal data class SourceDto(val platform: String, val appVersion: String? = null, val veriventVersion: String)
+data class SourceDto(val platform: String, val appVersion: String? = null, val veriventVersion: String)
 
 /** This process's source, or null where Verivent never writes an export (the JS validator). */
-internal expect val exportSource: SourceDto?
+@InternalVeriventApi
+expect val exportSource: SourceDto?

@@ -9,6 +9,7 @@ import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 /** [type] is an analytics property's JSON type; headers have none, so it's left out. */
 @Serializable
@@ -156,6 +157,10 @@ fun encodeExport(events: List<AnalyticsEntry>): String {
     if (entries.isEmpty()) return "[]"
     return entries.joinToString(",\n", prefix = "[\n", postfix = "\n]") { it.prependIndent(ARRAY_INDENT) }
 }
+
+/** [encodeExportEntry] as a JSON element, for a module that sends it inside a larger body. */
+@InternalVeriventApi
+fun exportEntryJson(entry: AnalyticsEntry): JsonElement = webJson.encodeToJsonElement(EntryDto.serializer(), entry.toDto())
 
 internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =
     webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))

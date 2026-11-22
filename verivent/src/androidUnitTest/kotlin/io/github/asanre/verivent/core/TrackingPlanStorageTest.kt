@@ -15,10 +15,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(InternalVeriventApi::class)
 class TrackingPlanStorageTest {
 
     private val dir: File = Files.createTempDirectory("verivent").toFile()
     private val plan = """{ "version": "3.0.0", "events": [] }"""
+    private val workspacePlan = """{ "version": "5.0.0", "events": [] }"""
 
     @BeforeTest fun setup() = Inspector.reset()
 
@@ -89,6 +91,51 @@ class TrackingPlanStorageTest {
         Inspector.configure(storageDir = dir.path)
         drainStorage()
         assertNull(Inspector.trackingPlan.value)
+    }
+
+    @Test
+    fun aWorkspacePlanReplacesTheRestoredOneAndIsNotStored() {
+        File(dir, "tracking-plan.json").writeText(plan)
+        Inspector.configure(storageDir = dir.path)
+        drainStorage()
+
+        assertTrue(Inspector.installWorkspacePlan(workspacePlan))
+        drainStorage()
+        assertEquals("5.0.0", Inspector.trackingPlan.value?.version)
+        assertEquals(plan, File(dir, "tracking-plan.json").readText())
+    }
+
+    @Test
+    fun aPlanTheHostLoadedWinsOverTheWorkspaceOne() {
+        Inspector.loadTrackingPlan(plan)
+        assertFalse(Inspector.installWorkspacePlan(workspacePlan))
+        assertEquals("3.0.0", Inspector.trackingPlan.value?.version)
+    }
+
+    @Test
+    fun aPlanTheHostLoadsAfterTheWorkspaceOneReplacesIt() {
+        Inspector.installWorkspacePlan(workspacePlan)
+        Inspector.loadTrackingPlan(plan)
+        assertEquals("3.0.0", Inspector.trackingPlan.value?.version)
+    }
+
+    @Test
+    fun aStoredPlanStillRestoringLeavesTheWorkspaceOneAlone() {
+        File(dir, "tracking-plan.json").writeText(plan)
+        whileStorageIsBusy {
+            Inspector.configure(storageDir = dir.path)
+            Inspector.installWorkspacePlan(workspacePlan)
+        }
+        assertEquals("5.0.0", Inspector.trackingPlan.value?.version)
+    }
+
+    @Test
+    fun aDirectorySetAfterTheWorkspacePlanArrivedLeavesItAlone() {
+        File(dir, "tracking-plan.json").writeText(plan)
+        Inspector.installWorkspacePlan(workspacePlan)
+        Inspector.configure(storageDir = dir.path)
+        drainStorage()
+        assertEquals("5.0.0", Inspector.trackingPlan.value?.version)
     }
 
     /** Runs [block] while the storage queue is held, then lets it drain. */

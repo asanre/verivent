@@ -107,10 +107,14 @@ object Inspector {
     // --- tracking plan ---
 
     // A fresh holder per install, so a restore that started earlier can tell — by identity — that
-    // something was loaded, cleared or reset meanwhile and drop what it read.
-    private class Installed(val plan: TrackingPlan?, val json: String?)
+    // something was loaded, cleared or reset meanwhile and drop what it read. [from] says who put it
+    // there: a workspace's plan never replaces the host's, and a stored one never replaces either.
+    // Unowned is no plan, or one restored from storage.
+    private class Installed(val plan: TrackingPlan?, val json: String?, val from: PlanFrom)
 
-    private val installed = AtomicReference(Installed(null, null))
+    private enum class PlanFrom { Unowned, Host, Workspace }
+
+    private val installed = AtomicReference(Installed(null, null, PlanFrom.Unowned))
 
     internal val activePlan: TrackingPlan? get() = installed.load().plan
 
@@ -135,14 +139,33 @@ object Inspector {
      * @throws IllegalArgumentException when [json] isn't a valid tracking plan; nothing changes then.
      */
     fun loadTrackingPlan(json: String) {
-        install(Installed(TrackingPlan.parse(json), json))
+        install(Installed(TrackingPlan.parse(json), json, PlanFrom.Host))
         persist()
     }
 
     /** Stop validating, and forget the plan kept in [storageDir]. */
     fun clearTrackingPlan() {
-        install(Installed(null, null))
+        install(Installed(null, null, PlanFrom.Host))
         persist()
+    }
+
+    /**
+     * Validate with the plan the connected workspace published, unless the host loaded or cleared one
+     * in this process. It replaces one restored from [storageDir] but isn't kept there: the workspace
+     * hands it over again on every start, and the stored one stays the host's.
+     *
+     * @return whether it was installed.
+     * @throws IllegalArgumentException when [json] isn't a valid tracking plan; nothing changes then.
+     */
+    @InternalVeriventApi
+    fun installWorkspacePlan(json: String): Boolean {
+        val next = Installed(TrackingPlan.parse(json), json, PlanFrom.Workspace)
+        do {
+            val current = installed.load()
+            if (current.from == PlanFrom.Host) return false
+        } while (!installed.compareAndSet(current, next))
+        publish()
+        return true
     }
 
     private fun install(next: Installed) {
@@ -173,10 +196,11 @@ object Inspector {
     private fun restoreTrackingPlan() {
         val path = planFile() ?: return
         val seen = installed.load()
+        if (seen.from == PlanFrom.Workspace) return
         storageScope.launch {
             val json = runCatching { readTextFile(path) }.getOrNull() ?: return@launch
             runCatching { TrackingPlan.parse(json) }
-                .onSuccess { plan -> if (installed.compareAndSet(seen, Installed(plan, json))) publish() }
+                .onSuccess { plan -> if (installed.compareAndSet(seen, Installed(plan, json, PlanFrom.Unowned))) publish() }
                 .onFailure { failure -> DiagnosticLog.warn(TAG, "ignoring the stored tracking plan", failure) }
         }
     }
@@ -192,7 +216,7 @@ object Inspector {
         enabled = true
         title = DEFAULT_TITLE
         storageDir = null
-        install(Installed(null, null))
+        install(Installed(null, null, PlanFrom.Unowned))
     }
 
     private const val DEFAULT_TITLE = "Verivent"

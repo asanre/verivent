@@ -1,3 +1,6 @@
 package io.github.asanre.verivent.web
 
-internal actual val exportSource: SourceDto? = null
+import io.github.asanre.verivent.core.InternalVeriventApi
+
+@InternalVeriventApi
+actual val exportSource: SourceDto? = null
