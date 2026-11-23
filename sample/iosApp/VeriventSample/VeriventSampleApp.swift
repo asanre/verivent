@@ -14,6 +14,11 @@ struct VeriventSampleApp: App {
             groupByEvent: "screen_view",
             groupLabelProperty: "screen_name"
         )
+        // Passed at launch so no workspace's key lands in the repo:
+        // xcrun simctl launch booted io.github.asanre.verivent.sample.ios -verivent_connection '<connection>'
+        if let connection = UserDefaults.standard.string(forKey: "verivent_connection") {
+            Verivent.connect(connection)
+        }
     }
 
     var body: some Scene {
