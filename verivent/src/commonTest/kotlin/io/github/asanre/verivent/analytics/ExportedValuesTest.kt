@@ -4,9 +4,9 @@ import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.model.PlanIssue
-import io.github.asanre.verivent.web.EntryDto
+import io.github.asanre.verivent.export.EntryDto
 import io.github.asanre.verivent.web.encodeEntries
-import io.github.asanre.verivent.web.toKeyValue
+import io.github.asanre.verivent.export.toKeyValue
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test

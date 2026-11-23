@@ -7,8 +7,8 @@ import io.github.asanre.verivent.analytics.Finding
 import io.github.asanre.verivent.analytics.TrackingPlan
 import io.github.asanre.verivent.analytics.exportedValues
 import io.github.asanre.verivent.analytics.parseObject
-import io.github.asanre.verivent.web.EntryDto
-import io.github.asanre.verivent.web.toKeyValue
+import io.github.asanre.verivent.export.EntryDto
+import io.github.asanre.verivent.export.toKeyValue
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 

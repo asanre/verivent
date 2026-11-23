@@ -6,7 +6,7 @@ import io.github.asanre.verivent.core.internal.runSafely
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.redaction.RedactionEngine
-import io.github.asanre.verivent.web.encodeConsoleLine
+import io.github.asanre.verivent.export.encodeConsoleLine
 
 /**
  * Vendor-agnostic analytics sink. The host wires its own analytics facade to [log]; Verivent never

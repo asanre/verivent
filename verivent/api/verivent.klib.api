@@ -456,41 +456,41 @@ final class io.github.asanre.verivent.core.store/TimelineStore { // io.github.as
     }
 }
 
-final class io.github.asanre.verivent.web/SourceDto { // io.github.asanre.verivent.web/SourceDto|null[0]
-    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String, kotlin/String? = ..., kotlin/Int = ...) // io.github.asanre.verivent.web/SourceDto.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
+final class io.github.asanre.verivent.export/SourceDto { // io.github.asanre.verivent.export/SourceDto|null[0]
+    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String, kotlin/String? = ..., kotlin/Int = ...) // io.github.asanre.verivent.export/SourceDto.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
 
-    final val appVersion // io.github.asanre.verivent.web/SourceDto.appVersion|{}appVersion[0]
-        final fun <get-appVersion>(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.appVersion.<get-appVersion>|<get-appVersion>(){}[0]
-    final val platform // io.github.asanre.verivent.web/SourceDto.platform|{}platform[0]
-        final fun <get-platform>(): kotlin/String // io.github.asanre.verivent.web/SourceDto.platform.<get-platform>|<get-platform>(){}[0]
-    final val schema // io.github.asanre.verivent.web/SourceDto.schema|{}schema[0]
-        final fun <get-schema>(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.schema.<get-schema>|<get-schema>(){}[0]
-    final val session // io.github.asanre.verivent.web/SourceDto.session|{}session[0]
-        final fun <get-session>(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.session.<get-session>|<get-session>(){}[0]
-    final val veriventVersion // io.github.asanre.verivent.web/SourceDto.veriventVersion|{}veriventVersion[0]
-        final fun <get-veriventVersion>(): kotlin/String // io.github.asanre.verivent.web/SourceDto.veriventVersion.<get-veriventVersion>|<get-veriventVersion>(){}[0]
+    final val appVersion // io.github.asanre.verivent.export/SourceDto.appVersion|{}appVersion[0]
+        final fun <get-appVersion>(): kotlin/String? // io.github.asanre.verivent.export/SourceDto.appVersion.<get-appVersion>|<get-appVersion>(){}[0]
+    final val platform // io.github.asanre.verivent.export/SourceDto.platform|{}platform[0]
+        final fun <get-platform>(): kotlin/String // io.github.asanre.verivent.export/SourceDto.platform.<get-platform>|<get-platform>(){}[0]
+    final val schema // io.github.asanre.verivent.export/SourceDto.schema|{}schema[0]
+        final fun <get-schema>(): kotlin/Int // io.github.asanre.verivent.export/SourceDto.schema.<get-schema>|<get-schema>(){}[0]
+    final val session // io.github.asanre.verivent.export/SourceDto.session|{}session[0]
+        final fun <get-session>(): kotlin/String? // io.github.asanre.verivent.export/SourceDto.session.<get-session>|<get-session>(){}[0]
+    final val veriventVersion // io.github.asanre.verivent.export/SourceDto.veriventVersion|{}veriventVersion[0]
+        final fun <get-veriventVersion>(): kotlin/String // io.github.asanre.verivent.export/SourceDto.veriventVersion.<get-veriventVersion>|<get-veriventVersion>(){}[0]
 
-    final fun component1(): kotlin/String // io.github.asanre.verivent.web/SourceDto.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.component2|component2(){}[0]
-    final fun component3(): kotlin/String // io.github.asanre.verivent.web/SourceDto.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // io.github.asanre.verivent.web/SourceDto.component4|component4(){}[0]
-    final fun component5(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.component5|component5(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/String? = ..., kotlin/Int = ...): io.github.asanre.verivent.web/SourceDto // io.github.asanre.verivent.web/SourceDto.copy|copy(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.web/SourceDto.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // io.github.asanre.verivent.web/SourceDto.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // io.github.asanre.verivent.web/SourceDto.toString|toString(){}[0]
+    final fun component1(): kotlin/String // io.github.asanre.verivent.export/SourceDto.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // io.github.asanre.verivent.export/SourceDto.component2|component2(){}[0]
+    final fun component3(): kotlin/String // io.github.asanre.verivent.export/SourceDto.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // io.github.asanre.verivent.export/SourceDto.component4|component4(){}[0]
+    final fun component5(): kotlin/Int // io.github.asanre.verivent.export/SourceDto.component5|component5(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String = ..., kotlin/String? = ..., kotlin/Int = ...): io.github.asanre.verivent.export/SourceDto // io.github.asanre.verivent.export/SourceDto.copy|copy(kotlin.String;kotlin.String?;kotlin.String;kotlin.String?;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.asanre.verivent.export/SourceDto.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.asanre.verivent.export/SourceDto.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.github.asanre.verivent.export/SourceDto.toString|toString(){}[0]
 
-    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.github.asanre.verivent.web/SourceDto> { // io.github.asanre.verivent.web/SourceDto.$serializer|null[0]
-        final val descriptor // io.github.asanre.verivent.web/SourceDto.$serializer.descriptor|{}descriptor[0]
-            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.github.asanre.verivent.web/SourceDto.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<io.github.asanre.verivent.export/SourceDto> { // io.github.asanre.verivent.export/SourceDto.$serializer|null[0]
+        final val descriptor // io.github.asanre.verivent.export/SourceDto.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // io.github.asanre.verivent.export/SourceDto.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
 
-        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.github.asanre.verivent.web/SourceDto.$serializer.childSerializers|childSerializers(){}[0]
-        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.github.asanre.verivent.web/SourceDto // io.github.asanre.verivent.web/SourceDto.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-        final fun serialize(kotlinx.serialization.encoding/Encoder, io.github.asanre.verivent.web/SourceDto) // io.github.asanre.verivent.web/SourceDto.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.github.asanre.verivent.web.SourceDto){}[0]
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // io.github.asanre.verivent.export/SourceDto.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): io.github.asanre.verivent.export/SourceDto // io.github.asanre.verivent.export/SourceDto.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, io.github.asanre.verivent.export/SourceDto) // io.github.asanre.verivent.export/SourceDto.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;io.github.asanre.verivent.export.SourceDto){}[0]
     }
 
-    final object Companion { // io.github.asanre.verivent.web/SourceDto.Companion|null[0]
-        final fun serializer(): kotlinx.serialization/KSerializer<io.github.asanre.verivent.web/SourceDto> // io.github.asanre.verivent.web/SourceDto.Companion.serializer|serializer(){}[0]
+    final object Companion { // io.github.asanre.verivent.export/SourceDto.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<io.github.asanre.verivent.export/SourceDto> // io.github.asanre.verivent.export/SourceDto.Companion.serializer|serializer(){}[0]
     }
 }
 
@@ -555,15 +555,15 @@ final object io.github.asanre.verivent.core/Inspector { // io.github.asanre.veri
     final fun updateNetwork(kotlin/String, kotlin/Function1<io.github.asanre.verivent.core.model/NetworkTransaction, io.github.asanre.verivent.core.model/NetworkTransaction>) // io.github.asanre.verivent.core/Inspector.updateNetwork|updateNetwork(kotlin.String;kotlin.Function1<io.github.asanre.verivent.core.model.NetworkTransaction,io.github.asanre.verivent.core.model.NetworkTransaction>){}[0]
 }
 
-final val io.github.asanre.verivent.web/exportSource // io.github.asanre.verivent.web/exportSource|{}exportSource[0]
-    final fun <get-exportSource>(): io.github.asanre.verivent.web/SourceDto? // io.github.asanre.verivent.web/exportSource.<get-exportSource>|<get-exportSource>(){}[0]
+final val io.github.asanre.verivent.export/exportSource // io.github.asanre.verivent.export/exportSource|{}exportSource[0]
+    final fun <get-exportSource>(): io.github.asanre.verivent.export/SourceDto? // io.github.asanre.verivent.export/exportSource.<get-exportSource>|<get-exportSource>(){}[0]
 
 final fun (kotlin/String).io.github.asanre.verivent.baseline/on(kotlin/String): io.github.asanre.verivent.core.model/PlanEvent // io.github.asanre.verivent.baseline/on|on@kotlin.String(kotlin.String){}[0]
 final fun io.github.asanre.verivent.analytics/AnalyticsSink(kotlin/Function1<io.github.asanre.verivent.analytics/AnalyticsSinkConfig, kotlin/Unit> = ...): io.github.asanre.verivent.analytics/AnalyticsSink // io.github.asanre.verivent.analytics/AnalyticsSink|AnalyticsSink(kotlin.Function1<io.github.asanre.verivent.analytics.AnalyticsSinkConfig,kotlin.Unit>){}[0]
 final fun io.github.asanre.verivent.baseline/lastEvent(io.github.asanre.verivent.core.model/PlanEvent, io.github.asanre.verivent.baseline/Waiter = ..., kotlin.time/Duration = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/Any?> = ...): io.github.asanre.verivent.baseline/EventCheck // io.github.asanre.verivent.baseline/lastEvent|lastEvent(io.github.asanre.verivent.core.model.PlanEvent;io.github.asanre.verivent.baseline.Waiter;kotlin.time.Duration;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
-final fun io.github.asanre.verivent.web/encodeExport(kotlin.collections/List<io.github.asanre.verivent.core.model/AnalyticsEntry>): kotlin/String // io.github.asanre.verivent.web/encodeExport|encodeExport(kotlin.collections.List<io.github.asanre.verivent.core.model.AnalyticsEntry>){}[0]
-final fun io.github.asanre.verivent.web/encodeExportEntry(io.github.asanre.verivent.core.model/AnalyticsEntry, kotlin/Boolean = ...): kotlin/String // io.github.asanre.verivent.web/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.AnalyticsEntry;kotlin.Boolean){}[0]
-final fun io.github.asanre.verivent.web/exportEntryJson(io.github.asanre.verivent.core.model/AnalyticsEntry): kotlinx.serialization.json/JsonElement // io.github.asanre.verivent.web/exportEntryJson|exportEntryJson(io.github.asanre.verivent.core.model.AnalyticsEntry){}[0]
+final fun io.github.asanre.verivent.export/encodeExport(kotlin.collections/List<io.github.asanre.verivent.core.model/AnalyticsEntry>): kotlin/String // io.github.asanre.verivent.export/encodeExport|encodeExport(kotlin.collections.List<io.github.asanre.verivent.core.model.AnalyticsEntry>){}[0]
+final fun io.github.asanre.verivent.export/encodeExportEntry(io.github.asanre.verivent.core.model/AnalyticsEntry, kotlin/Boolean = ...): kotlin/String // io.github.asanre.verivent.export/encodeExportEntry|encodeExportEntry(io.github.asanre.verivent.core.model.AnalyticsEntry;kotlin.Boolean){}[0]
+final fun io.github.asanre.verivent.export/exportEntryJson(io.github.asanre.verivent.core.model/AnalyticsEntry): kotlinx.serialization.json/JsonElement // io.github.asanre.verivent.export/exportEntryJson|exportEntryJson(io.github.asanre.verivent.core.model.AnalyticsEntry){}[0]
 final inline fun io.github.asanre.verivent.core.internal/runSafely(kotlin/String, kotlin/Function0<kotlin/Unit>) // io.github.asanre.verivent.core.internal/runSafely|runSafely(kotlin.String;kotlin.Function0<kotlin.Unit>){}[0]
 
 // Targets: [ios]

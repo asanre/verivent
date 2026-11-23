@@ -3,9 +3,9 @@ package io.github.asanre.verivent.sync
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.internal.DiagnosticLog
 import io.github.asanre.verivent.core.model.AnalyticsEntry
-import io.github.asanre.verivent.web.SourceDto
-import io.github.asanre.verivent.web.exportEntryJson
-import io.github.asanre.verivent.web.exportSource
+import io.github.asanre.verivent.export.SourceDto
+import io.github.asanre.verivent.export.exportEntryJson
+import io.github.asanre.verivent.export.exportSource
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post

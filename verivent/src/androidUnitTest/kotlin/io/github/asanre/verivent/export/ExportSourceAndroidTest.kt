@@ -1,4 +1,4 @@
-package io.github.asanre.verivent.web
+package io.github.asanre.verivent.export
 
 import io.github.asanre.verivent.core.InternalVeriventApi
 import kotlinx.serialization.json.Json

@@ -443,19 +443,19 @@ public final class io/github/asanre/verivent/core/store/TimelineStore {
 public final class io/github/asanre/verivent/core/store/TimelineStore$Companion {
 }
 
-public final class io/github/asanre/verivent/web/EntryDtoKt {
+public final class io/github/asanre/verivent/export/ExportEntryKt {
 	public static final fun encodeExport (Ljava/util/List;)Ljava/lang/String;
 	public static final fun encodeExportEntry (Lio/github/asanre/verivent/core/model/AnalyticsEntry;Z)Ljava/lang/String;
 	public static synthetic fun encodeExportEntry$default (Lio/github/asanre/verivent/core/model/AnalyticsEntry;ZILjava/lang/Object;)Ljava/lang/String;
 	public static final fun exportEntryJson (Lio/github/asanre/verivent/core/model/AnalyticsEntry;)Lkotlinx/serialization/json/JsonElement;
 }
 
-public final class io/github/asanre/verivent/web/ExportSource_androidKt {
-	public static final fun getExportSource ()Lio/github/asanre/verivent/web/SourceDto;
+public final class io/github/asanre/verivent/export/ExportSource_androidKt {
+	public static final fun getExportSource ()Lio/github/asanre/verivent/export/SourceDto;
 }
 
-public final class io/github/asanre/verivent/web/SourceDto {
-	public static final field Companion Lio/github/asanre/verivent/web/SourceDto$Companion;
+public final class io/github/asanre/verivent/export/SourceDto {
+	public static final field Companion Lio/github/asanre/verivent/export/SourceDto$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -463,8 +463,8 @@ public final class io/github/asanre/verivent/web/SourceDto {
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Lio/github/asanre/verivent/web/SourceDto;
-	public static synthetic fun copy$default (Lio/github/asanre/verivent/web/SourceDto;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/Object;)Lio/github/asanre/verivent/web/SourceDto;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)Lio/github/asanre/verivent/export/SourceDto;
+	public static synthetic fun copy$default (Lio/github/asanre/verivent/export/SourceDto;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IILjava/lang/Object;)Lio/github/asanre/verivent/export/SourceDto;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAppVersion ()Ljava/lang/String;
 	public final fun getPlatform ()Ljava/lang/String;
@@ -475,18 +475,18 @@ public final class io/github/asanre/verivent/web/SourceDto {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final synthetic class io/github/asanre/verivent/web/SourceDto$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
-	public static final field INSTANCE Lio/github/asanre/verivent/web/SourceDto$$serializer;
+public final synthetic class io/github/asanre/verivent/export/SourceDto$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/asanre/verivent/export/SourceDto$$serializer;
 	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
-	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/asanre/verivent/web/SourceDto;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/asanre/verivent/export/SourceDto;
 	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
 	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
-	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/asanre/verivent/web/SourceDto;)V
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/asanre/verivent/export/SourceDto;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
 }
 
-public final class io/github/asanre/verivent/web/SourceDto$Companion {
+public final class io/github/asanre/verivent/export/SourceDto$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 

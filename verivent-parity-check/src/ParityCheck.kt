@@ -38,8 +38,8 @@ import io.github.asanre.verivent.ui.InspectorLauncher as LauncherEntryPoints
 import io.github.asanre.verivent.ui.InspectorScreen
 import io.github.asanre.verivent.web.WebViewerBind
 import io.github.asanre.verivent.web.WebViewer
-import io.github.asanre.verivent.web.encodeExport
-import io.github.asanre.verivent.web.encodeExportEntry
+import io.github.asanre.verivent.export.encodeExport
+import io.github.asanre.verivent.export.encodeExportEntry
 import io.ktor.client.plugins.api.ClientPlugin
 import io.ktor.client.request.HttpRequestBuilder
 import kotlin.time.Duration

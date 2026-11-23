@@ -1,4 +1,4 @@
-package io.github.asanre.verivent.web
+package io.github.asanre.verivent.export
 
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.InternalVeriventApi
@@ -7,7 +7,6 @@ import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.github.asanre.verivent.core.model.TimelineEntry
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
@@ -61,13 +60,6 @@ internal data class EntryDto(
     val source: SourceDto? = null,
 )
 
-/**
- * One SSE frame: [ids] is the full timeline in order, [entries] only the ones the client doesn't
- * have yet. The client rebuilds its list from [ids], which also prunes whatever got evicted.
- */
-@Serializable
-internal data class StreamFrameDto(val ids: List<String>, val entries: List<EntryDto>)
-
 private fun KeyValue.toDto() = KvDto(name, value, redacted, type)
 
 internal fun KvDto.toKeyValue() = KeyValue(name, value, redacted, type)
@@ -114,16 +106,13 @@ internal fun TimelineEntry.toDto(): EntryDto = when (this) {
     )
 }
 
-private val webJson = Json { encodeDefaults = false }
-
-internal fun encodeEntries(entries: List<TimelineEntry>): String =
-    webJson.encodeToString(ListSerializer(EntryDto.serializer()), entries.map { it.toDto() })
+internal val exportJson = Json { encodeDefaults = false }
 
 /** A `logTo` console line: the event as exported, plus the [source][exportSource] a file states once. */
 internal fun encodeConsoleLine(entry: AnalyticsEntry): String =
-    webJson.encodeToString(EntryDto.serializer(), entry.toDto().copy(source = exportSource))
+    exportJson.encodeToString(EntryDto.serializer(), entry.toDto().copy(source = exportSource))
 
-private val prettyWebJson = Json(webJson) { prettyPrint = true }
+private val prettyExportJson = Json(exportJson) { prettyPrint = true }
 
 /**
  * One analytics event as every export writes it: [encodeExport] holds it, and a console line is it
@@ -133,7 +122,7 @@ private val prettyWebJson = Json(webJson) { prettyPrint = true }
  */
 @InternalVeriventApi
 fun encodeExportEntry(entry: AnalyticsEntry, pretty: Boolean = false): String =
-    (if (pretty) prettyWebJson else webJson).encodeToString(EntryDto.serializer(), entry.toDto())
+    (if (pretty) prettyExportJson else exportJson).encodeToString(EntryDto.serializer(), entry.toDto())
 
 /** Must match the export's pretty-print indent, so joined entries line up as array elements. */
 private const val ARRAY_INDENT = "    "
@@ -148,7 +137,7 @@ private const val ARRAY_INDENT = "    "
 @InternalVeriventApi
 fun encodeExport(events: List<AnalyticsEntry>): String {
     val opener = exportSource?.let { source ->
-        prettyWebJson.encodeToString(
+        prettyExportJson.encodeToString(
             EntryDto.serializer(),
             EntryDto(type = "source", id = "source", ts = Inspector.now().toEpochMilliseconds(), source = source),
         )
@@ -160,7 +149,4 @@ fun encodeExport(events: List<AnalyticsEntry>): String {
 
 /** [encodeExportEntry] as a JSON element, for a module that sends it inside a larger body. */
 @InternalVeriventApi
-fun exportEntryJson(entry: AnalyticsEntry): JsonElement = webJson.encodeToJsonElement(EntryDto.serializer(), entry.toDto())
-
-internal fun encodeFrame(ids: List<String>, changed: List<TimelineEntry>): String =
-    webJson.encodeToString(StreamFrameDto.serializer(), StreamFrameDto(ids, changed.map { it.toDto() }))
+fun exportEntryJson(entry: AnalyticsEntry): JsonElement = exportJson.encodeToJsonElement(EntryDto.serializer(), entry.toDto())

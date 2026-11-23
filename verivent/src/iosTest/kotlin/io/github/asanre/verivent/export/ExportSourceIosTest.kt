@@ -1,4 +1,4 @@
-package io.github.asanre.verivent.web
+package io.github.asanre.verivent.export
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

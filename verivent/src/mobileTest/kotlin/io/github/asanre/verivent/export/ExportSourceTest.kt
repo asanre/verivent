@@ -1,4 +1,4 @@
-package io.github.asanre.verivent.web
+package io.github.asanre.verivent.export
 
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector

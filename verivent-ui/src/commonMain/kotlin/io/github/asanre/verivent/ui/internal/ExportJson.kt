@@ -3,8 +3,8 @@ package io.github.asanre.verivent.ui.internal
 import io.github.asanre.verivent.core.InternalVeriventApi
 import io.github.asanre.verivent.core.model.AnalyticsEntry
 import io.github.asanre.verivent.core.model.TimelineEntry
-import io.github.asanre.verivent.web.encodeExport
-import io.github.asanre.verivent.web.encodeExportEntry
+import io.github.asanre.verivent.export.encodeExport
+import io.github.asanre.verivent.export.encodeExportEntry
 
 /** The exported JSON, with how many of the session's [events] made it into it ([kept]). */
 internal data class CappedExport(val json: String, val kept: Int, val events: Int)

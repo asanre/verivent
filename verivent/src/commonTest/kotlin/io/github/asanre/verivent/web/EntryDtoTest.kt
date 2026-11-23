@@ -6,6 +6,7 @@ import io.github.asanre.verivent.core.model.BodyPreview
 import io.github.asanre.verivent.core.model.KeyValue
 import io.github.asanre.verivent.core.model.NetworkTransaction
 import io.github.asanre.verivent.core.model.PlanIssue
+import io.github.asanre.verivent.export.encodeExport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -76,7 +77,7 @@ class EntryDtoTest {
         )
         val (opener, plain) = Json.parseToJsonElement(json).jsonArray.map { it.jsonObject }
         assertEquals("Home", opener.getValue("groupLabel").jsonPrimitive.content)
-        // Omitted, not null: webJson drops defaults, so the page has to treat absent as "no group".
+        // Omitted, not null: the JSON drops defaults, so the page has to treat absent as "no group".
         assertTrue("groupLabel" !in plain)
     }
 

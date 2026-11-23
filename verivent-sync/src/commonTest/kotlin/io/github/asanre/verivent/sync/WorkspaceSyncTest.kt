@@ -3,8 +3,8 @@ package io.github.asanre.verivent.sync
 import io.github.asanre.verivent.analytics.AnalyticsSink
 import io.github.asanre.verivent.core.Inspector
 import io.github.asanre.verivent.core.model.NetworkTransaction
-import io.github.asanre.verivent.web.SourceDto
-import io.github.asanre.verivent.web.exportSource
+import io.github.asanre.verivent.export.SourceDto
+import io.github.asanre.verivent.export.exportSource
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockEngineConfig
