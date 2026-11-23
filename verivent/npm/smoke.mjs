@@ -20,6 +20,7 @@ const tracks = Array.from({ length: 60 }, (_, i) => ({ duration_ms: String(i) })
 const issues = plan.check('play', 'firebase', JSON.stringify({ tracks }));
 assert.deepEqual(issues.map((i) => i.line), ['tracks[*].duration_ms · Expected integer, got string · 60 of 60']);
 assert.deepEqual(plan.check('play', 'firebase', '{}').map((i) => i.line), ['tracks · Required, but not sent']);
+assert.equal(plan.events[0].variants, null);
 assert.equal(plan.check('search', 'firebase', '{}'), null);
 assert.throws(() => new Plan('{"events":[]}'), { message: 'version must be a string' });
 
@@ -29,6 +30,7 @@ const generic = new Plan(JSON.stringify({
     schema: { required: ['element_id'], properties: { element_id: { type: 'string' }, item_id: {} } },
     variants: { by: ['element_id'], list: [{ id: 'share_playlist', when: { element_id: 'playlist_share' }, properties: { item_id: { pattern: '^pl_' } } }] } }],
 }));
+assert.deepEqual(Array.from(generic.events[0].variants), ['share_playlist']);
 const sent = (element, item) => ({ type: 'analytics', id: element, ts: 0, name: 'ui_interaction', channel: 'firebase', properties: [
   { name: 'element_id', value: element, redacted: false, type: 'string' }, { name: 'item_id', value: item, redacted: false, type: 'string' }] });
 const [share, unplanned] = generic.checkSession(JSON.stringify([sent('playlist_share', 'trk_1'), sent('cart_icon', 'x')]));

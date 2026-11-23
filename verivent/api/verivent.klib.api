@@ -642,12 +642,14 @@ final class io.github.asanre.verivent.js/Plan { // io.github.asanre.verivent.js/
 
 // Targets: [js]
 final class io.github.asanre.verivent.js/PlannedEvent { // io.github.asanre.verivent.js/PlannedEvent|null[0]
-    constructor <init>(kotlin/String, kotlin/String) // io.github.asanre.verivent.js/PlannedEvent.<init>|<init>(kotlin.String;kotlin.String){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Array<kotlin/String>?) // io.github.asanre.verivent.js/PlannedEvent.<init>|<init>(kotlin.String;kotlin.String;kotlin.Array<kotlin.String>?){}[0]
 
     final val channel // io.github.asanre.verivent.js/PlannedEvent.channel|{}channel[0]
         final fun <get-channel>(): kotlin/String // io.github.asanre.verivent.js/PlannedEvent.channel.<get-channel>|<get-channel>(){}[0]
     final val name // io.github.asanre.verivent.js/PlannedEvent.name|{}name[0]
         final fun <get-name>(): kotlin/String // io.github.asanre.verivent.js/PlannedEvent.name.<get-name>|<get-name>(){}[0]
+    final val variants // io.github.asanre.verivent.js/PlannedEvent.variants|{}variants[0]
+        final fun <get-variants>(): kotlin/Array<kotlin/String>? // io.github.asanre.verivent.js/PlannedEvent.variants.<get-variants>|<get-variants>(){}[0]
 }
 
 // Targets: [js]

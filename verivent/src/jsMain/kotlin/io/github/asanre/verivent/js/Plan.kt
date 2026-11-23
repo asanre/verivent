@@ -24,7 +24,10 @@ class Plan(json: String) {
 
     val version: String get() = plan.version
 
-    val events: Array<PlannedEvent> get() = plan.summary.events.map { PlannedEvent(it.name, it.channel) }.toTypedArray()
+    val events: Array<PlannedEvent>
+        get() = plan.summary.let { summary ->
+            summary.events.map { PlannedEvent(it.name, it.channel, summary.variants[it]?.toTypedArray()) }.toTypedArray()
+        }
 
     /**
      * What breaks the plan in an event whose properties are the JSON object [propertiesJson], or null
@@ -62,8 +65,9 @@ class Plan(json: String) {
     }
 }
 
+/** [variants] are the ids of the event's variants in the plan's order; null when it has none. */
 @JsExport
-class PlannedEvent(val name: String, val channel: String)
+class PlannedEvent(val name: String, val channel: String, val variants: Array<String>?)
 
 /**
  * [path] is the property, `.child` into objects and `[*]` into every item of a list; when it goes

@@ -18,7 +18,7 @@ import { Plan } from "verivent";
 
 const plan = new Plan(planJson);          // throws an Error with the device's message if it's invalid
 plan.version;                             // "1.4.0"
-plan.events;                              // [{ name, channel }]
+plan.events;                              // [{ name, channel, variants }]: variants' ids, or null
 
 // One event, from its properties as a JSON object. null when the plan doesn't define it.
 plan.check("play", "firebase", JSON.stringify({ tracks }))
