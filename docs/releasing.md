@@ -74,7 +74,7 @@ registry package; see [Validator in the browser](validator-npm.md).
    ```bash
    gh run view <run-id> --log | grep -c "signAndroidReleasePublication\|signIosArm64Publication\|signIosSimulatorArm64Publication\|signJsPublication\|signKotlinMultiplatformPublication"
    ```
-   Expect **25** — one per publication across the six modules, the core's JS target included. Zero means `signAllPublications`
+   Expect **33** — one per publication across the eight modules, the core's JS target included. Zero means `signAllPublications`
    did not take effect and the upload went out unsigned. 0.1.0 shipped that way on the first attempt:
    Gradle reports success for an unsigned upload because the rejection happens on Central's side.
 6. Verify it landed, once propagation finishes (minutes to a couple of hours):
@@ -127,10 +127,10 @@ never publishes, so that version is still free.
 ls ~/.m2/repository/io/github/asanre/
 ```
 
-Six modules are published: `verivent`, `verivent-ui`, `verivent-ktor` and their
-`-no-op` mirrors. Those are the six coordinates a consumer declares, but the `ls` lists **24**
+Eight modules are published: `verivent`, `verivent-ui`, `verivent-ktor`, `verivent-sync` and their
+`-no-op` mirrors. Those are the eight coordinates a consumer declares, but the `ls` lists **33**
 directories, because each Kotlin Multiplatform module publishes a root coordinate plus one per
-target:
+target (the core also has a JS one):
 
 ```
 verivent/                          root: POM, Gradle module metadata, common klib
